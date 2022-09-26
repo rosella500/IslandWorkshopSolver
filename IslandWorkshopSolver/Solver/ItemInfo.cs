@@ -129,9 +129,9 @@ public class ItemInfo
         setPeakBasedOnObserved();
     }
 
-    public void addCrafted(int num, int day)
+    public void setCrafted(int num, int day)
     {
-        craftedPerDay[day] += num;
+        craftedPerDay[day] = num;
     }
 
     private int getCraftedBeforeDay(int day)

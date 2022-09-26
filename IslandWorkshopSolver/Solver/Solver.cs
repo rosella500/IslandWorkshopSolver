@@ -46,7 +46,7 @@ public class Solver
         totalNet = 0;
         rested = false;
 
-        int dayToSolve = 1;
+        int dayToSolve = 5;
 
         SupplyHelper.DefaultInit();
         PopularityHelper.DefaultInit();
@@ -57,55 +57,45 @@ public class Solver
         for (int i = 1; i < dayToSolve; i++)
             setObservedFromCSV(i);
         if(importer.endDays.Count >= dayToSolve && dayToSolve > 0)
-            groove = importer.endDays[dayToSolve-1].endingGroove;
+        {
+            var prevDaySummary = importer.endDays[dayToSolve - 1];
+            Dalamud.Chat.Print("previous day summary: " + prevDaySummary);
+            groove = prevDaySummary.endingGroove;
+            if(prevDaySummary.crafts != null && dayToSolve - 1 > 0)
+            {
+                var twoDaysAgo = importer.endDays[dayToSolve - 2];
+                CycleSchedule yesterdaySchedule = new CycleSchedule(dayToSolve - 1, twoDaysAgo.endingGroove);
+                yesterdaySchedule.setForAllWorkshops(prevDaySummary.crafts);
+                int gross = yesterdaySchedule.getValue();
 
-        Dalamud.Chat.Print("we made " + groove + " groove yesterday");
+                int net = gross - yesterdaySchedule.getMaterialCost();
+
+                importer.writeEndDay(dayToSolve - 1, groove, gross, net, null);
+                totalGross += gross;
+                totalNet += net;
+            }
+        }
+
+        //Dalamud.Chat.Print("we made " + groove + " groove yesterday");
         
         if (dayToSolve == 1)
             addDay(new List<Item>(), 0);
 
         if (dayToSolve<4)
         {
-            var daySchedule = getBestSchedule(dayToSolve, null);
-            setObservedFromCSV(dayToSolve);
-            addOrRest(daySchedule, dayToSolve);
+            addOrRest(getBestSchedule(dayToSolve, null), dayToSolve);
         }
         else
         {
             if (importer.currentPeaks == null || importer.currentPeaks[0] == Unknown)
                 importer.writeCurrentPeaks(week);
-
-            setLateDays();
+            if (dayToSolve == 4)
+                setLateDays();
+            else if (dayToSolve == 5)
+                setLastTwoDays();
+            else
+                addOrRest(getBestSchedule(dayToSolve, null), dayToSolve);
         }
-
-
-        /*if (hasNextDay)
-        {
-            KeyValuePair<WorkshopSchedule, int> d3 = getBestSchedule(2, null);
-
-            hasNextDay = setObservedFromCSV(2);
-
-            addOrRest(d3, 2);
-            if (hasNextDay)
-            {
-                KeyValuePair<WorkshopSchedule, int> d4 = getBestSchedule(3, null);
-                hasNextDay = setObservedFromCSV(3);
-
-                addOrRest(d4, 3);
-                if (hasNextDay)
-                {
-                    if (importer.currentPeaks == null || importer.currentPeaks[0] == Unknown)
-                        importer.writeCurrentPeaks(week);
-
-                    setLateDays();
-
-                }
-            }
-        }*/
-
-
-        // foreach(ItemInfo item in items) { Dalamud.Chat.Print(item.item+":" +item.peak); }
-
 
         Dalamud.Chat.Print("Week total: " + totalGross + " (" + totalNet + ")\n" + "Took " + (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time) + "ms.");
 
@@ -124,11 +114,6 @@ public class Solver
 
             addDay(rec.Key.getItems(), day);
         }
-    }
-
-    private static void addBestSchedule(int day)
-    {
-        addDay(getBestSchedule(day, null).Key.getItems(), day);
     }
 
     private static void printRestDayInfo(List<Item> rec, int day)
@@ -288,6 +273,29 @@ public class Solver
         }
     }
 
+    private static void setLastTwoDays()
+    {
+        KeyValuePair<WorkshopSchedule, int> cycle6Sched = getBestSchedule(5, null);
+        KeyValuePair<WorkshopSchedule, int> cycle7Sched = getBestSchedule(6, null);
+
+        KeyValuePair<WorkshopSchedule, int> recalcedCycle6Sched = getBestSchedule(5, cycle7Sched.Key.getItems().ToHashSet());
+        KeyValuePair<WorkshopSchedule, int> trueCycle6Sched = recalcedCycle6Sched.Value > cycle6Sched.Value ? recalcedCycle6Sched : cycle6Sched;
+
+        if (trueCycle6Sched.Value >= cycle7Sched.Value || rested)
+        {
+            addDay(trueCycle6Sched.Key.getItems(), 5);
+            if (rested)
+                addDay(cycle7Sched.Key.getItems(), 6);
+        }
+        else
+        {
+            printRestDayInfo(trueCycle6Sched.Key.getItems(), 5);
+            addDay(cycle7Sched.Key.getItems(), 6);
+        }
+
+
+    }
+
     private static bool isWorseThanAllFollowing(KeyValuePair<WorkshopSchedule, int> rec, int day)
     {
         int worstInFuture = 99999;
@@ -390,10 +398,13 @@ public class Solver
 
         foreach(var kvp in schedule.numCrafted)
         {
-            items[(int)kvp.Key].addCrafted(kvp.Value, day);
+            items[(int)kvp.Key].setCrafted(kvp.Value, day);
         }
 
-        importer.writeEndDay(day, groove, gross, net);
+        if (schedule.hasAnyUnsurePeaks())
+            importer.writeEndDay(day, groove, 0, 0, crafts0);
+        else
+            importer.writeEndDay(day, groove, gross, net, null);
     }
 
     private static KeyValuePair<WorkshopSchedule, int> getBestScheduleAndAlts(Dictionary<WorkshopSchedule, int> schedules)
@@ -419,7 +430,7 @@ public class Solver
         return bestSchedule;
     }
 
-    private static KeyValuePair<WorkshopSchedule, int> getBestSchedule(int day, HashSet<Item>? reservedForLater, bool allowAllOthers = false)
+    private static KeyValuePair<WorkshopSchedule, int> getBestSchedule(int day, HashSet<Item>? reservedForLater, bool allowAllOthers = true)
     {
         var fourHour = new List<ItemInfo>();
         var eightHour = new List<ItemInfo>();
@@ -435,11 +446,11 @@ public class Solver
             if (reservedForLater != null && reservedForLater.Contains(item.item))
                 continue;
 
-            if (item.time == 4 && (allowAllOthers || item.peaksOnOrBeforeDay(day, true)))
+            if (item.time == 4 && item.rankUnlocked <= islandRank && (allowAllOthers || item.peaksOnOrBeforeDay(day, true)))
                 bucket = fourHour;
-            else if (item.time == 6 && (allowAllOthers || item.peaksOnOrBeforeDay(day,false)))
+            else if (item.time == 6 && item.rankUnlocked <= islandRank && (allowAllOthers || item.peaksOnOrBeforeDay(day,false)))
                 bucket = sixHour;
-            else if (item.time == 8 && (allowAllOthers || item.peaksOnOrBeforeDay(day, false)))
+            else if (item.time == 8 && item.rankUnlocked <= islandRank && (allowAllOthers || item.peaksOnOrBeforeDay(day, false)))
                 bucket = eightHour;            
 
             if(bucket!=null)
@@ -647,35 +658,32 @@ public class Solver
         }
     }
 
-    private static bool setObservedFromCSV(int day)
+    private static void setObservedFromCSV(int day)
     {
         bool hasDaySummary = day < importer.endDays.Count;
 
-        if (day < 4)
+        for (int i = 0; i < items.Count; i++)
         {
-            if (day >= importer.observedSupplies[0].Count)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < items.Count; i++)
+            if (day < importer.observedSupplies[i].Count)
             {
                 ObservedSupply ob = importer.observedSupplies[i][day];
                 items[i].addObservedDay(ob);
-                if (hasDaySummary && importer.endDays[day].craftedItems() > i)
-                    items[i].craftedPerDay[day] = importer.endDays[day].getCrafted(i);
             }
+            if (hasDaySummary && importer.endDays[day].craftedItems() > i)
+                items[i].setCrafted(importer.endDays[day].getCrafted(i), day);
         }
         
-        if(hasDaySummary)
+        if(hasDaySummary && importer.endDays[day].endingGross > -1)
         {
-            Dalamud.Chat.Print("Adding totals from day " + day + ": " + importer.endDays[day]);
+            //Dalamud.Chat.Print("Adding totals from day " + day + ": " + importer.endDays[day]);
             totalGross += importer.endDays[day].endingGross;
             totalNet += importer.endDays[day].endingNet;
             if (importer.endDays[day].endingGross == 0)
+            {
+                //Dalamud.Chat.Print("Rested day " + (day + 1));
                 rested = true;
+            }
         }
-        return true;
     }
 
     public static void initItems()

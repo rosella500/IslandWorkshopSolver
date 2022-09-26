@@ -41,7 +41,7 @@ public class MainWindow : Window, IDisposable
         ImGui.Spacing();
         if (ImGui.Button("Run Solver"))
         {
-            Dalamud.Chat.Print("Hitting button, "+rootPath);
+            //Dalamud.Chat.Print("Hitting button, "+rootPath);
             try
             {
                 Solver.Solver.RunSolver(rootPath);

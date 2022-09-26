@@ -170,6 +170,16 @@ public class WorkshopSchedule
         return true;
     }
 
+    public bool hasAnyUnsurePeaks()
+    {
+        foreach(ItemInfo itemInfo in crafts)
+        {
+            if (!itemInfo.peak.IsTerminal())
+                return true;
+        }
+        return false;
+    }
+
     public override bool Equals(object? obj)
     {
         return Equals(obj as WorkshopSchedule);

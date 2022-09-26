@@ -110,6 +110,11 @@ public class CycleSchedule
        
     }
 
+    public bool hasAnyUnsurePeaks()
+    {
+        return workshops[0].hasAnyUnsurePeaks();
+    }
+
     public int getMaterialCost()
     {
         int cost = 0;
