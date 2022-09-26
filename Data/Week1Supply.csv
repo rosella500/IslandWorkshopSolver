@@ -1,0 +1,50 @@
+Potion,Low,Sufficient,None,Insufficient,None,Sufficient,Decreasing,Sufficient,Increasing,Cycle 6 Weak
+Firesand,Average,Sufficient,None,Insufficient,None,Sufficient,Plummeting,Surplus,None,Cycle 7 Strong
+Wooden Chair,High,Sufficient,None,Sufficient,None,Insufficient,Increasing,Insufficient,Increasing,Cycle 4 Weak
+Grilled Clam,Average,Sufficient,None,Insufficient,Increasing,Insufficient,Increasing,Sufficient,Plummeting,Cycle 3 Weak
+Necklace,Very High,Sufficient,None,Sufficient,None,Sufficient,None,Insufficient,Skyrocketing,Cycle 5 Strong
+Coral Ring,Low,Sufficient,None,Sufficient,None,Insufficient,Skyrocketing,Nonexistent,Skyrocketing,Cycle 4 Strong
+Barbut,High,Insufficient,Plummeting,Nonexistent,Skyrocketing,Sufficient,Plummeting,Sufficient,None,Cycle 2 Strong
+Macuahuitl,Very High,Sufficient,None,Insufficient,Skyrocketing,Nonexistent,Skyrocketing,Sufficient,Plummeting,Cycle 3 Strong
+Sauerkraut,High,Sufficient,None,Insufficient,None,Sufficient,Decreasing,Sufficient,Increasing,Cycle 6 Weak
+Baked Pumpkin,Average,Sufficient,None,Sufficient,None,Sufficient,None,Insufficient,Increasing,Cycle 5 Weak
+Tunic,Low,Sufficient,Plummeting,Sufficient,None,Sufficient,None,Insufficient,Increasing,Cycle 5 Weak
+Culinary Knife,High,Sufficient,None,Insufficient,None,Sufficient,Plummeting,Sufficient,None,Cycle 7 Strong
+Brush,Average,Insufficient,Increasing,Insufficient,Increasing,Sufficient,Plummeting,Sufficient,None,Cycle 2 Weak
+Boiled Egg,Very High,Sufficient,None,Insufficient,None,Overflowing,Plummeting,Overflowing,None,Cycle 7 Strong
+Hora,Very High,Sufficient,None,Insufficient,None,Sufficient,Plummeting,Sufficient,Increasing,Cycle 7 Weak
+Earrings,Average,Sufficient,None,Sufficient,None,Sufficient,None,Insufficient,Skyrocketing,Cycle 5 Strong
+Butter,High,Sufficient,None,Sufficient,None,Insufficient,Skyrocketing,Nonexistent,Skyrocketing,Cycle 4 Strong
+Brick Counter,Very High,Sufficient,None,Sufficient,None,Insufficient,Increasing,Insufficient,Increasing,Cycle 4 Weak
+Bronze Sheep,Very High,Sufficient,None,Sufficient,None,Insufficient,Skyrocketing,Nonexistent,Skyrocketing,Cycle 4 Strong
+Growth Formula,Average,Sufficient,None,Insufficient,Skyrocketing,Nonexistent,Skyrocketing,Sufficient,Plummeting,Cycle 3 Strong
+Garnet Rapier,Average,Sufficient,None,Insufficient,None,Sufficient,Plummeting,Sufficient,Skyrocketing,Cycle 6 Strong
+Spruce Round Shield,High,Sufficient,None,Sufficient,None,Insufficient,Increasing,Insufficient,Increasing,Cycle 4 Weak
+Shark Oil,Very High,Sufficient,None,Insufficient,None,Sufficient,Plummeting,Sufficient,Skyrocketing,Cycle 6 Strong
+Silver Ear Cuffs,Average,Sufficient,None,Insufficient,None,Sufficient,Plummeting,Sufficient,Skyrocketing,Cycle 6 Strong
+Sweet Popoto,Average,Sufficient,None,Insufficient,None,Sufficient,Plummeting,Sufficient,Increasing,Cycle 7 Weak
+Parsnip Salad,Average,Insufficient,Skyrocketing,Nonexistent,Skyrocketing,Sufficient,Plummeting,Sufficient,None,Cycle 2 Strong
+Caramels,High,Sufficient,None,Sufficient,None,Sufficient,None,Insufficient,Increasing,Cycle 5 Weak
+Ribbon,Low,Sufficient,None,Insufficient,Skyrocketing,Nonexistent,Skyrocketing,Sufficient,Plummeting,Cycle 3 Strong
+Rope,Very High,Sufficient,None,Insufficient,None,Sufficient,Decreasing,Sufficient,Increasing,Cycle 6 Weak
+Cavalier's Hat,High,Sufficient,None,Insufficient,None,Sufficient,Decreasing,Sufficient,Increasing,Cycle 6 Weak
+Horn,Very High,Sufficient,None,Insufficient,Increasing,Insufficient,Increasing,Sufficient,Plummeting,Cycle 3 Weak
+Salt Cod,High,Sufficient,None,Insufficient,None,Sufficient,Plummeting,Sufficient,None,Cycle 7 Strong
+Squid Ink,Very High,Sufficient,None,Insufficient,Increasing,Insufficient,Increasing,Sufficient,Plummeting,Cycle 3 Weak
+Essential Draught,Low,Sufficient,None,Insufficient,Skyrocketing,Nonexistent,Skyrocketing,Sufficient,Plummeting,Cycle 3 Strong
+Jam,High,Sufficient,None,Insufficient,None,Sufficient,Plummeting,Sufficient,Increasing,Cycle 7 Weak
+Tomato Relish,Average,Sufficient,None,Insufficient,None,Sufficient,Plummeting,Sufficient,None,Cycle 7 Strong
+Onion Soup,Low,Insufficient,Skyrocketing,Insufficient,Increasing,Sufficient,Plummeting,Sufficient,None,Cycle 2 Weak
+Pie,Very High,Sufficient,None,Insufficient,Increasing,Insufficient,Increasing,Sufficient,Plummeting,Cycle 3 Weak
+Corn Flakes,High,Insufficient,Skyrocketing,Nonexistent,Skyrocketing,Sufficient,Plummeting,Sufficient,None,Cycle 2 Strong
+Pickled Radish,Average,Sufficient,None,Insufficient,None,Sufficient,Plummeting,Sufficient,Increasing,Cycle 7 Weak
+Iron Axe,Very High,Sufficient,None,Sufficient,None,Insufficient,Skyrocketing,Nonexistent,Skyrocketing,Cycle 4 Strong
+Quartz Ring,High,Sufficient,None,Sufficient,None,Sufficient,None,Insufficient,Skyrocketing,Cycle 5 Strong
+Porcelain Vase,Low,Sufficient,None,Insufficient,None,Sufficient,Plummeting,Sufficient,Increasing,Cycle 7 Weak
+Vegetable Juice,High,Sufficient,None,Sufficient,None,Sufficient,None,Insufficient,Increasing,Cycle 5 Weak
+Pumpkin Pudding,Average,Insufficient,Skyrocketing,Insufficient,Increasing,Sufficient,Plummeting,Sufficient,None,Cycle 2 Weak
+Sheepfluff Rug,Average,Sufficient,None,Sufficient,None,Insufficient,Increasing,Insufficient,Increasing,Cycle 4 Weak
+Garden Scythe,Low,Sufficient,None,Insufficient,None,Sufficient,Plummeting,Sufficient,Skyrocketing,Cycle 6 Strong
+Bed,High,Sufficient,None,Sufficient,None,Sufficient,None,Insufficient,Skyrocketing,Cycle 5 Strong
+Scale Fingers,High,Insufficient,None,Insufficient,Increasing,Sufficient,Plummeting,Sufficient,None,Cycle 2 Weak
+Crook,Average,Insufficient,Skyrocketing,Nonexistent,Skyrocketing,Sufficient,Plummeting,Sufficient,None,Cycle 2 Strong

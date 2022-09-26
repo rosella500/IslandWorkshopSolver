@@ -1,0 +1,15 @@
+{
+    "Author": "Mienna Pelletier",
+    "Name": "Island Sanctuary Workshop Solver",
+    "Punchline": "Determines the best thing to craft tomorrow on your island workshop",
+    "Description": "This is a solver that takes in your supply data, material data, pasture data, and crop data to determine what you can set your schedule to tomorrow to make the most Seafarer's Cowries possible! '",
+    "InternalName": "islandWorkshop",
+    "ApplicableVersion": "any",
+    "Tags": [
+        "island sanctuary",
+        "workshop",
+        "plugin",
+        "helper",
+        "solver"
+    ]
+}
