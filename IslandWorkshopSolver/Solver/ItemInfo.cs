@@ -115,17 +115,20 @@ public class ItemInfo
     {
         popularity = pop;
         previousPeak = prev;
-        addObservedDay(ob);
+        addObservedDay(ob, 0);
     }
 
-    public void addObservedDay(Supply supply, DemandShift demand)
+    public void addObservedDay(Supply supply, DemandShift demand, int day)
     {
-        addObservedDay(new ObservedSupply(supply, demand));
+        addObservedDay(new ObservedSupply(supply, demand), day);
     }
 
-    public void addObservedDay(ObservedSupply ob)
+    public void addObservedDay(ObservedSupply ob, int day)
     {
-        observedSupplies.Add(ob);
+        if (observedSupplies.Count > day)
+            observedSupplies[day] = ob;
+        else
+            observedSupplies.Add(ob);
         setPeakBasedOnObserved();
     }
 
@@ -178,11 +181,13 @@ public class ItemInfo
                     return;
                 }
                 else
-                    Dalamud.Chat.Print(item + " does not match any known patterns for day 2");
+                    Dalamud.Chat.Print(item + " does not match any known demand shifts for day 2: "+observedDemand2);
             }
             else
             {
                 peak = Cycle2Weak;
+
+                Solver.addUnknownD2(item);
                 /*if (previousPeak == Cycle7Strong)
                     Dalamud.Chat.Print("Warning! Can't tell if " + item + " is a weak or a strong 2 peak.");
                     else

@@ -21,7 +21,9 @@ public class CSVImporter
     public List<EndDaySummary> endDays;
     public PeakCycle[] currentPeaks;
     private string rootPath;
-    public CSVImporter(string root, int week)
+    private int currentWeek;
+    private int currentDay;
+    public CSVImporter(string root, int week, int day)
     {
         lastWeekPeaks = new PeakCycle[Solver.items.Count];
         currentPopularity = new Popularity[Solver.items.Count];
@@ -29,8 +31,89 @@ public class CSVImporter
         observedSupplies = new List<List<ObservedSupply>>();
         endDays = new List<EndDaySummary>();
         rootPath = root;
+        currentWeek = week;
+        currentDay = day;
 
-        initSupplyData(week);
+        initSupplyData();
+    }
+
+    public void writeWeekStart(string[] products)
+    {
+        //Make new CSV for current week
+        string path = getPathForWeek(currentWeek);
+        if (File.Exists(path))
+        {
+            Dalamud.Chat.Print("This week's file already exists at path " + path);
+            return;
+        }
+        Dalamud.Chat.Print("Starting to write a file to " + path);
+        try
+        {
+            string[] newFileContents = new string[products.Length];
+            for (int itemIndex = 0; itemIndex < products.Length; itemIndex++)
+            {
+                string[] productInfo = products[itemIndex].Split('\t');
+
+                if (productInfo.Length >= 4)
+                {
+                    newFileContents[itemIndex] = productInfo[0] + "," + productInfo[1] + "," + productInfo[2] + "," + productInfo[3];
+                }
+            }
+
+            File.WriteAllLines(path, newFileContents);
+        }
+        catch (Exception e)
+        {
+            Dalamud.Chat.Print("Error writing file: " + e.Message);
+        }
+    }
+
+    public void writeNewSupply(string[] products)
+    {
+        string path = getPathForWeek(currentWeek);
+        if (!File.Exists(path))
+        {
+            Dalamud.Chat.Print("No file found to add supply to at " + path);
+            return;
+        }
+        Dalamud.Chat.Print("Starting to read file at " + path);
+
+        try
+        {
+
+            string[] fileInfo = File.ReadAllLines(path);
+            //itemName, popularity, supply, shift, supply, shift, etc.
+
+            bool changedFile = false;
+            for (int itemIndex = 0; itemIndex < fileInfo.Length; itemIndex++)
+            {
+                string currentFileLine = fileInfo[itemIndex];
+                string[] fileItemInfo = currentFileLine.Split(',');
+
+                if (fileItemInfo.Length == 2 + (currentDay * 3)) //We're ready for today's info
+                {
+                    changedFile = true;
+                    string[] productInfo = products[itemIndex].Split('\t');
+                    if (productInfo.Length >= 4)
+                    {
+                        currentFileLine = currentFileLine + "," + productInfo[2] + "," + productInfo[3];
+                        fileInfo[itemIndex] = currentFileLine;
+                    }
+                }
+            }
+            if (changedFile)
+            {
+                File.WriteAllLines(path, fileInfo);
+            }
+            else
+            {
+                Dalamud.Chat.Print("Supply data for day " + (currentDay + 1) + " already found in sheet. Did not write anything.");
+            }
+        }
+        catch (Exception e)
+        {
+            Dalamud.Chat.Print("Error writing file: " + e.Message);
+        }
     }
 
     public void writeEndDay(int day, int groove, int gross, int net, List<Item>? crafts)
@@ -238,14 +321,12 @@ public class CSVImporter
 
     }
 
-    public void initSupplyData(int week)
+    public void initSupplyData()
     {
-        string fileName = "Week" + (week - 1) + "Supply.csv";
-
-        string path = rootPath + "\\" + fileName;
+        string path = getPathForWeek(currentWeek - 1);
         //Dalamud.Chat.Print("Looking for file at " + path);
 
-        if (week > 1)
+        if (currentWeek > 1)
         {
             if (!File.Exists(path))
             {
@@ -257,15 +338,15 @@ public class CSVImporter
             try
             {
                 string[] fileInfo = File.ReadAllLines(path);
-                for(int c=0; c<fileInfo.Length; c++)
+                for(int c=0; c<Solver.items.Count; c++)
                 {
                     string line = fileInfo[c];
 
                     string[] values = line.Split(",");
 
-                    if (values.Length >= 11)
+                    if (values.Length > 20)
                     {
-                        string peak = values[13].Replace(" ", "");
+                        string peak = values[20].Replace(" ", "");
 
                         PeakCycle peakEnum = Enum.Parse<PeakCycle>(peak);
                         //Dalamud.Chat.Print("Last week's peak: " + peak);
@@ -290,7 +371,7 @@ public class CSVImporter
 
         }
 
-        path = rootPath + "\\Week" + week + "Supply.csv";
+        path = getPathForWeek(currentWeek);
 
         observedSupplies.Clear();
         endDays.Clear();
@@ -424,6 +505,11 @@ public class CSVImporter
             }
             endDays.Add(new EndDaySummary(crafted, groove, schedule));
         }
+    }
+
+    public string getPathForWeek(int week)
+    {
+        return rootPath + "\\" + "Week" + week + "Supply.csv";
     }
 
 }

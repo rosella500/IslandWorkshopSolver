@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static FFXIVClientStructs.FFXIV.Client.UI.Misc.ConfigModule;
 using System.Xml.Linq;
+using System.Runtime.CompilerServices;
 
 namespace IslandWorkshopSolver.Solver;
 using static Item;
@@ -24,7 +25,7 @@ public class Solver
     public static List<ItemInfo> items;
 
     private static int groove;
-    private static int totalGross;
+    public static int totalGross;
     private static int totalNet;
     public static bool rested;
 
@@ -34,11 +35,40 @@ public class Solver
     public static int groovePerDay = 45;
     private static int islandRank = 10;
     public static double materialWeight = 0.5;
-    private static CSVImporter importer;
+    public static CSVImporter importer;
     public static int week = 5;
+    static bool initialized = false;
+    public static int currentDay;
+    private static Configuration config;
 
-    static public void RunSolver(string root)
+    public static void Init(Configuration newConfig)
     {
+        config = newConfig;
+        materialWeight = config.materialValue;
+        WORKSHOP_BONUS = config.workshopBonus;
+        GROOVE_MAX = config.maxGroove;
+        islandRank = config.islandRank;
+        if (initialized)
+            return;
+        SupplyHelper.DefaultInit();
+        PopularityHelper.DefaultInit();
+        RareMaterialHelper.DefaultInit();
+        initItems();
+        week = getCurrentWeek();
+        currentDay = getCurrentDay();
+        config.day = currentDay;
+        config.Save();
+        importer = new CSVImporter(config.rootPath, week, currentDay);
+        initialized = true;
+    }
+    static public List<(int,SuggestedSchedules?)>? RunSolver()
+    {
+        if (!initialized)
+        {
+            Dalamud.Chat.PrintError("Trying to run solver before solver initiated");
+            return null;
+        }
+            
         //TODO: Figure out how to handle D2 because no one's going to craft things D1 to find out
         long time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         groove = 0;
@@ -46,20 +76,16 @@ public class Solver
         totalNet = 0;
         rested = false;
 
-        int dayToSolve = 5;
+        int dayToSolve = currentDay+1;
 
-        SupplyHelper.DefaultInit();
-        PopularityHelper.DefaultInit();
-        RareMaterialHelper.DefaultInit();
-        initItems();
-        importer = new CSVImporter(root, week);
         setInitialFromCSV();
         for (int i = 1; i < dayToSolve; i++)
             setObservedFromCSV(i);
-        if(importer.endDays.Count >= dayToSolve && dayToSolve > 0)
+
+        if (importer.endDays.Count >= dayToSolve && dayToSolve > 0)
         {
             var prevDaySummary = importer.endDays[dayToSolve - 1];
-            Dalamud.Chat.Print("previous day summary: " + prevDaySummary);
+            //Dalamud.Chat.Print("previous day summary: " + prevDaySummary);
             groove = prevDaySummary.endingGroove;
             if(prevDaySummary.crafts != null && dayToSolve - 1 > 0)
             {
@@ -76,12 +102,33 @@ public class Solver
             }
         }
 
-        //Dalamud.Chat.Print("we made " + groove + " groove yesterday");
-        
-        if (dayToSolve == 1)
-            addDay(new List<Item>(), 0);
+        if(currentDay == 0 && config.unknownD2Items != null)
+        {
+            //Set each peak according to config
+            foreach(var item in config.unknownD2Items)
+            {
+                items[(int)(item.Key)].peak = item.Value ? Cycle2Strong : Cycle2Weak;
+            }
+        }
 
-        if (dayToSolve<4)
+        //Dalamud.Chat.Print("we made " + groove + " groove yesterday");
+
+
+        List<(int, SuggestedSchedules?)> toReturn = new List<(int, SuggestedSchedules?)>();
+        if (dayToSolve == 1)
+        {
+            toReturn.Add((0, null));
+
+            addDay(new List<Item>(), 0);
+        }
+
+        if(dayToSolve < 4)
+            toReturn.Add((dayToSolve,getSuggestedSchedules(dayToSolve, null)));
+        else
+            if (importer.currentPeaks == null || importer.currentPeaks[0] == Unknown)
+                importer.writeCurrentPeaks(week);
+
+        /*if (dayToSolve<4)
         {
             addOrRest(getBestSchedule(dayToSolve, null), dayToSolve);
         }
@@ -95,10 +142,21 @@ public class Solver
                 setLastTwoDays();
             else
                 addOrRest(getBestSchedule(dayToSolve, null), dayToSolve);
-        }
+        }*/
+        //Dalamud.Chat.Print("Week total: " + totalGross + " (" + totalNet + ")");
 
-        Dalamud.Chat.Print("Week total: " + totalGross + " (" + totalNet + ")\n" + "Took " + (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time) + "ms.");
+        Dalamud.Chat.Print("Took " + (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time) + "ms.");
 
+        return toReturn;
+
+    }
+
+    public static void addUnknownD2(Item item)
+    {
+        if (config.unknownD2Items == null)
+            config.unknownD2Items = new Dictionary<Item, bool>();
+        if (!config.unknownD2Items.ContainsKey(item))
+            config.unknownD2Items.Add(item, false);
     }
 
     private static void addOrRest(KeyValuePair<WorkshopSchedule, int> rec, int day)
@@ -369,8 +427,8 @@ public class Solver
 
     public static void addDay(List<Item> crafts, int day)
     {
-
-        Dalamud.Chat.Print("Day " + (day + 1) + ", crafts: " + String.Join(", ", crafts));
+        if (day != 0)
+            Dalamud.Chat.Print("Day " + (day + 1) + ", crafts: " + String.Join(", ", crafts));
 
         addDay(crafts, crafts, crafts, day);
     }
@@ -393,7 +451,8 @@ public class Solver
         schedule.GrooveToZero();
         bool oldVerbose = verboseCalculatorLogging;
         verboseCalculatorLogging = false;
-        Dalamud.Chat.Print("day " + (day + 1) + " total, 0 groove: " + schedule.getValue() + ". Starting groove " + startingGroove + ": " + gross + ", net " + net + ".");
+        if(day != 0)
+            Dalamud.Chat.Print("day " + (day + 1) + " total, 0 groove: " + schedule.getValue() + ". Starting groove " + startingGroove + ": " + gross + ", net " + net + ".");
         verboseCalculatorLogging = oldVerbose;
 
         foreach(var kvp in schedule.numCrafted)
@@ -407,30 +466,7 @@ public class Solver
             importer.writeEndDay(day, groove, gross, net, null);
     }
 
-    private static KeyValuePair<WorkshopSchedule, int> getBestScheduleAndAlts(Dictionary<WorkshopSchedule, int> schedules)
-    {
-        var scheduleEnum = schedules.OrderByDescending(kvp => kvp.Value).GetEnumerator();
-
-        scheduleEnum.MoveNext();
-        KeyValuePair<WorkshopSchedule, int> bestSchedule = scheduleEnum.Current;
-
-
-        if (alternatives > 0)
-        {
-            Dalamud.Chat.Print("Best rec: " + String.Join(", ", bestSchedule.Key.getItems()) + ": " + bestSchedule.Value);
-            int count = 0;
-            for(int c=0; c< alternatives && scheduleEnum.MoveNext(); c++)
-            {
-                KeyValuePair<WorkshopSchedule, int> alt = scheduleEnum.Current;
-                Dalamud.Chat.Print("Alternative rec: " + String.Join(", ", alt.Key.getItems()) + ": " + alt.Value);
-                count++;
-            }
-        }
-
-        return bestSchedule;
-    }
-
-    private static KeyValuePair<WorkshopSchedule, int> getBestSchedule(int day, HashSet<Item>? reservedForLater, bool allowAllOthers = true)
+    private static SuggestedSchedules getSuggestedSchedules(int day, HashSet<Item>? reservedForLater, bool allowAllOthers = true)
     {
         var fourHour = new List<ItemInfo>();
         var eightHour = new List<ItemInfo>();
@@ -439,7 +475,7 @@ public class Solver
         if (reservedForLater == null)
             allowAllOthers = false;
 
-        foreach(ItemInfo item in items)
+        foreach (ItemInfo item in items)
         {
             List<ItemInfo>? bucket = null;
 
@@ -448,12 +484,12 @@ public class Solver
 
             if (item.time == 4 && item.rankUnlocked <= islandRank && (allowAllOthers || item.peaksOnOrBeforeDay(day, true)))
                 bucket = fourHour;
-            else if (item.time == 6 && item.rankUnlocked <= islandRank && (allowAllOthers || item.peaksOnOrBeforeDay(day,false)))
+            else if (item.time == 6 && item.rankUnlocked <= islandRank && (allowAllOthers || item.peaksOnOrBeforeDay(day, false)))
                 bucket = sixHour;
             else if (item.time == 8 && item.rankUnlocked <= islandRank && (allowAllOthers || item.peaksOnOrBeforeDay(day, false)))
-                bucket = eightHour;            
+                bucket = eightHour;
 
-            if(bucket!=null)
+            if (bucket != null)
                 bucket.Add(item);
         }
 
@@ -466,14 +502,14 @@ public class Solver
         {
             var topItem = eightEnum.Current;
             if (verboseSolverLogging)
-                Dalamud.Chat.PrintError("Building schedule around : " + topItem.item + ", peak: "+topItem.peak);
+                Dalamud.Chat.PrintError("Building schedule around : " + topItem.item + ", peak: " + topItem.peak);
 
 
             //8-8-8
             var eightMatchEnum = eightHour.GetEnumerator();
             while (eightMatchEnum.MoveNext())
             {
-                addScheduleIfEfficient(eightMatchEnum.Current, topItem, 
+                addScheduleIfEfficient(eightMatchEnum.Current, topItem,
                     new List<Item> { topItem.item, eightMatchEnum.Current.item, topItem.item }, day, safeSchedules);
             }
 
@@ -490,7 +526,7 @@ public class Solver
                 var secondFourMatchEnum = fourHour.GetEnumerator();
                 while (secondFourMatchEnum.MoveNext())
                 {
-                    if(verboseSolverLogging)
+                    if (verboseSolverLogging)
                         Dalamud.Chat.Print("Checking potential 4hr match: " + secondFourMatchEnum.Current.item);
                     addScheduleIfEfficient(secondFourMatchEnum.Current, topItem,
                         new List<Item> { firstFourMatchEnum.Current.item, topItem.item, secondFourMatchEnum.Current.item, topItem.item },
@@ -609,8 +645,30 @@ public class Solver
                 }
             }
         }
+        return new SuggestedSchedules(safeSchedules);
+    }
 
-        return getBestScheduleAndAlts(safeSchedules);
+    private static KeyValuePair<WorkshopSchedule, int> getBestSchedule(int day, HashSet<Item>? reservedForLater, bool allowAllOthers = true)
+    {
+        var suggested = getSuggestedSchedules(day, reservedForLater, allowAllOthers);
+        var scheduleEnum = suggested.orderedSuggestions.GetEnumerator();
+        scheduleEnum.MoveNext();
+        var bestSchedule = scheduleEnum.Current;
+
+
+        if (alternatives > 0)
+        {
+            Dalamud.Chat.Print("Best rec: " + String.Join(", ", bestSchedule.Key) + ": " + bestSchedule.Value);
+            int count = 0;
+            for (int c = 0; c < alternatives && scheduleEnum.MoveNext(); c++)
+            {
+                var alt = scheduleEnum.Current;
+                Dalamud.Chat.Print("Alternative rec: " + String.Join(", ", alt.Key) + ": " + alt.Value);
+                count++;
+            }
+        }
+
+        return bestSchedule;//new KeyValuePair<WorkshopSchedule, int>(new WorkshopSchedule(bestSchedule.Key), bestSchedule.Value);
     }
 
     public static bool addScheduleIfEfficient(ItemInfo newItem, ItemInfo origItem, List<Item> scheduledItems, int day, Dictionary<WorkshopSchedule, int> safeSchedules)
@@ -667,7 +725,7 @@ public class Solver
             if (day < importer.observedSupplies[i].Count)
             {
                 ObservedSupply ob = importer.observedSupplies[i][day];
-                items[i].addObservedDay(ob);
+                items[i].addObservedDay(ob, day);
             }
             if (hasDaySummary && importer.endDays[day].craftedItems() > i)
                 items[i].setCrafted(importer.endDays[day].getCrafted(i), day);
@@ -739,5 +797,69 @@ public class Solver
         items.Add(new ItemInfo(Bed, Furnishings, Textiles, 120, 8, 9, new Dictionary<RareMaterial, int>() { { Fur, 4 } }));
         items.Add(new ItemInfo(ScaleFingers, Attire, CreatureCreations, 120, 8, 9, new Dictionary<RareMaterial, int>() { { Carapace, 4 } }));
         items.Add(new ItemInfo(Crook, Arms, Woodworks, 120, 8, 9, new Dictionary<RareMaterial, int>() { { Fang, 4 } }));
+    }
+
+    public static int getCurrentWeek()
+    {
+        //August 23 2022
+        DateTime startOfIS = new DateTime(2022, 8, 23, 4, 0, 0);
+
+        DateTime current = DateTime.Now;
+
+        TimeSpan timeSinceStart = (current - startOfIS);
+        int week = timeSinceStart.Days / 7 + 1;
+        int day = timeSinceStart.Days % 7;
+
+        Dalamud.Chat.Print("Current week: " + week + " day: " + day);
+
+        return week;
+    }
+
+    public static int getCurrentDay()
+    {
+        DateTime startOfIS = new DateTime(2022, 8, 23, 4, 0, 0);
+        DateTime current = DateTime.Now;
+        TimeSpan timeSinceStart = (current - startOfIS);
+
+        return timeSinceStart.Days % 7;
+    }
+
+    public static void writeTodaySupply(string[] products)
+    {
+        if (!initialized)
+        {
+            Dalamud.Chat.PrintError("Trying to run solver before solver initiated");
+            return;
+        }
+
+        Dalamud.Chat.Print("Printing supply info starting with " + products[0]);
+        if (isProductsValid(products))
+        {
+            if (currentDay == 0)
+                importer.writeWeekStart(products);
+            else
+                importer.writeNewSupply(products);
+        }
+        else
+            Dalamud.Chat.PrintError("Can't import supply. Please talk to the Tactful Taskmaster on your Island Sanctuary and open the Supply/Demand window!");
+        
+    }
+
+    private static bool isProductsValid(string[] products)
+    {
+        int numNE = 0;
+        foreach(string product in products)
+        {
+            if (product.Contains("Nonexistent"))
+            {
+                //Dalamud.Chat.Print("Found NE row: "+product);
+                numNE++;
+            }
+
+            if (numNE > 5)
+                return false;
+        }
+
+        return true;
     }
 }
