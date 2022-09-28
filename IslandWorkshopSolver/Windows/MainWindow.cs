@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Numerics;
 using System.Reflection.PortableExecutable;
@@ -16,6 +17,8 @@ public class MainWindow : Window, IDisposable
     private Reader reader;
     private Configuration config;
     private Dictionary<int,SuggestedSchedules?> scheduleSuggestions;
+    private List<EndDaySummary> endDaySummaries;
+    private int[] selectedSchedules = new int[7];
 
     public MainWindow(Plugin plugin, Reader reader) : base(
         "Island Sanctuary Workshop Solver")
@@ -29,7 +32,31 @@ public class MainWindow : Window, IDisposable
         Plugin = plugin;
         this.reader = reader;
         config = plugin.Configuration;
+        Solver.Solver.Init(config);
+
+        
         scheduleSuggestions = new Dictionary<int, SuggestedSchedules?>();
+        endDaySummaries = Solver.Solver.importer.endDays;
+    }
+
+    public override void OnOpen()
+    {
+        string[] products = reader.ExportIsleData().Split('\n', StringSplitOptions.None);
+        try
+        {
+            if(Solver.Solver.writeTodaySupply(products))
+            {
+                Solver.Solver.InitAfterWritingTodaysData();
+
+                endDaySummaries = Solver.Solver.importer.endDays;
+
+                base.OnOpen();
+            }
+        }
+        catch (Exception e)
+        {
+            Dalamud.Chat.PrintError(e.GetType() + ": " + e.Message + "\n" + e.StackTrace);
+        }
     }
 
     public void Dispose()
@@ -44,28 +71,13 @@ public class MainWindow : Window, IDisposable
             Plugin.DrawConfigUI();
         }
         ImGui.SameLine();
-        ImGui.Text("Cowries Earned: " + Solver.Solver.totalGross);
-
+        ImGui.Text("Total Cowries this season: " + Solver.Solver.totalGross);
         ImGui.Spacing();
-
-        if (ImGui.Button("Import supply"))
-        {
-            string[] products = reader.ExportIsleData().Split('\n', StringSplitOptions.None);
-           
-            try
-            {
-                Solver.Solver.Init(config);
-                Solver.Solver.writeTodaySupply(products);
-            }
-            catch (Exception e)
-            {
-                Dalamud.Chat.PrintError(e.GetType() + ": " + e.Message + "\n" + e.StackTrace);
-            }
-        }
-        ImGui.SameLine();
         if (ImGui.Button("Run Solver"))
         {
             //Dalamud.Chat.Print("Hitting button, "+rootPath);
+            for(int c=0; c<selectedSchedules.Length;c++)
+                selectedSchedules[c] = -1;
             try
             {
                 Solver.Solver.Init(config);
@@ -88,48 +100,96 @@ public class MainWindow : Window, IDisposable
         ImGui.Spacing();
 
         // Create a new table to show relevant data.
-        if(scheduleSuggestions.Count > 0 && ImGui.BeginTabBar("Suggested Schedules"))
+        if((scheduleSuggestions.Count > 0 || endDaySummaries.Count > 0) && ImGui.BeginTabBar("Workshop Schedules"))
         {
-            foreach(var schedule in scheduleSuggestions)
+            for(int day=0;day<7;day++)
             {
-                if(ImGui.BeginTabItem("Day " + (schedule.Key + 1)))
+                if(day <= Solver.Solver.currentDay && endDaySummaries.Count > day)
                 {
-                    if(schedule.Value != null)
+                    if (ImGui.BeginTabItem("Day " + (day + 1)))
                     {
-                        if (ImGui.BeginTable("Options", 4))
+                        if (endDaySummaries[day].totalCraftedItems() > 0 && ImGui.BeginTable("Crafted", 4))
                         {
                             /*ImGui.TableSetupColumn("Confirmed", ImGuiTableColumnFlags.WidthStretch);*/
-                            ImGui.TableSetupColumn("Select?", ImGuiTableColumnFlags.WidthFixed, 50);
-                            ImGui.TableSetupColumn("Per Workshop", ImGuiTableColumnFlags.WidthFixed, 100);
-                            ImGui.TableSetupColumn("Crafts to Make", ImGuiTableColumnFlags.WidthStretch, 250);
+                            ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.WidthFixed, 200);
+                            ImGui.TableSetupColumn("Total crafted", ImGuiTableColumnFlags.WidthStretch, 10);
                             ImGui.TableHeadersRow();
 
-                            var enumerator = schedule.Value.orderedSuggestions.GetEnumerator();
-                            for (int i=0; i< config.suggestionsToShow && enumerator.MoveNext(); i++)
+                            for(int i=0;i<Solver.Solver.items.Count; i++)
                             {
-                                var suggestion = enumerator.Current;
                                 int column = 0;
-                                ImGui.TableNextRow();
-                                /*ImGui.TableSetColumnIndex(column++);
-                                ImGui.Text((!suggestion.Key.hasAnyUnsurePeaks()).ToString());*/
-                                ImGui.TableSetColumnIndex(column++);
-                                if(ImGui.Button("Select"))
+                                if (endDaySummaries[day].getCrafted(i) > 0)
                                 {
-                                    Solver.Solver.addDay(suggestion.Key.getItems(), schedule.Key);
+                                    ImGui.TableNextRow();
+                                    /*ImGui.TableSetColumnIndex(column++);
+                                    ImGui.Text((!suggestion.Key.hasAnyUnsurePeaks()).ToString());*/
+                                    ImGui.TableSetColumnIndex(column++);
+                                    ImGui.Text(Solver.Solver.items[i].item.ToString());
+                                    ImGui.TableSetColumnIndex(column++);
+                                    ImGui.Text("" + endDaySummaries[day].getCrafted(i));
                                 }
-                                ImGui.TableSetColumnIndex(column++);
-                                ImGui.Text(suggestion.Value.ToString());
-                                ImGui.TableSetColumnIndex(column++);
-                                ImGui.Text(String.Join(", ", suggestion.Key.getItems()));
                             }
                             ImGui.EndTable();
+                            ImGui.Spacing();
+
+                           
+                            ImGui.Text("Earned today: " + endDaySummaries[day].endingGross);
+                            ImGui.SameLine(200);
+                            ImGui.Text("Used material value: " + (endDaySummaries[day].endingGross - endDaySummaries[day].endingNet));
                         }
+                        else
+                        {
+                            ImGui.Text("Rested");
+                        }
+                        ImGui.EndTabItem();
                     }
-                    else
+                }
+                else if(scheduleSuggestions.ContainsKey(day))
+                {
+                    var schedule = scheduleSuggestions[day];
+                    if (ImGui.BeginTabItem("Day " + (day + 1)))
                     {
-                        ImGui.Text("Rest!!!");
+                        if (schedule != null)
+                        {
+                            if (ImGui.BeginTable("Options", 4))
+                            {
+                                /*ImGui.TableSetupColumn("Confirmed", ImGuiTableColumnFlags.WidthStretch);*/
+                                ImGui.TableSetupColumn("Use?", ImGuiTableColumnFlags.WidthFixed, 50);
+                                ImGui.TableSetupColumn("Per Workshop", ImGuiTableColumnFlags.WidthFixed, 100);
+                                ImGui.TableSetupColumn("Crafts to Make", ImGuiTableColumnFlags.WidthStretch, 250);
+                                ImGui.TableHeadersRow();
+
+                                var enumerator = schedule.orderedSuggestions.GetEnumerator();
+
+                                for (int i = 0; i < config.suggestionsToShow && enumerator.MoveNext(); i++)
+                                {
+                                    var suggestion = enumerator.Current;
+                                    int column = 0;
+                                    ImGui.TableNextRow();
+                                    /*ImGui.TableSetColumnIndex(column++);
+                                    ImGui.Text((!suggestion.Key.hasAnyUnsurePeaks()).ToString());*/
+                                    ImGui.TableSetColumnIndex(column++);
+                                    if (ImGui.RadioButton("##" + (i + 1), ref selectedSchedules[day], i))
+                                    {
+                                        Solver.Solver.setDay(suggestion.Key.getItems(), day);
+                                    }
+                                    ImGui.TableSetColumnIndex(column++);
+                                    ImGui.Text(suggestion.Value.ToString());
+                                    ImGui.TableSetColumnIndex(column++);
+                                    if (suggestion.Key.getNumCrafts() > 0)
+                                        ImGui.Text(String.Join(", ", suggestion.Key.getItems()));
+                                    else
+                                        ImGui.Text("Rest");
+                                }
+                                ImGui.EndTable();
+                            }
+                        }
+                        else
+                        {
+                            ImGui.Text("Rest!!!");
+                        }
+                        ImGui.EndTabItem();
                     }
-                    ImGui.EndTabItem();
                 }
             }
             ImGui.EndTabBar();

@@ -10,7 +10,7 @@ namespace IslandWorkshopSolver.Solver;
 public class CycleSchedule
 {
     private int day;
-    private int startingGroove;
+    public int startingGroove { get; set; }
     public int endingGroove { get; private set; }
     WorkshopSchedule[] workshops = new WorkshopSchedule[3];
     public Dictionary<Item, int> numCrafted { get; private set; }
@@ -20,11 +20,6 @@ public class CycleSchedule
         this.day = day;
         startingGroove = groove;
         numCrafted = new Dictionary<Item, int>();
-    }
-
-    public void GrooveToZero()
-    {
-        startingGroove = 0;
     }
 
     public void setForAllWorkshops(List<Item> crafts)

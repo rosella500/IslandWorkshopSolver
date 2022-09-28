@@ -9,6 +9,7 @@ namespace IslandWorkshopSolver.Solver;
 using static RareMaterial;
 public enum RareMaterial
 {
+    None,
     Fleece,
     Claw,
     Fur,
@@ -50,6 +51,7 @@ public static class RareMaterialHelper
     public static void DefaultInit()
     {
         materialValues.Clear();
+        materialValues.Add(None, 0);
         materialValues.Add(Fleece, 12);
         materialValues.Add(Claw, 12);
         materialValues.Add(Fur, 12);

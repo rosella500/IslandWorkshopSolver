@@ -31,6 +31,10 @@ public class WorkshopSchedule
         int currentHour = 0;
         completionHours.Clear();
         items.Clear();
+        if(newCrafts.Count == 0)
+        {
+            rareMaterialsRequired.Add(RareMaterial.None, 1);
+        }
         foreach (ItemInfo craft in crafts)
         {
             currentHour += craft.time;
@@ -79,7 +83,7 @@ public class WorkshopSchedule
         if (currentIndex >= crafts.Count)
             return false;
 
-        if (completionHours[currentIndex] == hour)
+        if (completionHours.Count > 0 && completionHours[currentIndex] == hour)
             return true;
         return false;
     }
@@ -189,11 +193,23 @@ public class WorkshopSchedule
     {
         if (other == null)
             return false;
-        return rareMaterialsRequired.Equals(other.rareMaterialsRequired);
+
+        if (rareMaterialsRequired.Count != other.rareMaterialsRequired.Count) return false;
+        foreach (var kvp in rareMaterialsRequired)
+        {
+            if (!other.rareMaterialsRequired.TryGetValue(kvp.Key, out int neededForOther)) return false;
+            if (neededForOther != kvp.Value) return false;
+        }
+        return true;
     }
 
     public override int GetHashCode()
     {
-        return rareMaterialsRequired.GetHashCode();
+        int hashSum = 0;
+        foreach(var rareMat in rareMaterialsRequired)
+        {
+            hashSum += rareMat.Key.GetHashCode() ^ rareMat.Value.GetHashCode();
+        }
+        return hashSum;
     }
 }

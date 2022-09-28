@@ -65,6 +65,30 @@ public class ConfigWindow : Window, IDisposable
         }
         ImGui.Spacing();
 
+        bool verbCalc = Configuration.verboseCalculatorLogging;
+        if (ImGui.Checkbox("Verbose calculator logging ", ref verbCalc))
+        {
+            Configuration.verboseCalculatorLogging = verbCalc;
+            Configuration.Save();
+        }
+        ImGui.Spacing();
+
+        bool verbSolv = Configuration.verboseSolverLogging;
+        if (ImGui.Checkbox("Verbose solver logging ", ref verbSolv))
+        {
+            Configuration.verboseSolverLogging = verbSolv;
+            Configuration.Save();
+        }
+        ImGui.Spacing();
+
+        bool verbRest = Configuration.verboseRestDayLogging;
+        if (ImGui.Checkbox("Verbose rest day logging ", ref verbRest))
+        {
+            Configuration.verboseRestDayLogging = verbRest;
+            Configuration.Save();
+        }
+        ImGui.Spacing();
+
         if (Configuration.day == 0 && Configuration.unknownD2Items != null)
         {
             var enumerator = Configuration.unknownD2Items.GetEnumerator();

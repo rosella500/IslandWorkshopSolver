@@ -68,6 +68,43 @@ public class CSVImporter
         }
     }
 
+    public bool needNewWeekData()
+    {
+        string path = getPathForWeek(currentWeek);
+        return !File.Exists(path);
+    }
+
+    public bool needNewTodayData()
+    {
+        string path = getPathForWeek(currentWeek);
+        if (!File.Exists(path))
+        {
+            Dalamud.Chat.Print("No file found to add supply to at " + path);
+            return false;
+        }
+        try
+        {
+
+            string[] fileInfo = File.ReadAllLines(path);
+            //itemName, popularity, supply, shift, supply, shift, etc.
+
+            for (int itemIndex = 0; itemIndex < fileInfo.Length; itemIndex++)
+            {
+                string currentFileLine = fileInfo[itemIndex];
+                string[] fileItemInfo = currentFileLine.Split(',');
+                if (fileItemInfo.Length == 2 + (currentDay * 3)) //We're ready for today's info
+                {
+                    return true;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Dalamud.Chat.Print("Error checking if file is ready for new data: " + e.Message);
+        }
+        return false;
+    }
+
     public void writeNewSupply(string[] products)
     {
         string path = getPathForWeek(currentWeek);
@@ -76,7 +113,7 @@ public class CSVImporter
             Dalamud.Chat.Print("No file found to add supply to at " + path);
             return;
         }
-        Dalamud.Chat.Print("Starting to read file at " + path);
+        //Dalamud.Chat.Print("Starting to read file at " + path);
 
         try
         {
@@ -112,7 +149,7 @@ public class CSVImporter
         }
         catch (Exception e)
         {
-            Dalamud.Chat.Print("Error writing file: " + e.Message);
+            Dalamud.Chat.PrintError("Error writing file: " + e.Message);
         }
     }
 
