@@ -14,29 +14,17 @@ public class EndDaySummary
     public int endingNet { get; private set; }  
 
     public List<Item> crafts { get; private set; }
-    public EndDaySummary(List<int> numCrafted, int endingGroove, List<Item> crafts)
+    public List<int> valuesPerCraft { get; set; }
+    public EndDaySummary(List<int> numCrafted, int endingGroove, int gross, int net, List<Item> crafts)
     {
         this.numCrafted = numCrafted;
         this.endingGroove = endingGroove;
-        this.endingGross = -1;
-        this.endingNet = -1;
+        this.endingGross = gross;
+        this.endingNet = net;
         this.crafts = crafts;
-
-
-        //Dalamud.Chat.Print("Making new end-day summary with just crafts: " + ToString());
+        valuesPerCraft = new List<int>();
     }
 
-    public EndDaySummary(List<int> crafted, int groove, int gross, int net)
-    {
-        
-        numCrafted = crafted;
-
-        endingGroove = groove;
-        endingGross = gross;
-        endingNet = net;
-
-        //Dalamud.Chat.Print("Making new end-day summary: " + ToString());
-    }
     public int getCrafted(int itemIndex)
     {
         return numCrafted[itemIndex];

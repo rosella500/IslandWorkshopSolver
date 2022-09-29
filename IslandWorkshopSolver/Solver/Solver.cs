@@ -24,7 +24,6 @@ public class Solver
 
     public static List<ItemInfo> items;
 
-    private static int groove;
     public static int totalGross;
     private static int totalNet;
     public static bool rested;
@@ -64,8 +63,15 @@ public class Solver
         currentDay = getCurrentDay();
         config.day = currentDay;
         config.Save();
-        importer = new CSVImporter(config.rootPath, week, currentDay);
-        initStep = 1;
+        try
+        {
+            importer = new CSVImporter(config.rootPath, week, currentDay);
+            initStep = 1;
+        }
+        catch(Exception e)
+        {
+            Dalamud.Chat.PrintError("Error importing file :" + e.Message + "\n" + e.StackTrace);
+        }
     }
 
     public static void InitAfterWritingTodaysData()
@@ -73,7 +79,6 @@ public class Solver
         if (initStep != 1)
             return;
 
-        groove = 0;
         totalGross = 0;
         totalNet = 0;
         rested = false;
@@ -84,24 +89,25 @@ public class Solver
         for (int i = 1; i < dayToSolve; i++)
             setObservedFromCSV(i);
 
-        if (importer.endDays.Count >= dayToSolve && dayToSolve > 0)
+        for(int summary = 1; summary < importer.endDays.Count && summary <= currentDay; summary++)
         {
-            var prevDaySummary = importer.endDays[dayToSolve - 1];
+            var prevDaySummary = importer.endDays[summary];
             //Dalamud.Chat.Print("previous day summary: " + prevDaySummary);
-            groove = prevDaySummary.endingGroove;
-            if (prevDaySummary.crafts != null && dayToSolve - 1 > 0)
+            if (prevDaySummary.crafts != null)
             {
-                var twoDaysAgo = importer.endDays[dayToSolve - 2];
-                CycleSchedule yesterdaySchedule = new CycleSchedule(dayToSolve - 1, twoDaysAgo.endingGroove);
+                var twoDaysAgo = importer.endDays[summary-1];
+                CycleSchedule yesterdaySchedule = new CycleSchedule(summary, twoDaysAgo.endingGroove);
                 yesterdaySchedule.setForAllWorkshops(prevDaySummary.crafts);
                 int gross = yesterdaySchedule.getValue();
 
-                int net = gross - yesterdaySchedule.getMaterialCost();
-
-                importer.writeEndDay(dayToSolve - 1, groove, gross, net, null);
-                totalGross += gross;
-                totalNet += net;
-
+                if(prevDaySummary.endingGross == -1)
+                {
+                    int net = gross - yesterdaySchedule.getMaterialCost();
+                    importer.writeEndDay(summary, prevDaySummary.endingGroove, gross, net, prevDaySummary.crafts);
+                    totalGross += gross;
+                    totalNet += net;
+                }
+                prevDaySummary.valuesPerCraft = yesterdaySchedule.cowriesPerHour;
             }
         }
         updateRestedStatus();
@@ -158,10 +164,14 @@ public class Solver
 
             toReturn.Add((dayToSolve, new SuggestedSchedules(safeSchedules)));
         }
-            
         else
+        {
             if (importer.currentPeaks == null || importer.currentPeaks[0] == Unknown)
                 importer.writeCurrentPeaks(week);
+
+
+        }
+            
 
         /*if (dayToSolve<4)
         {
@@ -211,7 +221,7 @@ public class Solver
 
     private static void printRestDayInfo(List<Item> rec, int day)
     {
-        CycleSchedule restedDay = new CycleSchedule(day, groove);
+        CycleSchedule restedDay = new CycleSchedule(day, getEndingGrooveForDay(day-1));
         restedDay.setForAllWorkshops(rec);
         Dalamud.Chat.Print("Think we're guaranteed to make more than " + restedDay.getValue() + " with " + String.Join(", ",rec) + ". Rest day " + (day + 1));
     }
@@ -394,7 +404,7 @@ public class Solver
         int worstInFuture = 99999;
         if (verboseRestDayLogging)
             Dalamud.Chat.Print("Comparing d" + (day + 1) + " (" + rec.Value + ") to worst-case future days");
-        HashSet<Item> reservedSet = new HashSet<Item>();
+        HashSet<Item> reservedSet = new HashSet<Item>(rec.Key.getItems());
         for (int d = day + 1; d < 7; d++)
         {
             KeyValuePair<WorkshopSchedule, int> solution;
@@ -441,7 +451,7 @@ public class Solver
                     c5Peaks[i].peak = Cycle5Weak;
             }
 
-            int toAdd = solution.Key.getValueWithGrooveEstimate(4, groove);
+            int toAdd = solution.Key.getValueWithGrooveEstimate(4, getEndingGrooveForDay(currentDay));
             if (verboseSolverLogging)
                 Dalamud.Chat.Print("Permutation " + p + " has value " + toAdd);
             sum += toAdd;
@@ -479,7 +489,7 @@ public class Solver
 
     public static void setDay(List<Item> crafts0, List<Item> crafts1, List<Item> crafts2, int day)
     {
-        groove = getEndingGrooveForDay(day - 1);
+        int groove = getEndingGrooveForDay(day - 1);
         CycleSchedule schedule = new CycleSchedule(day, groove);
         schedule.setWorkshop(0, crafts0);
         schedule.setWorkshop(1, crafts1);
@@ -515,9 +525,9 @@ public class Solver
         schedulesPerDay.Add(day, (schedule, gross));
 
         if (schedule.hasAnyUnsurePeaks())
-            importer.writeEndDay(day, groove, 0, 0, crafts0);
+            importer.writeEndDay(day, groove, -1, -1, crafts0);
         else
-            importer.writeEndDay(day, groove, gross, net, null);
+            importer.writeEndDay(day, groove, gross, net, crafts0);
 
         updateRestedStatus();
     }
@@ -759,7 +769,7 @@ public class Solver
     {
         WorkshopSchedule workshop = new WorkshopSchedule(list);
 
-        int value = workshop.getValueWithGrooveEstimate(day, groove);
+        int value = workshop.getValueWithGrooveEstimate(day, getEndingGrooveForDay(day - 1));
         //Only add if we don't already have one with this schedule or ours is better
         if(safeSchedules.TryGetValue(workshop, out int oldValue))
         {

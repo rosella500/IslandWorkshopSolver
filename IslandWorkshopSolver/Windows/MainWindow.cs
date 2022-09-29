@@ -52,11 +52,17 @@ public class MainWindow : Window, IDisposable
 
                 base.OnOpen();
             }
+            else
+            {
+                Dalamud.Chat.Print("Failed to int today's supply. Init step wrong? No product info??");
+            }
         }
         catch (Exception e)
         {
             Dalamud.Chat.PrintError(e.GetType() + ": " + e.Message + "\n" + e.StackTrace);
         }
+
+
     }
 
     public void Dispose()
@@ -66,134 +72,146 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
-        if (ImGui.Button("Settings"))
+        try
         {
-            Plugin.DrawConfigUI();
-        }
-        ImGui.SameLine();
-        ImGui.Text("Total Cowries this season: " + Solver.Solver.totalGross);
-        ImGui.Spacing();
-        if (ImGui.Button("Run Solver"))
-        {
-            //Dalamud.Chat.Print("Hitting button, "+rootPath);
-            for(int c=0; c<selectedSchedules.Length;c++)
-                selectedSchedules[c] = -1;
-            try
+            if (ImGui.Button("Settings"))
             {
-                Solver.Solver.Init(config);
-                List<(int day, SuggestedSchedules? sch)>? schedules = Solver.Solver.RunSolver();
-                if(schedules!= null)
-                {
-                    foreach(var schedule in schedules)
-                    {
-                        scheduleSuggestions.Remove(schedule.day);
-                        scheduleSuggestions.Add(schedule.day, schedule.sch);
-                    }
-                }
-                
+                Plugin.DrawConfigUI();
             }
-            catch(Exception e)
+            ImGui.SameLine();
+            ImGui.Text("Total Cowries this season: " + Solver.Solver.totalGross);
+            ImGui.Spacing();
+            if (ImGui.Button("Run Solver"))
             {
-                Dalamud.Chat.PrintError(e.GetType() + ": " + e.Message + "\n" + e.StackTrace);
-            }
-        }
-        ImGui.Spacing();
-
-        // Create a new table to show relevant data.
-        if((scheduleSuggestions.Count > 0 || endDaySummaries.Count > 0) && ImGui.BeginTabBar("Workshop Schedules"))
-        {
-            for(int day=0;day<7;day++)
-            {
-                if(day <= Solver.Solver.currentDay && endDaySummaries.Count > day)
+                //Dalamud.Chat.Print("Hitting button, "+rootPath);
+                for (int c = 0; c < selectedSchedules.Length; c++)
+                    selectedSchedules[c] = -1;
+                try
                 {
-                    if (ImGui.BeginTabItem("Day " + (day + 1)))
+                    Solver.Solver.Init(config);
+                    List<(int day, SuggestedSchedules? sch)>? schedules = Solver.Solver.RunSolver();
+                    if (schedules != null)
                     {
-                        if (endDaySummaries[day].totalCraftedItems() > 0 && ImGui.BeginTable("Crafted", 4))
+                        foreach (var schedule in schedules)
                         {
-                            /*ImGui.TableSetupColumn("Confirmed", ImGuiTableColumnFlags.WidthStretch);*/
-                            ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.WidthFixed, 200);
-                            ImGui.TableSetupColumn("Total crafted", ImGuiTableColumnFlags.WidthStretch, 10);
-                            ImGui.TableHeadersRow();
-
-                            for(int i=0;i<Solver.Solver.items.Count; i++)
-                            {
-                                int column = 0;
-                                if (endDaySummaries[day].getCrafted(i) > 0)
-                                {
-                                    ImGui.TableNextRow();
-                                    /*ImGui.TableSetColumnIndex(column++);
-                                    ImGui.Text((!suggestion.Key.hasAnyUnsurePeaks()).ToString());*/
-                                    ImGui.TableSetColumnIndex(column++);
-                                    ImGui.Text(Solver.Solver.items[i].item.ToString());
-                                    ImGui.TableSetColumnIndex(column++);
-                                    ImGui.Text("" + endDaySummaries[day].getCrafted(i));
-                                }
-                            }
-                            ImGui.EndTable();
-                            ImGui.Spacing();
-
-                           
-                            ImGui.Text("Earned today: " + endDaySummaries[day].endingGross);
-                            ImGui.SameLine(200);
-                            ImGui.Text("Used material value: " + (endDaySummaries[day].endingGross - endDaySummaries[day].endingNet));
+                            scheduleSuggestions.Remove(schedule.day);
+                            scheduleSuggestions.Add(schedule.day, schedule.sch);
                         }
-                        else
-                        {
-                            ImGui.Text("Rested");
-                        }
-                        ImGui.EndTabItem();
                     }
+
                 }
-                else if(scheduleSuggestions.ContainsKey(day))
+                catch (Exception e)
                 {
-                    var schedule = scheduleSuggestions[day];
-                    if (ImGui.BeginTabItem("Day " + (day + 1)))
+                    Dalamud.Chat.PrintError(e.GetType() + ": " + e.Message + "\n" + e.StackTrace);
+                }
+            }
+            ImGui.Spacing();
+
+            // Create a new table to show relevant data.
+            if ((scheduleSuggestions.Count > 0 || endDaySummaries.Count > 0) && ImGui.BeginTabBar("Workshop Schedules"))
+            {
+                for (int day = 0; day < 7; day++)
+                {
+                    if (day <= Solver.Solver.currentDay && endDaySummaries.Count > day)
                     {
-                        if (schedule != null)
+                        if (ImGui.BeginTabItem("Day " + (day + 1)))
                         {
-                            if (ImGui.BeginTable("Options", 4))
+                            string title = "Crafted";
+                            if (day == Solver.Solver.currentDay)
+                                title = "Scheduled";
+                            if (endDaySummaries[day].totalCraftedItems() > 0 && ImGui.BeginTable(title, 3))
                             {
-                                /*ImGui.TableSetupColumn("Confirmed", ImGuiTableColumnFlags.WidthStretch);*/
-                                ImGui.TableSetupColumn("Use?", ImGuiTableColumnFlags.WidthFixed, 50);
-                                ImGui.TableSetupColumn("Per Workshop", ImGuiTableColumnFlags.WidthFixed, 100);
-                                ImGui.TableSetupColumn("Crafts to Make", ImGuiTableColumnFlags.WidthStretch, 250);
+                                ImGui.TableSetupColumn("Product", ImGuiTableColumnFlags.WidthFixed, 180);
+                                ImGui.TableSetupColumn("Qty.", ImGuiTableColumnFlags.WidthFixed, 100);
+                                ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthFixed, 100);
                                 ImGui.TableHeadersRow();
 
-                                var enumerator = schedule.orderedSuggestions.GetEnumerator();
 
-                                for (int i = 0; i < config.suggestionsToShow && enumerator.MoveNext(); i++)
+                                for (int i = 0; i < endDaySummaries[day].crafts.Count; i++)
                                 {
-                                    var suggestion = enumerator.Current;
                                     int column = 0;
                                     ImGui.TableNextRow();
-                                    /*ImGui.TableSetColumnIndex(column++);
-                                    ImGui.Text((!suggestion.Key.hasAnyUnsurePeaks()).ToString());*/
                                     ImGui.TableSetColumnIndex(column++);
-                                    if (ImGui.RadioButton("##" + (i + 1), ref selectedSchedules[day], i))
-                                    {
-                                        Solver.Solver.setDay(suggestion.Key.getItems(), day);
-                                    }
+                                    ImGui.Text(endDaySummaries[day].crafts[i].ToString());
                                     ImGui.TableSetColumnIndex(column++);
-                                    ImGui.Text(suggestion.Value.ToString());
+                                    ImGui.Text((i==0?3:6).ToString()); //I'm just hard-coding in that these are efficient, idgaf
                                     ImGui.TableSetColumnIndex(column++);
-                                    if (suggestion.Key.getNumCrafts() > 0)
-                                        ImGui.Text(String.Join(", ", suggestion.Key.getItems()));
-                                    else
-                                        ImGui.Text("Rest");
+                                    ImGui.Text(endDaySummaries[day].valuesPerCraft[i].ToString());
                                 }
                                 ImGui.EndTable();
+                                ImGui.Spacing();
+
+
+                                ImGui.Text("This day's value: " + endDaySummaries[day].endingGross);
+                                ImGui.SameLine(200);
+                                ImGui.Text("Used material value: " + (endDaySummaries[day].endingGross - endDaySummaries[day].endingNet));
                             }
+                            else
+                            {
+                                if(day==Solver.Solver.currentDay)
+                                    ImGui.Text("Resting");
+                                else
+                                    ImGui.Text("Rested");
+
+                            }
+                            ImGui.EndTabItem();
                         }
-                        else
+                    }
+                    else if (scheduleSuggestions.ContainsKey(day))
+                    {
+                        var schedule = scheduleSuggestions[day];
+                        if (ImGui.BeginTabItem("Day " + (day + 1)))
                         {
-                            ImGui.Text("Rest!!!");
+                            if (schedule != null)
+                            {
+                                if (ImGui.BeginTable("Options", 4))
+                                {
+                                    /*ImGui.TableSetupColumn("Confirmed", ImGuiTableColumnFlags.WidthStretch);*/
+                                    ImGui.TableSetupColumn("Use?", ImGuiTableColumnFlags.WidthFixed, 50);
+                                    ImGui.TableSetupColumn("Per Workshop", ImGuiTableColumnFlags.WidthFixed, 100);
+                                    ImGui.TableSetupColumn("Products to Make", ImGuiTableColumnFlags.WidthStretch, 250);
+                                    ImGui.TableHeadersRow();
+
+                                    var enumerator = schedule.orderedSuggestions.GetEnumerator();
+
+                                    for (int i = 0; i < config.suggestionsToShow && enumerator.MoveNext(); i++)
+                                    {
+                                        var suggestion = enumerator.Current;
+                                        int column = 0;
+                                        ImGui.TableNextRow();
+                                        /*ImGui.TableSetColumnIndex(column++);
+                                        ImGui.Text((!suggestion.Key.hasAnyUnsurePeaks()).ToString());*/
+                                        ImGui.TableSetColumnIndex(column++);
+                                        if (ImGui.RadioButton("##" + (i + 1), ref selectedSchedules[day], i))
+                                        {
+                                            Solver.Solver.setDay(suggestion.Key.getItems(), day);
+                                        }
+                                        ImGui.TableSetColumnIndex(column++);
+                                        ImGui.Text(suggestion.Value.ToString());
+                                        ImGui.TableSetColumnIndex(column++);
+                                        if (suggestion.Key.getNumCrafts() > 0)
+                                            ImGui.Text(String.Join(", ", suggestion.Key.getItems()));
+                                        else
+                                            ImGui.Text("Rest");
+                                    }
+                                    ImGui.EndTable();
+                                }
+                            }
+                            else
+                            {
+                                ImGui.Text("Rest!!!");
+                            }
+                            ImGui.EndTabItem();
                         }
-                        ImGui.EndTabItem();
                     }
                 }
+                ImGui.EndTabBar();
+                ImGui.Separator();
             }
-            ImGui.EndTabBar();
-            ImGui.Separator();
+        }
+        catch (Exception e)
+        {
+            Dalamud.Chat.PrintError(e.GetType() + ": " + e.Message + "\n" + e.StackTrace);
         }
     }
 }

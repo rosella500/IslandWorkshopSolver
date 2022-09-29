@@ -15,11 +15,14 @@ public class CycleSchedule
     WorkshopSchedule[] workshops = new WorkshopSchedule[3];
     public Dictionary<Item, int> numCrafted { get; private set; }
 
+    public List<int> cowriesPerHour { get; private set; }
+
     public CycleSchedule(int day, int groove)
     {
         this.day = day;
         startingGroove = groove;
         numCrafted = new Dictionary<Item, int>();
+        cowriesPerHour = new List<int>();
     }
 
     public void setForAllWorkshops(List<Item> crafts)
@@ -39,6 +42,7 @@ public class CycleSchedule
 
     public int getValue()
     {
+        cowriesPerHour.Clear();
         numCrafted.Clear();
 
         for (int i = 0; i < workshops.Length; i++)
@@ -82,8 +86,12 @@ public class CycleSchedule
                         grooveToAdd++;
                 }
             }
-            if (Solver.verboseCalculatorLogging && cowriesThisHour > 0)
-                Dalamud.Chat.Print("hour " + hour + ": " + cowriesThisHour);
+            if (cowriesThisHour > 0)
+            {
+                cowriesPerHour.Add(cowriesThisHour);
+                if(Solver.verboseCalculatorLogging)
+                    Dalamud.Chat.Print("hour " + hour + ": " + cowriesThisHour);
+            }
 
             totalCowries += cowriesThisHour;
             currentGroove += grooveToAdd;
