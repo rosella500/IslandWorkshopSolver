@@ -28,8 +28,36 @@ public class ConfigWindow : Window, IDisposable
 
     public override void Draw()
     {
+        ImGui.PushItemWidth(140);
+        ImGui.Text("Island Configuration");
+        ImGui.Spacing();
+        int rank = Configuration.islandRank;
+        if (ImGui.InputInt("Island rank", ref rank))
+        {
+            Configuration.islandRank = rank;
+            Configuration.Save();
+        }
+        ImGui.Spacing();
+        int currentLevel = (Configuration.workshopBonus - 100) / 10;
+
+        if (ImGui.Combo("Workshop level", ref currentLevel, new string[3] { "Workshop I", "Workshop II", "Workshop III" }, 3))
+        {
+            Configuration.workshopBonus = currentLevel * 10 + 100;
+            Configuration.Save();
+        }
+        ImGui.Spacing();
+        int groove = Configuration.maxGroove;
+        if (ImGui.InputInt("Max groove", ref groove))
+        {
+            Configuration.maxGroove = groove;
+            Configuration.Save();
+        }
+        ImGui.Spacing();
+        ImGui.Spacing();
+
+        ImGui.Text("Solver Configuration");
+        ImGui.Spacing();
         int sugg = Configuration.suggestionsToShow;
-        ImGui.PushItemWidth(100);
         if(ImGui.InputInt("Suggestions to show", ref sugg))
         {
             Configuration.suggestionsToShow = sugg;
@@ -43,26 +71,9 @@ public class ConfigWindow : Window, IDisposable
             Configuration.Save();
         }
         ImGui.Spacing();
-        int rank = Configuration.islandRank;
-        if (ImGui.InputInt("Island rank", ref rank))
-        {
-            Configuration.islandRank = rank;
-            Configuration.Save();
-        }
         ImGui.Spacing();
-        int bonus = Configuration.workshopBonus;
-        if (ImGui.InputInt("Workshop bonus", ref bonus))
-        {
-            Configuration.workshopBonus = bonus;
-            Configuration.Save();
-        }
-        ImGui.Spacing();
-        int groove = Configuration.maxGroove;
-        if (ImGui.InputInt("Max groove", ref groove))
-        {
-            Configuration.maxGroove = groove;
-            Configuration.Save();
-        }
+
+        ImGui.Text("Advanced Configuration");
         ImGui.Spacing();
 
         bool verbCalc = Configuration.verboseCalculatorLogging;

@@ -32,13 +32,14 @@ public class Solver
     public static bool verboseSolverLogging = false;
     public static bool verboseRestDayLogging = false;
     private static int alternatives = 0;
-    public static int groovePerDay = 45;
+    public static int groovePerFullDay = 40;
+    public static int groovePerPartDay = 15;
     private static int islandRank = 10;
     public static double materialWeight = 0.5;
     public static CSVImporter importer;
     public static int week = 5;
     static int initStep = 0;
-    public static int currentDay;
+    public static int currentDay = -1;
     private static Configuration config;
     private static Dictionary<int, (CycleSchedule schedule, int value)> schedulesPerDay = new Dictionary<int, (CycleSchedule schedule, int value)>();
     public static Dictionary<int, int> restOpportunityCost = new Dictionary<int, int>();
@@ -53,6 +54,7 @@ public class Solver
         verboseSolverLogging = config.verboseSolverLogging;
         verboseCalculatorLogging = config.verboseCalculatorLogging;
         verboseRestDayLogging = config.verboseRestDayLogging;
+
         if (initStep!=0)
             return;
         SupplyHelper.DefaultInit();
@@ -65,13 +67,18 @@ public class Solver
         config.Save();
         try
         {
-            importer = new CSVImporter(config.rootPath, week, currentDay);
+            importer = new CSVImporter(config.rootPath, week);
             initStep = 1;
         }
         catch(Exception e)
         {
             Dalamud.Chat.PrintError("Error importing file :" + e.Message + "\n" + e.StackTrace);
         }
+    }
+
+    public static void InitCSVs()
+    {
+
     }
 
     public static void InitAfterWritingTodaysData()
@@ -152,14 +159,10 @@ public class Solver
             Dictionary<WorkshopSchedule, int> safeSchedules = getSuggestedSchedules(dayToSolve, null);
 
             //This is faster than just using LINQ, lol
-            KeyValuePair<WorkshopSchedule, int> bestSched = safeSchedules.First();
-            foreach (var sched in safeSchedules)
-            {
-                if (sched.Value > bestSched.Value) bestSched = sched;
-            }
+            var bestSched = getBestSchedule(safeSchedules);
 
             if (!rested)
-                safeSchedules.Add(new WorkshopSchedule(new List<Item>()), getWorstFutureDay(bestSched, dayToSolve));
+                addRestDayValue(safeSchedules,getWorstFutureDay(bestSched, dayToSolve));
 
 
             toReturn.Add((dayToSolve, new SuggestedSchedules(safeSchedules)));
@@ -169,31 +172,33 @@ public class Solver
             if (importer.currentPeaks == null || importer.currentPeaks[0] == Unknown)
                 importer.writeCurrentPeaks(week);
 
-
+            if (dayToSolve == 4) //3 days to calculate
+            {
+                toReturn.AddRange(getLateDays());
+            } 
+            else if (dayToSolve == 5) //2 days to calculate
+            {
+                toReturn.AddRange(getLastTwoDays());
+            }
+            else if (dayToSolve == 6)
+            {
+                if (rested) //If we've rested, just get the best schedules for today
+                    toReturn.Add((6, new SuggestedSchedules(getSuggestedSchedules(dayToSolve, null))));
+                else //If we haven't rested, go to bed!!
+                    toReturn.Add((6, null));
+            }
         }
-            
-
-        /*if (dayToSolve<4)
-        {
-            addOrRest(getBestSchedule(dayToSolve, null), dayToSolve);
-        }
-        else
-        {
-            if (importer.currentPeaks == null || importer.currentPeaks[0] == Unknown)
-                importer.writeCurrentPeaks(week);
-            if (dayToSolve == 4)
-                setLateDays();
-            else if (dayToSolve == 5)
-                setLastTwoDays();
-            else
-                addOrRest(getBestSchedule(dayToSolve, null), dayToSolve);
-        }*/
-        //Dalamud.Chat.Print("Week total: " + totalGross + " (" + totalNet + ")");
+        //Technically speaking we can log in on D7 but there's nothing we can really do
 
         Dalamud.Chat.Print("Took " + (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time) + "ms.");
 
         return toReturn;
 
+    }
+
+    public static void addRestDayValue(Dictionary<WorkshopSchedule, int> safeSchedules, int restValue)
+    {
+        safeSchedules.Add(new WorkshopSchedule(new List<Item>()), restValue);
     }
 
     public static void addUnknownD2(Item item)
@@ -226,18 +231,27 @@ public class Solver
         Dalamud.Chat.Print("Think we're guaranteed to make more than " + restedDay.getValue() + " with " + String.Join(", ",rec) + ". Rest day " + (day + 1));
     }
 
-    private static void setLateDays()
+
+    private static KeyValuePair<WorkshopSchedule, int> getBestSchedule(Dictionary<WorkshopSchedule, int> schedulesAvailable)
     {
-        KeyValuePair<WorkshopSchedule, int> cycle5Sched = getBestSchedule(4, null);
-        KeyValuePair<WorkshopSchedule, int> cycle6Sched = getBestSchedule(5, null);
-        KeyValuePair<WorkshopSchedule, int> cycle7Sched = getBestSchedule(6, null);
+        KeyValuePair<WorkshopSchedule, int> bestSched = schedulesAvailable.First();
+        foreach (var sched in schedulesAvailable)
+        {
+            if (sched.Value > bestSched.Value) bestSched = sched;
+        }
+        return bestSched;
+    }
+    private static List<(int,SuggestedSchedules?)> getLateDays()
+    {
+        List<Dictionary<WorkshopSchedule, int>> initialSchedules = new List<Dictionary<WorkshopSchedule, int>> { getSuggestedSchedules(4, null),
+            getSuggestedSchedules(5, null), getSuggestedSchedules(6, null)};
+        List<KeyValuePair<WorkshopSchedule, int>> initialBests = new List<KeyValuePair<WorkshopSchedule, int>> { getBestSchedule(initialSchedules[0]),
+            getBestSchedule(initialSchedules[1]), getBestSchedule(initialSchedules[2])};
+
+        List<(int, SuggestedSchedules?)> suggestedSchedules = new List<(int, SuggestedSchedules?)>();
 
         //I'm just hardcoding this, This could almost certainly be improved
 
-        List<KeyValuePair<WorkshopSchedule, int>> endOfWeekSchedules = new List<KeyValuePair<WorkshopSchedule, int>>();
-        endOfWeekSchedules.Add(cycle5Sched);
-        endOfWeekSchedules.Add(cycle6Sched);
-        endOfWeekSchedules.Add(cycle7Sched);
 
         int bestDay = -1;
         int bestDayValue = -1;
@@ -247,7 +261,7 @@ public class Solver
 
         for (int i = 0; i < 3; i++)
         {
-            int value = endOfWeekSchedules[i].Value;
+            int value = initialBests[i].Value;
             if (bestDay == -1 || value > bestDayValue)
             {
                 bestDay = i + 4;
@@ -262,141 +276,212 @@ public class Solver
 
         if (bestDay == 4) //Day 5 is best
         {
-            //Dalamud.Chat.Print("Day 5 is best. Adding as-is");
-            setDay(cycle5Sched.Key.getItems(), 4);
-
+            //Temporarily adding day 5 so we recalculate later days with its supply changes
+            setDay(initialBests[0].Key.getItems(), 4);
+            Dictionary<WorkshopSchedule, int> recalced6;
+            Dictionary<WorkshopSchedule, int> recalced7;
+            KeyValuePair<WorkshopSchedule, int> best7;
+            KeyValuePair<WorkshopSchedule, int> best6;
             if (worstDay == 5)
             {
+                //Recalc 7 in case 5 used some of its 4hrs
+                recalced7 = getSuggestedSchedules(6, null);
+                best7 = getBestSchedule(recalced7);
+
                 //Day 6 is worst, so recalculate it according to day 7
-                KeyValuePair<WorkshopSchedule, int> recalcedCycle7Sched = getBestSchedule(6, null);
-
-                KeyValuePair<WorkshopSchedule, int> recalced6Sched = getBestSchedule(5, new HashSet<Item>(recalcedCycle7Sched.Key.getItems()));
-                //Dalamud.Chat.Print("Recalcing day 7");
-                if (rested)
-                {
-                    //Dalamud.Chat.Print("Recalcing day 6 using only day 7's requirements as verboten and adding");
-                    setDay(recalced6Sched.Key.getItems(), 5);
-                }
-                else
-                {
-                    printRestDayInfo(recalced6Sched.Key.getItems(), 5);
-                }
-                // Dalamud.Chat.Print("Adding day 7");
-                setDay(recalcedCycle7Sched.Key.getItems(), 6);
+                recalced6 = getSuggestedSchedules(5, new HashSet<Item>(best7.Key.getItems()));
+                best6 = getBestSchedule(recalced6);
             }
-            else
+            else //6 is second best, just recalcing and adding
             {
-                //Dalamud.Chat.Print("Day 6 is second best, just recalcing and adding");
-                setDay(getBestSchedule(5, null).Key.getItems(), 5);
-
-                KeyValuePair<WorkshopSchedule, int> recalced7Sched = getBestSchedule(6, null);
-                if (rested)
-                {
-                    // Dalamud.Chat.Print("Day 6 is second best, just recalcing and adding 7 too");
-                    setDay(recalced7Sched.Key.getItems(), 6);
-                }
-                else
-                {
-                    printRestDayInfo(recalced7Sched.Key.getItems(), 6);
-                }
+                recalced6 = getSuggestedSchedules(5, null);
+                best6 = getBestSchedule(recalced6);
+                setDay(best6.Key.getItems(), 5);
+                recalced7 = getSuggestedSchedules(6, null);
+                best7 = getBestSchedule(recalced7);
             }
+            if (!rested)
+            {
+                addRestDayValue(recalced6, best7.Value);
+                addRestDayValue(initialSchedules[0], Math.Min(best6.Value, best7.Value));
+                addRestDayValue(recalced7, best6.Value);
+            }
+
+
+            setDay(new List<Item>(), 4); //Set d5 as rest day to clear it?
+
+            suggestedSchedules.Add((4, new SuggestedSchedules(initialSchedules[0])));
+            suggestedSchedules.Add((5, new SuggestedSchedules(recalced6)));
+            suggestedSchedules.Add((6, new SuggestedSchedules(recalced7)));
+            return suggestedSchedules;
         }
         else if (bestDay == 6) //Day 7 is best
         {
             //Dalamud.Chat.Print("Day 7 is best");
-            HashSet<Item> reserved7Items = new HashSet<Item>(cycle7Sched.Key.getItems());
-            if (worstDay == 4 || rested) //Day 6 is second best or we're using all the days anyway
+            HashSet<Item> reserved7Items = new HashSet<Item>(initialBests[2].Key.getItems());
+            //Recalculate them both in case it's better just reserving day 7 (this is dangerous for d5)
+            Dictionary<WorkshopSchedule, int> recalced5 = getSuggestedSchedules(4, reserved7Items);
+            Dictionary<WorkshopSchedule, int> recalced6 = getSuggestedSchedules(5, reserved7Items);
+            KeyValuePair<WorkshopSchedule, int> best5 = getBestSchedule(recalced5);
+            KeyValuePair<WorkshopSchedule, int> best6 = getBestSchedule(recalced6);
+
+            if (best5.Value < best6.Value) //Day 6 is second best
             {
-                //Dalamud.Chat.Print("Day 6 is second best or we're using all the days anyway. Recalcing 6 based on 7.");
-                //Recalculate it in case it's better just reserving day 7
-                KeyValuePair<WorkshopSchedule, int> recalcedCycle6Sched = getBestSchedule(5, reserved7Items);
-                //Dalamud.Chat.Print("Recalced 6: "+String.Join(", ",recalcedCycle6Sched.Key)+" value: "+recalcedCycle6Sched.Value);
-                HashSet<Item> reserved67Items = new HashSet<Item>();
-                reserved67Items.UnionWith(reserved7Items);
-                reserved67Items.UnionWith(recalcedCycle6Sched.Key.getItems());
+                HashSet<Item> reserved67Items = new HashSet<Item>(reserved7Items);
+                reserved67Items.UnionWith(best6.Key.getItems());
 
-                if (rested)
+                recalced5 = getSuggestedSchedules(4, reserved67Items); //Recalc d5 reserving d6. This makes up for the danger from before
+                //Dalamud.Chat.Print("Recalced 5: "+String.Join(", ",recalcedCycle5Sched.Key)+" value: "+recalcedCycle5Sched.Value);
+                //Dalamud.Chat.Print("Recalcing 5 based on 6. Is it better?");
+                best5 = getBestSchedule(recalced5);
+
+                if (rested && best5.Value + best6.Value < initialBests[0].Value + initialBests[1].Value) //If we're using all 3 days, allow D5 some opinion on what D6 should be
                 {
-                    KeyValuePair<WorkshopSchedule, int> recalcedCycle5Sched = getBestSchedule(4, reserved67Items);
-                    //Dalamud.Chat.Print("Recalced 5: "+String.Join(", ",recalcedCycle5Sched.Key)+" value: "+recalcedCycle5Sched.Value);
-                    //Dalamud.Chat.Print("Recalcing 5 based on 6. Is it better?");
+                    recalced5 = initialSchedules[0];
+                    setDay(initialBests[0].Key.getItems(), 4);
+                    //Dalamud.Chat.Print("Recalcing 6 AGAIN just in case 5 changed it, still only forbidding things used day 7");
+                    recalced6 = getSuggestedSchedules(5, reserved7Items);
+                }
+            }
+            else //Day 5 is second best 
+            {
+                setDay(best5.Key.getItems(), 4);
+                //Recalc 6 to see if it changes because we committed to 5 
+                recalced6 = getSuggestedSchedules(5, reserved7Items);
+                best6 = getBestSchedule(recalced6);
+                int recalcedTotal = best5.Value + best6.Value;
+                if (rested && recalcedTotal < initialBests[0].Value + initialBests[1].Value) //If we're using all 3 days, allow D6 some opinion on what D5 should be
+                {
+                    setDay(initialBests[0].Key.getItems(), 4);
+                    //Dalamud.Chat.Print("Recalcing 6 AGAIN just in case 5 changed it, still only forbidding things used day 7");
+                    recalced6 = getSuggestedSchedules(5, reserved7Items);
+                    best6 = getBestSchedule(recalced6);
 
-
-                    //Only use the recalculation if it doesn't ruin D5 too badly
-                    if (recalcedCycle5Sched.Value + recalcedCycle6Sched.Value > cycle5Sched.Value + cycle6Sched.Value)
+                    if(initialBests[0].Value + best6.Value < recalcedTotal) //Wait, nevermind, it only looked better because we didn't commit to D5, change it back
                     {
-                        //Dalamud.Chat.Print("It is! Using recalced 5");
-                        setDay(recalcedCycle5Sched.Key.getItems(), 4);
+                        setDay(best5.Key.getItems(), 4);
+                        //Recalc 6 to see if it changes because we committed to 5 
+                        recalced6 = getSuggestedSchedules(5, reserved7Items);
+                        best6 = getBestSchedule(recalced6);
                     }
-
                     else
                     {
-                        setDay(cycle5Sched.Key.getItems(), 4);
+                        recalced5 = initialSchedules[0];
+                        best5 = initialBests[0];
                     }
-                    //Dalamud.Chat.Print("Recalcing 6 AGAIN just in case 5 changed it, still only forbidding things used day 7");
-                    setDay(getBestSchedule(5, reserved7Items).Key.getItems(), 5);
-                }
-                else
-                {
-                    printRestDayInfo(cycle5Sched.Key.getItems(), 4);
-                    setDay(recalcedCycle6Sched.Key.getItems(), 5);
                 }
             }
-            if (worstDay == 5) //Day 5 is second best and we aren't using day 6
+
+            if(!rested)
             {
-                printRestDayInfo(cycle6Sched.Key.getItems(), 5);
-                ///Dalamud.Chat.Print("Day 6 isn't being used so just recalc 5 based on day 7");
-                setDay(getBestSchedule(4, reserved7Items).Key.getItems(), 4);
+                addRestDayValue(initialSchedules[2], Math.Min(best5.Value, best6.Value));
+                addRestDayValue(recalced6, best5.Value);
+                addRestDayValue(recalced5, best6.Value);
             }
-            //Dalamud.Chat.Print("Adding recalced day 7");
-            setDay(getBestSchedule(6, null).Key.getItems(), 6);
+
+            setDay(new List<Item>(), 4);
+            suggestedSchedules.Add((4, new SuggestedSchedules(recalced5)));
+            suggestedSchedules.Add((5, new SuggestedSchedules(recalced6)));
+            suggestedSchedules.Add((6, new SuggestedSchedules(initialSchedules[2])));
+            return suggestedSchedules;
 
         }
         else //Best day is Day 6
         {
-            //Dalamud.Chat.Print("Day 6 is best");
-            if (rested || worstDay != 4)
-            {
-                //Dalamud.Chat.Print("Adding day 5 as-is");
-                setDay(cycle5Sched.Key.getItems(), 4);
-            }
-            else
-                printRestDayInfo(cycle5Sched.Key.getItems(), 4);
-            //Dalamud.Chat.Print("Recalcing day 6 and adding");
-            setDay(getBestSchedule(5, null).Key.getItems(), 5);
 
-            KeyValuePair<WorkshopSchedule, int> recalcedCycle7Sched = getBestSchedule(6, null);
-            if (rested || worstDay != 6)
+            //Dalamud.Chat.Print("Day 6 is best");
+            setDay(initialBests[1].Key.getItems(), 5);
+
+            Dictionary<WorkshopSchedule, int> recalced7;
+            KeyValuePair<WorkshopSchedule, int> best7;
+            Dictionary<WorkshopSchedule, int> recalced5;
+            KeyValuePair<WorkshopSchedule, int> best5;
+            var reservedD6 = new HashSet<Item>(initialBests[1].Key.getItems());
+
+            //Day 5 is the worst, so let's figure out day 7 first
+            if (worstDay == 4)
             {
-                //Dalamud.Chat.Print("Recalcing day 7 and adding");
-                setDay(recalcedCycle7Sched.Key.getItems(), 6);
+                //Just recalc 7 now that we've locked in 6
+                recalced7 = getSuggestedSchedules(6, null);
+                best7 = getBestSchedule(recalced7);
+
+                //D5 can use anything other than what D6 and 7 have used
+                reservedD6.UnionWith(best7.Key.getItems());
+                recalced5 = getSuggestedSchedules(4, reservedD6);
+                best5 = getBestSchedule(recalced5);
             }
             else
-                printRestDayInfo(recalcedCycle7Sched.Key.getItems(), 6);
+            {
+                //Let day 5 do whatever it wants as long as it doesn't use D6's stuff
+                recalced5 = getSuggestedSchedules(4, reservedD6);
+                best5 = getBestSchedule(recalced5);
+                setDay(best5.Key.getItems(), 4);
+
+                //See what D7's like now that we've committed 5 and 6
+                recalced7 = getSuggestedSchedules(6, null);
+                best7 = getBestSchedule(recalced7);
+            }
+
+            if (!rested)
+            {
+                addRestDayValue(initialSchedules[1], Math.Min(best5.Value, best7.Value));
+                addRestDayValue(recalced7, best5.Value);
+                addRestDayValue(recalced5, best7.Value);
+            }
+
+            setDay(new List<Item>(), 4);
+            setDay(new List<Item>(), 5);
+            suggestedSchedules.Add((4, new SuggestedSchedules(recalced5)));
+            suggestedSchedules.Add((5, new SuggestedSchedules(initialSchedules[1])));
+            suggestedSchedules.Add((6, new SuggestedSchedules(recalced7)));
         }
+        return suggestedSchedules;
     }
 
-    private static void setLastTwoDays()
+    private static List<(int, SuggestedSchedules?)> getLastTwoDays()
     {
-        KeyValuePair<WorkshopSchedule, int> cycle6Sched = getBestSchedule(5, null);
-        KeyValuePair<WorkshopSchedule, int> cycle7Sched = getBestSchedule(6, null);
+        List<(int, SuggestedSchedules?)> suggestedSchedules = new List<(int, SuggestedSchedules?)>();
+        var orig6 = getSuggestedSchedules(5, null);
+        var bestOrig6 = getBestSchedule(orig6);
+        var orig7 = getSuggestedSchedules(6, null);
+        var bestOrig7 = getBestSchedule(orig7);
 
-        KeyValuePair<WorkshopSchedule, int> recalcedCycle6Sched = getBestSchedule(5, cycle7Sched.Key.getItems().ToHashSet());
-        KeyValuePair<WorkshopSchedule, int> trueCycle6Sched = recalcedCycle6Sched.Value > cycle6Sched.Value ? recalcedCycle6Sched : cycle6Sched;
 
-        if (trueCycle6Sched.Value >= cycle7Sched.Value || rested)
+        setDay(bestOrig6.Key.getItems(), 5);
+        var recalced7 = getSuggestedSchedules(6, null);
+        var bestNew7 = getBestSchedule(recalced7);
+        var recalced6 = getSuggestedSchedules(5, new HashSet<Item>(bestOrig7.Key.getItems()));
+        var bestNew6 = getBestSchedule(recalced6);
+
+        Dictionary<WorkshopSchedule, int> best7Scheds;
+        KeyValuePair<WorkshopSchedule, int> best7;
+        Dictionary<WorkshopSchedule, int> best6Scheds;
+        KeyValuePair<WorkshopSchedule, int> best6;
+
+        if (bestNew6.Value + bestOrig7.Value > bestOrig6.Value + bestNew7.Value) //Better to let 6 use 7's leftovers
         {
-            setDay(trueCycle6Sched.Key.getItems(), 5);
-            if (rested)
-                setDay(cycle7Sched.Key.getItems(), 6);
+            best7Scheds = orig7;
+            best7 = bestOrig7;
+            best6Scheds = recalced6;
+            best6 = bestNew6;
         }
-        else
+        else //Better to calc 6 and then 7
         {
-            printRestDayInfo(trueCycle6Sched.Key.getItems(), 5);
-            setDay(cycle7Sched.Key.getItems(), 6);
+            best6Scheds = orig6;
+            best6 = bestOrig6;
+            best7Scheds = recalced7;
+            best7 = bestNew7;
         }
 
-
+        if(!rested)
+        {
+            addRestDayValue(best7Scheds, best6.Value);
+            addRestDayValue(best6Scheds, best7.Value);
+        }
+        setDay(new List<Item>(), 5);
+        suggestedSchedules.Add((5, new SuggestedSchedules(best6Scheds)));
+        suggestedSchedules.Add((6, new SuggestedSchedules(best7Scheds)));
+        return suggestedSchedules;
     }
 
     private static int getWorstFutureDay(KeyValuePair<WorkshopSchedule, int> rec, int day)
@@ -915,6 +1000,7 @@ public class Solver
 
     public static bool writeTodaySupply(string[] products)
     {
+        currentDay = getCurrentDay();
         if (initStep < 1)
         {
             Dalamud.Chat.PrintError("Trying to run solver before solver initiated");
@@ -923,7 +1009,7 @@ public class Solver
         else if (initStep > 1)
             return true;
 
-        bool needToWrite = (currentDay == 0 && importer.needNewWeekData()) || (currentDay > 0 && importer.needNewTodayData());
+        bool needToWrite = (currentDay == 0 && importer.needNewWeekData(getCurrentWeek())) || (currentDay > 0 && importer.needNewTodayData(currentDay));
         if (!needToWrite)
             return true;
 
@@ -937,7 +1023,7 @@ public class Solver
             }
             else
             {
-                importer.writeNewSupply(products);
+                importer.writeNewSupply(products, currentDay);
             }
             return true;
         }

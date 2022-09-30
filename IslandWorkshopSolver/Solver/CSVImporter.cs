@@ -23,8 +23,7 @@ public class CSVImporter
     public PeakCycle[] currentPeaks;
     private string rootPath;
     private int currentWeek;
-    private int currentDay;
-    public CSVImporter(string root, int week, int day)
+    public CSVImporter(string root, int week)
     {
         lastWeekPeaks = new PeakCycle[Solver.items.Count];
         currentPopularity = new Popularity[Solver.items.Count];
@@ -33,7 +32,6 @@ public class CSVImporter
         endDays = new List<EndDaySummary>();
         rootPath = root;
         currentWeek = week;
-        currentDay = day;
 
         initSupplyData();
     }
@@ -69,19 +67,20 @@ public class CSVImporter
         }
     }
 
-    public bool needNewWeekData()
+    public bool needNewWeekData(int currentWeek)
     {
+        this.currentWeek = currentWeek;
         string path = getPathForWeek(currentWeek);
         return !File.Exists(path);
     }
 
-    public bool needNewTodayData()
+    public bool needNewTodayData(int currentDay)
     {
         //Dalamud.Chat.Print("Checking observed supplies: " + observedSupplies[0].Count);
         return observedSupplies[0].Count <= currentDay;
     }
 
-    public void writeNewSupply(string[] products)
+    public void writeNewSupply(string[] products, int currentDay)
     {
         string path = getPathForWeek(currentWeek);
         if (!File.Exists(path))
@@ -93,13 +92,13 @@ public class CSVImporter
 
         try
         {
-
             string[] fileInfo = File.ReadAllLines(path);
             //itemName, popularity, supply, shift, supply, shift, etc.
 
             bool changedFile = false;
             for (int itemIndex = 0; itemIndex < Solver.items.Count; itemIndex++)
             {
+                
                 string currentFileLine = fileInfo[itemIndex];
                 string[] fileItemInfo = currentFileLine.Split(',');
                 int column = 2 + (currentDay * 3);
@@ -132,6 +131,7 @@ public class CSVImporter
             if (changedFile)
             {
                 File.WriteAllLines(path, fileInfo);
+                initSupplyData();
             }
             else
             {

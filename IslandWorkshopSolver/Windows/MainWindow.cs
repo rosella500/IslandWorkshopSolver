@@ -4,6 +4,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Numerics;
 using System.Reflection.PortableExecutable;
+using System.Text;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using ImGuiScene;
@@ -70,17 +71,23 @@ public class MainWindow : Window, IDisposable
        
     }
 
+    private string JoinItems(string delimiter, List<Item> items)
+    {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < items.Count; i++)
+        {
+            sb.Append(ItemHelper.GetDisplayName(items[i]));
+            if (i < items.Count - 1)
+                sb.Append(delimiter);
+        }
+        return sb.ToString();
+    }
+
     public override void Draw()
     {
         try
         {
-            if (ImGui.Button("Settings"))
-            {
-                Plugin.DrawConfigUI();
-            }
-            ImGui.SameLine();
-            ImGui.Text("Total Cowries this season: " + Solver.Solver.totalGross);
-            ImGui.Spacing();
+
             if (ImGui.Button("Run Solver"))
             {
                 //Dalamud.Chat.Print("Hitting button, "+rootPath);
@@ -104,6 +111,14 @@ public class MainWindow : Window, IDisposable
                 {
                     Dalamud.Chat.PrintError(e.GetType() + ": " + e.Message + "\n" + e.StackTrace);
                 }
+            }
+            ImGui.SameLine(100);
+            ImGui.Text("Total Cowries this season: " + Solver.Solver.totalGross);
+            
+            ImGui.SameLine(ImGui.GetWindowWidth() - 60);
+            if (ImGui.Button("Settings"))
+            {
+                Plugin.DrawConfigUI();
             }
             ImGui.Spacing();
 
@@ -132,7 +147,7 @@ public class MainWindow : Window, IDisposable
                                     int column = 0;
                                     ImGui.TableNextRow();
                                     ImGui.TableSetColumnIndex(column++);
-                                    ImGui.Text(endDaySummaries[day].crafts[i].ToString());
+                                    ImGui.Text(ItemHelper.GetDisplayName(endDaySummaries[day].crafts[i]));
                                     ImGui.TableSetColumnIndex(column++);
                                     ImGui.Text((i==0?3:6).ToString()); //I'm just hard-coding in that these are efficient, idgaf
                                     ImGui.TableSetColumnIndex(column++);
@@ -168,7 +183,7 @@ public class MainWindow : Window, IDisposable
                                 {
                                     /*ImGui.TableSetupColumn("Confirmed", ImGuiTableColumnFlags.WidthStretch);*/
                                     ImGui.TableSetupColumn("Use?", ImGuiTableColumnFlags.WidthFixed, 50);
-                                    ImGui.TableSetupColumn("Per Workshop", ImGuiTableColumnFlags.WidthFixed, 100);
+                                    ImGui.TableSetupColumn("Weighted Value", ImGuiTableColumnFlags.WidthFixed, 100);
                                     ImGui.TableSetupColumn("Products to Make", ImGuiTableColumnFlags.WidthStretch, 250);
                                     ImGui.TableHeadersRow();
 
@@ -190,7 +205,7 @@ public class MainWindow : Window, IDisposable
                                         ImGui.Text(suggestion.Value.ToString());
                                         ImGui.TableSetColumnIndex(column++);
                                         if (suggestion.Key.getNumCrafts() > 0)
-                                            ImGui.Text(String.Join(", ", suggestion.Key.getItems()));
+                                            ImGui.Text(JoinItems(" - ", suggestion.Key.getItems()));
                                         else
                                             ImGui.Text("Rest");
                                     }

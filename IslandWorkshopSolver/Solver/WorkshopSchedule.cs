@@ -126,12 +126,17 @@ public class WorkshopSchedule
     {
         int craftsAbove4 = 0;
         craftsAbove4 += getNumCrafts() - 4;
-        int daysToGroove = 4 - day;
+        int daysToGroove = 5 - day;
         if (!Solver.rested)
             daysToGroove--;
 
-        if (daysToGroove < 0)
-            daysToGroove = 0;
+        int grooveValue = 0;
+
+        if (daysToGroove > 0)
+        {
+            int fullGrooveBonus = (daysToGroove - 1) * Solver.groovePerFullDay;
+            grooveValue = fullGrooveBonus + Solver.groovePerPartDay;
+        }
 
         int workshopValue = 0;
         Dictionary<Item, int> numCrafted = new Dictionary<Item, int>();
@@ -161,7 +166,7 @@ public class WorkshopSchedule
         }
 
         //Allow for the accounting for materials if desired
-        return craftsAbove4 * daysToGroove * Solver.groovePerDay + workshopValue - (int)(getMaterialCost() * Solver.materialWeight);
+        return grooveValue + workshopValue - (int)(getMaterialCost() * Solver.materialWeight);
     }
 
     public bool isSafe(int day)
