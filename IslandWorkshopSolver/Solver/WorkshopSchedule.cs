@@ -136,6 +136,7 @@ public class WorkshopSchedule
         {
             int fullGrooveBonus = (daysToGroove - 1) * Solver.groovePerFullDay;
             grooveValue = fullGrooveBonus + Solver.groovePerPartDay;
+            grooveValue *= craftsAbove4;
         }
 
         int workshopValue = 0;
