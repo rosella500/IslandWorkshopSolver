@@ -10,7 +10,7 @@ using Lumina.Excel;
 
 namespace IslandWorkshopSolver
 {
-    // Code from Otter, just slight changes to fix warnings/get it plugin ready.
+    // Lifted entirely from Rietty's AutoMammet. Bless you. <3
     public class Reader
     {
         [Signature("E8 ?? ?? ?? ?? 8B 50 10")]
@@ -25,15 +25,15 @@ namespace IslandWorkshopSolver
         public Reader(DalamudPluginInterface pluginInterface)
         {
             SignatureHelper.Initialise(this);
-            items = Dalamud.GameData.GetExcelSheet<MJICraftworksObject>()!.Select(o => o.Item.Value?.Name.ToString() ?? string.Empty)
+            items = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Select(o => o.Item.Value?.Name.ToString() ?? string.Empty)
                .Where(s => s.Length > 0).Prepend(string.Empty).ToArray();
 
-            var addon = Dalamud.GameData.GetExcelSheet<Addon>()!;
+            var addon = DalamudPlugins.GameData.GetExcelSheet<Addon>()!;
             shifts = Enumerable.Range(15186, 5).Select(i => addon.GetRow((uint)i)!.Text.ToString()).ToArray();
             supplies = Enumerable.Range(15181, 5).Reverse().Select(i => addon.GetRow((uint)i)!.Text.ToString()).ToArray();
             popularities = Enumerable.Range(15177, 4).Select(i => addon.GetRow((uint)i)!.Text.ToString()).Prepend(string.Empty).ToArray();
 
-            sheet = Dalamud.GameData.GetExcelSheet<MJICraftworksPopularity>()!;
+            sheet = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksPopularity>()!;
         }
 
         public unsafe string ExportIsleData()

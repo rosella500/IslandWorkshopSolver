@@ -1,9 +1,5 @@
-using System;
+using Dalamud.Logging;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace IslandWorkshopSolver.Solver;
 
 public class WorkshopSchedule
@@ -110,8 +106,7 @@ public class WorkshopSchedule
 
         if (isEfficient)
             adjustedValue *= 2;
-        if (Solver.verboseCalculatorLogging)
-            Dalamud.Chat.Print(craft.item + " is worth " + adjustedValue + " with " + currentGroove + " groove at " + ItemInfo.getSupplyBucket(supply) + " supply (" + supply + ") and " + craft.popularity + " popularity");
+            PluginLog.LogVerbose(craft.item + " is worth " + adjustedValue + " with " + currentGroove + " groove at " + ItemInfo.getSupplyBucket(supply) + " supply (" + supply + ") and " + craft.popularity + " popularity");
 
         return adjustedValue;
     }

@@ -7,7 +7,7 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
-using ImGuiScene;
+using Dalamud.Logging;
 using IslandWorkshopSolver.Solver;
 
 namespace IslandWorkshopSolver.Windows;
@@ -55,12 +55,12 @@ public class MainWindow : Window, IDisposable
             }
             else
             {
-                Dalamud.Chat.Print("Failed to int today's supply. Init step wrong? No product info??");
+                PluginLog.LogError("Failed to int today's supply. Init step wrong? No product info??");
             }
         }
         catch (Exception e)
         {
-            Dalamud.Chat.PrintError(e.GetType() + ": " + e.Message + "\n" + e.StackTrace);
+            PluginLog.LogError(e, "Error opening window and writing supply/initing");
         }
 
 
@@ -121,9 +121,7 @@ public class MainWindow : Window, IDisposable
         try
         {
             if (ImGui.Button("Run Solver"))
-            {
-                //Dalamud.Chat.Print("Hitting button, "+rootPath);
-                
+            {                
                 try
                 {
                     Solver.Solver.Init(config);
@@ -133,7 +131,7 @@ public class MainWindow : Window, IDisposable
                 }
                 catch (Exception e)
                 {
-                    Dalamud.Chat.PrintError(e.GetType() + ": " + e.Message + "\n" + e.StackTrace);
+                    PluginLog.LogError(e, "Error running solver.");
                 }
             }
             ImGui.SameLine(100);
@@ -255,7 +253,7 @@ public class MainWindow : Window, IDisposable
         }
         catch (Exception e)
         {
-            Dalamud.Chat.PrintError(e.GetType() + ": " + e.Message + "\n" + e.StackTrace);
+            PluginLog.LogError(e, "Error displaying schedule data.");
         }
     }
 }

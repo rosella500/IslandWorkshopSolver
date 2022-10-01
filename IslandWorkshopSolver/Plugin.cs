@@ -27,7 +27,7 @@ namespace IslandWorkshopSolver
 
             Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             Configuration.Initialize(PluginInterface);
-            Dalamud.Initialize(PluginInterface);
+            DalamudPlugins.Initialize(PluginInterface);
             Reader reader = new Reader(this.PluginInterface);
 
             WindowSystem.AddWindow(new ConfigWindow(this, PluginInterface.AssemblyLocation.Directory?.FullName!));

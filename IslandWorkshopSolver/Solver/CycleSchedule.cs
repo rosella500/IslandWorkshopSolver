@@ -1,9 +1,6 @@
-using Lumina.Excel.GeneratedSheets;
-using System;
+
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Dalamud.Logging;
 
 namespace IslandWorkshopSolver.Solver;
 
@@ -77,7 +74,7 @@ public class CycleSchedule
                     }
                     craftedThisHour[completedCraft.item] = craftedEarlierThisHour + (efficient ? 2 : 1);
 
-                    //Dalamud.Chat.Print("Found completed "+completedCraft.item+" at hour "+hour+". Efficient? "+efficient);
+                    PluginLog.LogVerbose("Found completed "+completedCraft.item+" at hour "+hour+". Efficient? "+efficient);
 
                     cowriesThisHour += workshops[i].getValueForCurrent(day, (numCrafted.TryGetValue(completedCraft.item, out int craftedPreviously) ? craftedPreviously: 0), currentGroove, efficient);
 
@@ -89,8 +86,7 @@ public class CycleSchedule
             if (cowriesThisHour > 0)
             {
                 cowriesPerHour.Add(cowriesThisHour);
-                if(Solver.verboseCalculatorLogging)
-                    Dalamud.Chat.Print("hour " + hour + ": " + cowriesThisHour);
+                PluginLog.LogVerbose("hour " + hour + ": " + cowriesThisHour);
             }
 
             totalCowries += cowriesThisHour;

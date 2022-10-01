@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Dalamud.Logging;
 
 using static IslandWorkshopSolver.Solver.PeakCycle;
 using static IslandWorkshopSolver.Solver.ItemCategory;
@@ -87,7 +88,7 @@ public class ItemInfo
     {
         if (other == null)
         {
-            Dalamud.Chat.PrintError("Trying to compare efficiency for null item?");
+            PluginLog.LogError("Trying to compare efficiency for null item?");
             return false;
         }
         bool diffItem = other.item != item;
@@ -161,13 +162,13 @@ public class ItemInfo
                     currentDaySchedule.setForAllWorkshops(Solver.importer.endDays[day].crafts);
 
                 }
-
+                PluginLog.LogDebug(item + " observed: " + observedSupplies[day]);
                 int craftedToday = currentDaySchedule == null ? 0 : currentDaySchedule.getCraftedBeforeHour(item, currentHour);
                 int weakPrevious = getSupplyOnDayByPeak(Cycle2Weak, day - 1);
                 int weakSupply = getSupplyOnDayByPeak(Cycle2Weak, day) + craftedToday;
                 ObservedSupply expectedWeak = new ObservedSupply(getSupplyBucket(weakSupply),
                         getDemandShift(weakPrevious, weakSupply));
-
+                PluginLog.LogDebug("Checking against peak Cycle2Weak, expecting: " + expectedWeak);
                 if (observedSupplies[day].Equals(expectedWeak))
                 {
                     peak = Cycle2Weak;
@@ -179,23 +180,20 @@ public class ItemInfo
                 ObservedSupply expectedStrong = new ObservedSupply(getSupplyBucket(strongSupply),
                         getDemandShift(strongPrevious, strongSupply));
 
+                PluginLog.LogDebug("Checking against peak Cycle2Strong, expecting: " + expectedStrong);
                 if (observedSupplies[day].Equals(expectedStrong))
                 {
                     peak = Cycle2Strong;
                     return;
                 }
                 else
-                    Dalamud.Chat.Print(item + " does not match any known demand shifts for day 2: " + observedSupplies[1]);
+                    PluginLog.LogWarning(item + " does not match any known demand shifts for day 2: " + observedSupplies[1]);
             }
             else
             {
                 peak = Cycle2Weak;
 
                 Solver.addUnknownD2(item);
-                /*if (previousPeak == Cycle7Strong)
-                    Dalamud.Chat.Print("Warning! Can't tell if " + item + " is a weak or a strong 2 peak.");
-                    else
-                    Dalamud.Chat.Print("Need to craft " + item + " to determine weak or strong 2 peak, assuming weak.");*/
             }
         }
         else if (observedSupplies.Count > 1)
@@ -210,8 +208,7 @@ public class ItemInfo
                 }
 
                 ObservedSupply observedToday = observedSupplies[day];
-                if (Solver.verboseCalculatorLogging)
-                    Dalamud.Chat.Print(item + " observed: " + observedToday);
+                PluginLog.LogDebug(item + " observed: " + observedToday);
                 int craftedPreviously = getCraftedBeforeDay(day);
                 int craftedToday = currentDaySchedule == null? 0 : currentDaySchedule.getCraftedBeforeHour(item, currentHour);
                 bool found = false;
@@ -223,13 +220,11 @@ public class ItemInfo
                     int expectedSupply = getSupplyOnDayByPeak(potentialPeak, day) + craftedToday;
                     ObservedSupply expectedObservation = new ObservedSupply(getSupplyBucket(craftedPreviously + expectedSupply),
                             getDemandShift(expectedPrevious, expectedSupply));
-                    if (Solver.verboseCalculatorLogging)
-                        Dalamud.Chat.Print("Checking against peak " + potentialPeak + ", expecting: " + expectedObservation);
+                        PluginLog.LogDebug("Checking against peak " + potentialPeak + ", expecting: " + expectedObservation);
 
                     if (observedToday.Equals(expectedObservation))
                     {
-                        if (Solver.verboseCalculatorLogging)
-                            Dalamud.Chat.Print("match found!");
+                            PluginLog.LogDebug("match found!");
                         peak = potentialPeak;
                         found = true;
                         if (peak.IsTerminal())
@@ -238,7 +233,7 @@ public class ItemInfo
                 }
 
                 if (!found)
-                    Dalamud.Chat.Print(item + " does not match any known patterns for day " + (day + 1));
+                    PluginLog.LogWarning(item + " does not match any known patterns for day " + (day + 1));
             }
         }
     }
