@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
-using System.Linq;
 using System.Numerics;
-using System.Reflection.PortableExecutable;
 using System.Text;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
@@ -225,7 +222,7 @@ public class MainWindow : Window, IDisposable
                                         {
                                             Solver.Solver.setDay(suggestion.Key.getItems(), day);
                                             if (scheduleSuggestions.Count > 1) //If we have multiple days, committing to this probably changed something
-                                                AddNewSuggestions(Solver.Solver.calculateLastDays());
+                                                AddNewSuggestions(Solver.Solver.calculateLastTwoDays());
                                         }
                                         ImGui.TableSetColumnIndex(column++);
                                         ImGui.Text(suggestion.Value.ToString());

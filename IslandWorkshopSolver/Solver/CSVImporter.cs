@@ -1,15 +1,8 @@
-using Dalamud.Utility;
-using Lumina.Excel.GeneratedSheets;
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
-using static Lumina.Data.Files.LgbFile;
 using Dalamud.Logging;
 
 namespace IslandWorkshopSolver.Solver;
@@ -210,15 +203,15 @@ public class CSVImporter
                             sb.Append(",");
 
                         sb.Append(Solver.items[c].craftedPerDay[day]);
-                        if (Solver.items[c].craftedPerDay[day] > 0)
-                            PluginLog.LogDebug("Adding " + Solver.items[c].craftedPerDay[day] + "x " + Solver.items[c].item + " to end day summary");
+                        /*if (Solver.items[c].craftedPerDay[day] > 0)
+                            PluginLog.LogDebug("Adding " + Solver.items[c].craftedPerDay[day] + "x " + Solver.items[c].item + " to end day summary");*/
                         updated.Add(sb.ToString());
                     }
                     else
                     {
                         split[column] = "" + Solver.items[c].craftedPerDay[day];
                         string joined = String.Join(",", split);
-                        PluginLog.LogDebug("Column set to " + split[column]+", new row: "+joined);
+                        //PluginLog.LogDebug("Column set to " + split[column]+", new row: "+joined);
                         updated.Add(joined);
                     }
                 }
@@ -237,11 +230,11 @@ public class CSVImporter
             if(Solver.items.Count < original.Length)
             {
                 string orig = original[Solver.items.Count];
-                PluginLog.LogDebug("Summary line exists: " + orig+" trying to write to column "+column);
+                //PluginLog.LogDebug("Summary line exists: " + orig+" trying to write to column "+column);
                 string[] split = orig.Split(",");
                 if (split.Length < column - 1)
                 {
-                    PluginLog.LogDebug("Summary line ends before we need to write, can just append");
+                    //PluginLog.LogDebug("Summary line ends before we need to write, can just append");
                     StringBuilder sb = new StringBuilder(orig);
                     int commasToAdd = column - 1 - split.Length;
                     for (int i = 0; i < commasToAdd; i++)
@@ -249,11 +242,11 @@ public class CSVImporter
 
                     sb.Append(groove).Append(',').Append(gross).Append(',').Append(net);
                     updated.Add(sb.ToString());
-                    PluginLog.LogDebug("Adding onto existing row: " + sb.ToString());
+                    //PluginLog.LogDebug("Adding onto existing row: " + sb.ToString());
                 }
                 else
                 {
-                    PluginLog.LogDebug("Summary line is long enough we have to overwrite values") ;
+                    //PluginLog.LogDebug("Summary line is long enough we have to overwrite values") ;
                     split[column - 2] = "" + groove;
                     if (split.Length > column - 1)
                     {
@@ -279,12 +272,12 @@ public class CSVImporter
                     }
                     
                     
-                    PluginLog.LogDebug("Setting existing row's values to " + updated[updated.Count - 1]);
+                    //PluginLog.LogDebug("Setting existing row's values to " + updated[updated.Count - 1]);
                 }
             }
             else
             {
-                PluginLog.LogDebug("Need to add new row for output summaries");
+                //PluginLog.LogDebug("Need to add new row for output summaries");
                 StringBuilder sb = new StringBuilder();
                 int commasToAdd = column - 2;
                 for (int i = 0; i < commasToAdd; i++)
@@ -292,17 +285,17 @@ public class CSVImporter
                 sb.Append(groove).Append(',');
                 sb.Append(gross).Append(',').Append(net);
                 updated.Add(sb.ToString());
-                PluginLog.LogDebug("Adding new row: " + sb.ToString());
+                //PluginLog.LogDebug("Adding new row: " + sb.ToString());
             }
 
             if (Solver.items.Count + 1 < original.Length)
             {
                 string orig = original[Solver.items.Count + 1];
-                PluginLog.LogDebug("Summary line 2 exists: " + orig+" trying to write to column "+column);
+                //PluginLog.LogDebug("Summary line 2 exists: " + orig+" trying to write to column "+column);
                 string[] split = orig.Split(",");
                 if (split.Length < column + 1)
                 {
-                    PluginLog.LogDebug("Adding to end of file for items ");
+                    //PluginLog.LogDebug("Adding to end of file for items ");
                     StringBuilder sb = new StringBuilder();
                     sb.Append(orig);
                     int commasToAdd = column + 1 - split.Length;
@@ -316,13 +309,13 @@ public class CSVImporter
                 {
                     split[column] = String.Join(";", crafts);
                     string joined = String.Join(",", split);
-                    PluginLog.LogDebug("Column set to " + split[column]+", new row: "+joined);
+                    //PluginLog.LogDebug("Column set to " + split[column]+", new row: "+joined);
                     updated.Add(joined);
                 }
             }
             else
             {
-                PluginLog.LogDebug("Need to add new row for output summary 2");
+                //PluginLog.LogDebug("Need to add new row for output summary 2");
                 StringBuilder sb = new StringBuilder();
                 int commasToAdd = column + 1;
                 for (int i = 0; i < commasToAdd; i++)
@@ -330,7 +323,7 @@ public class CSVImporter
                 
                 sb.Append(String.Join(";", crafts));
                 updated.Add(sb.ToString());
-                PluginLog.LogDebug("Adding new row: " + sb.ToString());
+                //PluginLog.LogDebug("Adding new row: " + sb.ToString());
             }
 
             PluginLog.LogDebug("Writing " + updated.Count + " lines to the end-day summary list");
@@ -420,7 +413,7 @@ public class CSVImporter
                     string peak = values[20].Replace(" ", "");
 
                     PeakCycle peakEnum = Enum.Parse<PeakCycle>(peak);
-                    PluginLog.LogDebug("Last week's peak: " + peak);
+                    //PluginLog.LogDebug("Last week's peak: " + peak);
                     lastWeekPeaks[c] = peakEnum;
                 }
             }
@@ -477,7 +470,7 @@ public class CSVImporter
                         data3 = values[c + 2];
 
                     bool parseAsSummary = row == Solver.items.Count;
-                    PluginLog.LogDebug("Parsing column " + c+" d1: "+data1+" d2: "+data2+" d3: "+data3 +" summary: "+parseAsSummary);
+                    //PluginLog.LogDebug("Parsing column " + c+" d1: "+data1+" d2: "+data2+" d3: "+data3 +" summary: "+parseAsSummary);
 
 
                     if (row == Solver.items.Count) //Summary row

@@ -74,7 +74,7 @@ public class CycleSchedule
                     }
                     craftedThisHour[completedCraft.item] = craftedEarlierThisHour + (efficient ? 2 : 1);
 
-                    PluginLog.LogVerbose("Found completed "+completedCraft.item+" at hour "+hour+". Efficient? "+efficient);
+                    //PluginLog.LogVerbose("Found completed "+completedCraft.item+" at hour "+hour+". Efficient? "+efficient);
 
                     cowriesThisHour += workshops[i].getValueForCurrent(day, (numCrafted.TryGetValue(completedCraft.item, out int craftedPreviously) ? craftedPreviously: 0), currentGroove, efficient);
 
@@ -86,7 +86,7 @@ public class CycleSchedule
             if (cowriesThisHour > 0)
             {
                 cowriesPerHour.Add(cowriesThisHour);
-                PluginLog.LogVerbose("hour " + hour + ": " + cowriesThisHour);
+                //PluginLog.LogVerbose("hour " + hour + ": " + cowriesThisHour);
             }
 
             totalCowries += cowriesThisHour;

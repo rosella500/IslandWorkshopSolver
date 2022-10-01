@@ -150,7 +150,14 @@ public class Solver
             if (importer.currentPeaks == null || importer.currentPeaks[0] == Unknown)
                 importer.writeCurrentPeaks(week);
 
-            toReturn.AddRange(calculateLastDays());
+            if (dayToSolve == 4)
+                toReturn.AddRange(calculateLastThreeDays());
+            else if (dayToSolve == 5)
+                toReturn.AddRange(calculateLastTwoDays());
+            else if (rested)
+                toReturn.Add((dayToSolve, new SuggestedSchedules(getSuggestedSchedules(dayToSolve, -1, null))));
+            else
+                toReturn.Add((dayToSolve, null));
         }
         //Technically speaking we can log in on D7 but there's nothing we can really do
 
@@ -182,8 +189,69 @@ public class Solver
         }
         return bestSched;
     }
+    public static List<(int, SuggestedSchedules?)> calculateLastTwoDays()
+    {
+        HashSet<Item>? reservedFor6 = null;
+        int startingGroove = getEndingGrooveForDay(currentDay);
+        bool sixSet = false;
+        bool sevenSet = false;
+        int dayRested = -1;
 
-    public static List<(int, SuggestedSchedules?)> calculateLastDays()
+        if (schedulesPerDay.TryGetValue(5, out var schedule6))
+        {
+            sixSet = true;
+            if (schedule6.schedule.workshops[0].getItems().Count == 0)
+                dayRested = 5;
+        }
+
+        if (schedulesPerDay.TryGetValue(6, out var schedule7))
+        {
+            sevenSet = true;
+            List<Item> items7 = schedule7.schedule.workshops[0].getItems();
+            if (sixSet)
+            {
+                setDay(items7, 6); //Recalculate with 6's groove
+            }
+            if (schedule7.schedule.workshops[0].getItems().Count == 0)
+                dayRested = 7;
+            reservedFor6 = new HashSet<Item>(schedule7.schedule.workshops[0].getItems());
+        }
+
+        List<Dictionary<WorkshopSchedule, int>> initialSchedules = new List<Dictionary<WorkshopSchedule, int>>
+        {
+            getSuggestedSchedules(5, startingGroove, reservedFor6),
+            getSuggestedSchedules(6, startingGroove, null)
+        };
+        List<KeyValuePair<WorkshopSchedule, int>> initialBests = new List<KeyValuePair<WorkshopSchedule, int>>
+        {
+            getBestSchedule(initialSchedules[0]),
+            getBestSchedule(initialSchedules[1])
+        };
+
+        if (!rested)
+        {
+            if (dayRested == -1)
+            {
+                if (sevenSet) //Must rest 6
+                    initialSchedules[0].Clear();
+                if (sixSet) //Must rest 7
+                    initialSchedules[1].Clear();
+
+                addRestDayValue(initialSchedules[0], initialBests[1].Value);
+                addRestDayValue(initialSchedules[1], initialBests[0].Value);
+            }
+            else if (dayRested == 5)
+                addRestDayValue(initialSchedules[0], initialBests[1].Value);
+            else if (dayRested == 6)
+                addRestDayValue(initialSchedules[1], initialBests[0].Value);
+        }
+
+        List<(int, SuggestedSchedules?)> suggested = new List<(int, SuggestedSchedules?)>();
+        suggested.Add((5, new SuggestedSchedules(initialSchedules[0])));
+        suggested.Add((6, new SuggestedSchedules(initialSchedules[1])));
+        return suggested;
+    }
+    public static List<(int, SuggestedSchedules?)> calculateLastThreeDays()
     {
         HashSet<Item> reservedFor6 = new HashSet<Item>();
         HashSet<Item> reservedFor5 = new HashSet<Item>();
@@ -193,36 +261,26 @@ public class Solver
         bool sevenSet = false;
         int dayRested = -1;
 
-        if (currentDay < 4)
+        if (schedulesPerDay.TryGetValue(4, out var schedule5))
         {
-            if (schedulesPerDay.TryGetValue(4, out var schedule5))
-            {
-                fiveSet = true;
-                if (schedule5.schedule.workshops[0].getItems().Count == 0)
-                    dayRested = 4;
-            }
-        }
-        else
             fiveSet = true;
-
-        if (currentDay < 5)
-        {
-            if (schedulesPerDay.TryGetValue(5, out var schedule6))
-            {
-                List<Item> items6 = schedule6.schedule.workshops[0].getItems();
-                if (fiveSet)
-                {
-                    setDay(items6, 5); //Recalculate with 5's groove
-                    sixSet = true;
-                }
-                if (schedule6.schedule.workshops[0].getItems().Count == 0)
-                    dayRested = 5;
-
-                reservedFor5.UnionWith(schedule6.schedule.workshops[0].getItems());
-            }
+            if (schedule5.schedule.workshops[0].getItems().Count == 0)
+                dayRested = 4;
         }
-        else
-            sixSet = true;
+
+        if (schedulesPerDay.TryGetValue(5, out var schedule6))
+        {
+            List<Item> items6 = schedule6.schedule.workshops[0].getItems();
+            if (fiveSet)
+            {
+                setDay(items6, 5); //Recalculate with 5's groove
+                sixSet = true;
+            }
+            if (schedule6.schedule.workshops[0].getItems().Count == 0)
+                dayRested = 5;
+
+            reservedFor5.UnionWith(schedule6.schedule.workshops[0].getItems());
+        }
 
         if (schedulesPerDay.TryGetValue(6, out var schedule7))
         {
@@ -253,7 +311,7 @@ public class Solver
 
         if (!rested)
         {
-            if(dayRested == -1)
+            if (dayRested == -1)
             {
                 if (sixSet && sevenSet) //Must rest 5
                     initialSchedules[0].Clear();
@@ -266,11 +324,11 @@ public class Solver
                 addRestDayValue(initialSchedules[1], Math.Min(initialBests[0].Value, initialBests[2].Value));
                 addRestDayValue(initialSchedules[2], Math.Min(initialBests[1].Value, initialBests[0].Value));
             }
-            else if(dayRested == 4)
+            else if (dayRested == 4)
                 addRestDayValue(initialSchedules[0], Math.Min(initialBests[1].Value, initialBests[2].Value));
-            else if(dayRested == 5)
+            else if (dayRested == 5)
                 addRestDayValue(initialSchedules[1], Math.Min(initialBests[0].Value, initialBests[2].Value));
-            else if(dayRested == 6)
+            else if (dayRested == 6)
                 addRestDayValue(initialSchedules[2], Math.Min(initialBests[1].Value, initialBests[0].Value));
         }
 
@@ -290,7 +348,7 @@ public class Solver
     private static int getWorstFutureDay(KeyValuePair<WorkshopSchedule, int> rec, int day)
     {
         int worstInFuture = 99999;
-        PluginLog.LogVerbose("Comparing d" + (day + 1) + " (" + rec.Value + ") to worst-case future days");
+        //PluginLog.LogVerbose("Comparing d" + (day + 1) + " (" + rec.Value + ") to worst-case future days");
         HashSet<Item> reservedSet = new HashSet<Item>(rec.Key.getItems());
         for (int d = day + 1; d < 7; d++)
         {
@@ -299,11 +357,11 @@ public class Solver
                 solution = getD5EV();
             else
                 solution = getBestSchedule(d, reservedSet, false);
-                PluginLog.LogVerbose("Day " + (d + 1) + ", crafts: " + String.Join(", ", solution.Key.getItems()) + " value: " + solution.Value);
+                //PluginLog.LogVerbose("Day " + (d + 1) + ", crafts: " + String.Join(", ", solution.Key.getItems()) + " value: " + solution.Value);
             worstInFuture = Math.Min(worstInFuture, solution.Value);
             reservedSet.UnionWith(solution.Key.getItems());
         }
-            PluginLog.LogVerbose("Worst future day: " + worstInFuture);
+            //PluginLog.LogVerbose("Worst future day: " + worstInFuture);
 
         return worstInFuture;
     }
@@ -312,7 +370,7 @@ public class Solver
     public static KeyValuePair<WorkshopSchedule, int> getD5EV()
     {
         KeyValuePair<WorkshopSchedule, int> solution = getBestSchedule(4, null);
-            PluginLog.LogVerbose("Testing against D5 solution " + solution.Key.getItems());
+            //PluginLog.LogVerbose("Testing against D5 solution " + solution.Key.getItems());
         List<ItemInfo> c5Peaks = new List<ItemInfo>();
         foreach (Item item in solution.Key.getItems())
             if (items[(int)item].peak == Cycle5 && !c5Peaks.Contains(items[(int)item]))
@@ -320,14 +378,14 @@ public class Solver
         int sum = solution.Value;
         int permutations = (int)Math.Pow(2, c5Peaks.Count);
 
-            PluginLog.LogVerbose("C5 peaks: " + c5Peaks.Count + ", permutations: " + permutations);
+            //PluginLog.LogVerbose("C5 peaks: " + c5Peaks.Count + ", permutations: " + permutations);
 
         for (int p = 1; p < permutations; p++)
         {
             for (int i = 0; i < c5Peaks.Count; i++)
             {
                 bool strong = ((p) & (1 << i)) != 0; //I can't believe I'm using a bitwise and
-                    PluginLog.LogVerbose("Checking permutation " + p + " for item " + c5Peaks[i].item + " " + (strong ? "strong" : "weak"));
+                    //PluginLog.LogVerbose("Checking permutation " + p + " for item " + c5Peaks[i].item + " " + (strong ? "strong" : "weak"));
                 if (strong)
                     c5Peaks[i].peak = Cycle5Strong;
                 else
@@ -335,11 +393,11 @@ public class Solver
             }
 
             int toAdd = solution.Key.getValueWithGrooveEstimate(4, getEndingGrooveForDay(currentDay));
-                PluginLog.LogVerbose("Permutation " + p + " has value " + toAdd);
+                //PluginLog.LogVerbose("Permutation " + p + " has value " + toAdd);
             sum += toAdd;
         }
 
-            PluginLog.LogVerbose("Sum: " + sum + " average: " + sum / permutations);
+            //PluginLog.LogVerbose("Sum: " + sum + " average: " + sum / permutations);
         sum /= permutations;
         KeyValuePair<WorkshopSchedule, int> newSolution = new KeyValuePair<WorkshopSchedule, int>(solution.Key, sum);
 
@@ -460,7 +518,7 @@ public class Solver
         while (eightEnum.MoveNext())
         {
             var topItem = eightEnum.Current;
-                PluginLog.LogVerbose("Building schedule around : " + topItem.item + ", peak: " + topItem.peak);
+                //PluginLog.LogVerbose("Building schedule around : " + topItem.item + ", peak: " + topItem.peak);
 
 
             //8-8-8
@@ -478,12 +536,12 @@ public class Solver
                 if (!firstFourMatchEnum.Current.getsEfficiencyBonus(topItem))
                     continue;
 
-                    PluginLog.LogVerbose("Found 4hr match, matching with " + firstFourMatchEnum.Current.item);
+                    //PluginLog.LogVerbose("Found 4hr match, matching with " + firstFourMatchEnum.Current.item);
 
                 var secondFourMatchEnum = fourHour.GetEnumerator();
                 while (secondFourMatchEnum.MoveNext())
                 {
-                        PluginLog.LogVerbose("Checking potential 4hr match: " + secondFourMatchEnum.Current.item);
+                        //PluginLog.LogVerbose("Checking potential 4hr match: " + secondFourMatchEnum.Current.item);
                     addScheduleIfEfficient(secondFourMatchEnum.Current, topItem,
                         new List<Item> { firstFourMatchEnum.Current.item, topItem.item, secondFourMatchEnum.Current.item, topItem.item },
                         day, safeSchedules, startingGroove);
@@ -533,7 +591,7 @@ public class Solver
         {
             var topItem = sixEnum.Current;
 
-                PluginLog.LogVerbose("Building schedule around : " + topItem.item);
+                //PluginLog.LogVerbose("Building schedule around : " + topItem.item);
 
 
             //6-6-6-6
@@ -549,7 +607,7 @@ public class Solver
             {
                 foreach (ItemInfo secondSix in sixMatches)
                 {
-                        PluginLog.LogVerbose("Adding 6-6-6-6 schedule made out of helpers " + firstSix.item + ", " + secondSix.item + ", and top item: " + topItem.item);
+                        //PluginLog.LogVerbose("Adding 6-6-6-6 schedule made out of helpers " + firstSix.item + ", " + secondSix.item + ", and top item: " + topItem.item);
                     addToScheduleMap(new List<Item> { secondSix.item, topItem.item, firstSix.item, topItem.item },
                     day, safeSchedules, startingGroove);
                 }
@@ -631,24 +689,24 @@ public class Solver
         //Only add if we don't already have one with this schedule or ours is better
         if(safeSchedules.TryGetValue(workshop, out int oldValue))
         {
-                PluginLog.LogVerbose("Found workshop in safe schedules with rare mats: " + String.Join(", ", workshop.rareMaterialsRequired));
+                //PluginLog.LogVerbose("Found workshop in safe schedules with rare mats: " + String.Join(", ", workshop.rareMaterialsRequired));
         }
         else
         {
-                PluginLog.LogVerbose("Can't find workshop schedule out of "+safeSchedules.Count+" with rare mats: " + String.Join(", ", workshop.rareMaterialsRequired));
+                //PluginLog.LogVerbose("Can't find workshop schedule out of "+safeSchedules.Count+" with rare mats: " + String.Join(", ", workshop.rareMaterialsRequired));
             oldValue = -1;
         }
 
         if (oldValue < value)
         {
             if (oldValue != -1)
-                PluginLog.LogVerbose("Replacing schedule with mats " + String.Join(", ",workshop.rareMaterialsRequired) + " with " + String.Join(", ",list) + " because " + value + " is higher than " + oldValue);
+                //PluginLog.LogVerbose("Replacing schedule with mats " + String.Join(", ",workshop.rareMaterialsRequired) + " with " + String.Join(", ",list) + " because " + value + " is higher than " + oldValue);
             safeSchedules.Remove(workshop); //It doesn't seem to update the key when updating the value, so we delete the key first
             safeSchedules.Add(workshop, value);
         }
         else
         {
-                PluginLog.LogVerbose("Not replacing schedule with mats " + String.Join(", ",workshop.rareMaterialsRequired) + " with " + String.Join(", ",list) + " because " + value + " is lower than " + oldValue);
+                //PluginLog.LogVerbose("Not replacing schedule with mats " + String.Join(", ",workshop.rareMaterialsRequired) + " with " + String.Join(", ",list) + " because " + value + " is lower than " + oldValue);
 
                 value = 0;
         }
