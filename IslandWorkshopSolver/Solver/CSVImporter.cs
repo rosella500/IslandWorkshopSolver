@@ -15,15 +15,14 @@ namespace IslandWorkshopSolver.Solver;
 
 public class CSVImporter
 {
-    public List<List<Item>> allEfficientChains;
     public PeakCycle[] lastWeekPeaks;
     public Popularity[] currentPopularity;
     public List<List<ObservedSupply>> observedSupplies;
+    public List<int> observedSupplyHours;
     public List<EndDaySummary> endDays;
     public PeakCycle[] currentPeaks;
     private string rootPath;
     private int currentWeek;
-    public int lastWroteHour;
     public CSVImporter(string root, int week)
     {
         lastWeekPeaks = new PeakCycle[Solver.items.Count];
@@ -33,7 +32,7 @@ public class CSVImporter
         endDays = new List<EndDaySummary>();
         rootPath = root;
         currentWeek = week;
-
+        observedSupplyHours = new List<int>();
         initSupplyData();
     }
 
@@ -49,7 +48,7 @@ public class CSVImporter
         Dalamud.Chat.Print("Starting to write a file to " + path);
         try
         {
-            string[] newFileContents = new string[products.Length];
+            string[] newFileContents = new string[products.Length+2];
             for (int itemIndex = 0; itemIndex < products.Length; itemIndex++)
             {
                 string[] productInfo = products[itemIndex].Split('\t');
@@ -59,6 +58,7 @@ public class CSVImporter
                     newFileContents[itemIndex] = productInfo[0] + "," + productInfo[1] + "," + productInfo[2] + "," + productInfo[3];
                 }
             }
+            newFileContents[products.Length + 1] = ",," + Solver.getCurrentHour();
 
             File.WriteAllLines(path, newFileContents);
         }
@@ -97,12 +97,11 @@ public class CSVImporter
             //itemName, popularity, supply, shift, supply, shift, etc.
 
             bool changedFile = false;
+            int column = 2 + (currentDay * 3);
             for (int itemIndex = 0; itemIndex < Solver.items.Count; itemIndex++)
             {
-                
                 string currentFileLine = fileInfo[itemIndex];
                 string[] fileItemInfo = currentFileLine.Split(',');
-                int column = 2 + (currentDay * 3);
                 if (fileItemInfo.Length == column) //We're ready for today's info
                 {
                     changedFile = true;
@@ -131,8 +130,39 @@ public class CSVImporter
             }
             if (changedFile)
             {
-                lastWroteHour = Solver.getCurrentHour();
-                File.WriteAllLines(path, fileInfo);
+                List<string> newFileInfo = new List<string>(fileInfo);
+                //Add summary line
+                int lastWroteHour = Solver.getCurrentHour();
+
+                if (Solver.items.Count >= newFileInfo.Count()) //Missing two summary rows
+                {
+                    newFileInfo.Add("");
+                    newFileInfo.Add("");
+                }
+                else if (Solver.items.Count + 1 >= newFileInfo.Count()) //Missing one summary row
+                    newFileInfo.Add("");
+
+                string summaryRow = newFileInfo[Solver.items.Count + 1];
+                string[] split = summaryRow.Split(',');
+                if (split.Length < column + 1)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append(summaryRow);
+                    int commasToAdd = column + 1 - split.Length;
+                    for (int i = 0; i < commasToAdd; i++)
+                        sb.Append(',');
+                    sb.Append(lastWroteHour);
+                    summaryRow = sb.ToString();
+                }
+                else
+                {
+                    split[column] = lastWroteHour.ToString();
+                    summaryRow = String.Join(',', split);
+                }
+                newFileInfo[Solver.items.Count + 1] = summaryRow;
+
+
+                File.WriteAllLines(path, newFileInfo);
                 initSupplyData();
             }
             else
@@ -417,6 +447,7 @@ public class CSVImporter
 
         observedSupplies.Clear();
         endDays.Clear();
+        observedSupplyHours.Clear();
 
         if (!File.Exists(path))
         {
@@ -460,16 +491,19 @@ public class CSVImporter
                         if(c > 0)
                         {
                             string craftsStr = "";
+                        string hourRecorded = "";
                             if(fileInfo.Length>row+1)
                             {
                                 string itemRow = fileInfo[row + 1];
                                 string[] itemValues = itemRow.Split(",");
+                                if (itemValues.Length > c)
+                                    hourRecorded = itemValues[c];
                                 if(itemValues.Length > c+2)
                                 {
                                     craftsStr = itemValues[c + 2];
                                 }
                             }
-                            addSummaryValues(numCrafted, data1, data2, data3, craftsStr);
+                            addSummaryValues(numCrafted, data1, data2, data3, hourRecorded, craftsStr);
                         }
 
                         continue;
@@ -539,12 +573,13 @@ public class CSVImporter
         
     }
 
-    private void addSummaryValues(List<int> crafted, string data1, string data2, string data3, string craftsStr)
+    private void addSummaryValues(List<int> crafted, string data1, string data2, string data3, string hourRecorded, string craftsStr)
     {
         //Dalamud.Chat.Print("Adding summary row of " + data1 + ", " + data2 + ", " + data3 + ", and " + craftsStr);
         int.TryParse(data1, out int groove);
         int.TryParse(data2, out int gross);
         int.TryParse(data3, out int net);
+        int.TryParse(hourRecorded, out int currentHour);
         string[] items = craftsStr.Split(";");
         List<Item> schedule = new List<Item>();
         foreach (var itemStr in items)
@@ -553,7 +588,7 @@ public class CSVImporter
             schedule.Add(item);
         }
         endDays.Add(new EndDaySummary(crafted, groove, gross, net, schedule));
-
+        observedSupplyHours.Add(currentHour);
     }
 
     public string getPathForWeek(int week)

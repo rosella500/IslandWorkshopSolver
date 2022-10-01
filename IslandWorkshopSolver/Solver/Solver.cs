@@ -718,10 +718,13 @@ public class Solver
 
         for (int i = 0; i < importer.observedSupplies.Count; i++)
         {
-            if (day < importer.observedSupplies[i].Count)
+            if (day < importer.observedSupplies[i].Count && day < 4)
             {
                 ObservedSupply ob = importer.observedSupplies[i][day];
-                items[i].addObservedDay(ob, day, importer.lastWroteHour);
+                int observedHour = 0;
+                if (importer.observedSupplyHours.Count > day)
+                    observedHour = importer.observedSupplyHours[day];
+                items[i].addObservedDay(ob, day, observedHour);
             }
             if (hasDaySummary && importer.endDays[day].craftedItems() > i)
                 items[i].setCrafted(importer.endDays[day].getCrafted(i), day);
@@ -798,7 +801,6 @@ public class Solver
 
         TimeSpan timeSinceStart = (current - startOfIS);
         int week = timeSinceStart.Days / 7 + 1;
-        int day = timeSinceStart.Days % 7;
 
         //Dalamud.Chat.Print("Current week: " + week + " day: " + day);
 
@@ -819,7 +821,6 @@ public class Solver
         DateTime startOfIS = new DateTime(2022, 8, 23, 8, 0, 0, DateTimeKind.Utc);
         DateTime current = DateTime.UtcNow;
         TimeSpan timeSinceStart = (current - startOfIS);
-        Dalamud.Chat.Print("Hours since 4am EDT: "+timeSinceStart.Hours);
         return timeSinceStart.Hours;
     }
 

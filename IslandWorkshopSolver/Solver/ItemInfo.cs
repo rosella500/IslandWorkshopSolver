@@ -98,19 +98,6 @@ public class ItemInfo
     }
 
     //Set start-of-week data
-    public void setInitialData(Popularity pop, PeakCycle prevPeak)
-    {
-        setInitialData(pop, prevPeak, Sufficient, None);
-    }
-    public void setInitialData(Popularity pop, PeakCycle prevPeak, DemandShift startingDemand)
-    {
-        setInitialData(pop, prevPeak, Insufficient, startingDemand);
-    }
-    public void setInitialData(Popularity pop, PeakCycle prevPeak, Supply startingSupply, DemandShift startingDemand)
-    {
-        setInitialData(pop, prevPeak, new ObservedSupply(startingSupply, startingDemand));
-    }
-
     public void setInitialData(Popularity pop, PeakCycle prev, ObservedSupply ob)
     {
         popularity = pop;
@@ -168,7 +155,7 @@ public class ItemInfo
             else if (observedSupplies.Count > 1)
             {
                 int day = 1;
-                if (day == Solver.currentDay && Solver.importer.endDays.Count > day)
+                if (Solver.importer.endDays.Count > day)
                 {
                     currentDaySchedule = new CycleSchedule(day, 0);
                     currentDaySchedule.setForAllWorkshops(Solver.importer.endDays[day].crafts);
@@ -216,7 +203,7 @@ public class ItemInfo
             int daysToCheck = Math.Min(4, observedSupplies.Count);
             for (int day = 1; day < daysToCheck; day++)
             {
-                if (day == Solver.currentDay && Solver.importer.endDays.Count > day)
+                if (Solver.importer.endDays.Count > day)
                 {
                     currentDaySchedule = new CycleSchedule(day, 0);
                     currentDaySchedule.setForAllWorkshops(Solver.importer.endDays[day].crafts);
