@@ -132,11 +132,14 @@ public class MainWindow : Window, IDisposable
                 }
             }
             ImGui.SameLine(100);
-            ImGui.Text("Total Cowries this season: " + Solver.Solver.totalGross);
+            string totalCowries = "Total cowries this season: " + Solver.Solver.totalGross;
+            if (config.showNetCowries)
+                totalCowries += " (" + Solver.Solver.totalNet + " net)";
+            ImGui.Text(totalCowries);
 
             ImGui.GetContentRegionAvail();
-            ImGui.SameLine(ImGui.GetContentRegionAvail().X - 50);
-            if (ImGui.Button("Settings"))
+            ImGui.SameLine(ImGui.GetContentRegionAvail().X - 40);
+            if (ImGui.Button("Config"))
             {
                 Plugin.DrawConfigUI();
             }

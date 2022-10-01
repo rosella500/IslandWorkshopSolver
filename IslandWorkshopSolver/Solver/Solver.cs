@@ -16,7 +16,7 @@ public class Solver
     public static List<ItemInfo> items;
 
     public static int totalGross;
-    private static int totalNet;
+    public static int totalNet;
     public static bool rested;
 
     public static int groovePerFullDay = 40;

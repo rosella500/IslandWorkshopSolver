@@ -68,7 +68,26 @@ public class ConfigWindow : Window, IDisposable
             Configuration.materialValue = matWeight;
             Configuration.Save();
         }
-        
+        if(ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Material weight is how much you care about the sale price of rare mats." +
+                "\n1 means \"I sell all excess mats and care about total cowries.\"" +
+                "\n0 means \"I only care about getting the highest workshop revenue.\"" +
+                "\n0.5 is a nice balance. Ctrl + click to type an exact value");
+        }
+        ImGui.Spacing();
+        bool showNet = Configuration.showNetCowries;
+        if (ImGui.Checkbox("Show net cowries", ref showNet))
+        {
+            Configuration.showNetCowries = showNet;
+            Configuration.Save();
+        }
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Net cowries is workshop revenue minus the value you would've gotten from exporting rare materials directly");
+        }
+
+
         if (Configuration.day == 0 && Configuration.unknownD2Items != null)
         {
             ImGui.Spacing();
