@@ -23,6 +23,7 @@ public class CSVImporter
     public PeakCycle[] currentPeaks;
     private string rootPath;
     private int currentWeek;
+    public int lastWroteHour;
     public CSVImporter(string root, int week)
     {
         lastWeekPeaks = new PeakCycle[Solver.items.Count];
@@ -130,6 +131,7 @@ public class CSVImporter
             }
             if (changedFile)
             {
+                lastWroteHour = Solver.getCurrentHour();
                 File.WriteAllLines(path, fileInfo);
                 initSupplyData();
             }
@@ -180,6 +182,8 @@ public class CSVImporter
                             sb.Append(",");
 
                         sb.Append(Solver.items[c].craftedPerDay[day]);
+                        /*if (Solver.items[c].craftedPerDay[day] > 0)
+                            Dalamud.Chat.Print("Adding " + Solver.items[c].craftedPerDay[day] + "x " + Solver.items[c].item + " to end day summary");*/
                         updated.Add(sb.ToString());
                     }
                     else
@@ -418,9 +422,7 @@ public class CSVImporter
         {
             Dalamud.Chat.PrintError("No file found with observed data at " + path);
             return;
-        }
-        //Dalamud.Chat.Print("Starting to read file at " + path);
-        
+        }     
 
        
             string[] fileInfo = File.ReadAllLines(path);

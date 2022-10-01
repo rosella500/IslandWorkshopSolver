@@ -115,21 +115,16 @@ public class ItemInfo
     {
         popularity = pop;
         previousPeak = prev;
-        addObservedDay(ob, 0);
+        addObservedDay(ob, 0, 0);
     }
 
-    public void addObservedDay(Supply supply, DemandShift demand, int day)
-    {
-        addObservedDay(new ObservedSupply(supply, demand), day);
-    }
-
-    public void addObservedDay(ObservedSupply ob, int day)
+    public void addObservedDay(ObservedSupply ob, int day, int hour)
     {
         if (observedSupplies.Count > day)
             observedSupplies[day] = ob;
         else
             observedSupplies.Add(ob);
-        setPeakBasedOnObserved();
+        setPeakBasedOnObserved(hour);
     }
 
     public void setCrafted(int num, int day)
@@ -146,10 +141,13 @@ public class ItemInfo
         return sum;
     }
 
-    private void setPeakBasedOnObserved()
+    private void setPeakBasedOnObserved(int currentHour)
     {
         if (peak.IsTerminal() && peak != Cycle2Weak)
             return;
+
+        CycleSchedule? currentDaySchedule = null;
+
         if (observedSupplies[0].supply == Insufficient)
         {
             DemandShift observedDemand = observedSupplies[0].demandShift;
@@ -169,19 +167,38 @@ public class ItemInfo
             }
             else if (observedSupplies.Count > 1)
             {
-                DemandShift observedDemand2 = observedSupplies[1].demandShift;
-                if (observedDemand2 == Skyrocketing)
+                int day = 1;
+                if (day == Solver.currentDay && Solver.importer.endDays.Count > day)
                 {
-                    peak = Cycle2Strong;
-                    return;
+                    currentDaySchedule = new CycleSchedule(day, 0);
+                    currentDaySchedule.setForAllWorkshops(Solver.importer.endDays[day].crafts);
+
                 }
-                else if (observedDemand2 == Increasing)
+
+                int craftedToday = currentDaySchedule == null ? 0 : currentDaySchedule.getCraftedBeforeHour(item, currentHour);
+                int weakPrevious = getSupplyOnDayByPeak(Cycle2Weak, day - 1);
+                int weakSupply = getSupplyOnDayByPeak(Cycle2Weak, day) + craftedToday;
+                ObservedSupply expectedWeak = new ObservedSupply(getSupplyBucket(weakSupply),
+                        getDemandShift(weakPrevious, weakSupply));
+
+                if (observedSupplies[day].Equals(expectedWeak))
                 {
                     peak = Cycle2Weak;
                     return;
                 }
+
+                int strongPrevious = getSupplyOnDayByPeak(Cycle2Strong, day - 1);
+                int strongSupply = getSupplyOnDayByPeak(Cycle2Strong, day) + craftedToday;
+                ObservedSupply expectedStrong = new ObservedSupply(getSupplyBucket(strongSupply),
+                        getDemandShift(strongPrevious, strongSupply));
+
+                if (observedSupplies[day].Equals(expectedStrong))
+                {
+                    peak = Cycle2Strong;
+                    return;
+                }
                 else
-                    Dalamud.Chat.Print(item + " does not match any known demand shifts for day 2: "+observedDemand2);
+                    Dalamud.Chat.Print(item + " does not match any known demand shifts for day 2: " + observedSupplies[1]);
             }
             else
             {
@@ -199,18 +216,25 @@ public class ItemInfo
             int daysToCheck = Math.Min(4, observedSupplies.Count);
             for (int day = 1; day < daysToCheck; day++)
             {
+                if (day == Solver.currentDay && Solver.importer.endDays.Count > day)
+                {
+                    currentDaySchedule = new CycleSchedule(day, 0);
+                    currentDaySchedule.setForAllWorkshops(Solver.importer.endDays[day].crafts);
+                }
+
                 ObservedSupply observedToday = observedSupplies[day];
                 if (Solver.verboseCalculatorLogging)
                     Dalamud.Chat.Print(item + " observed: " + observedToday);
-                int crafted = getCraftedBeforeDay(day);
+                int craftedPreviously = getCraftedBeforeDay(day);
+                int craftedToday = currentDaySchedule == null? 0 : currentDaySchedule.getCraftedBeforeHour(item, currentHour);
                 bool found = false;
 
                 for (int i = 0; i < PEAKS_TO_CHECK[day - 1].Length; i++)
                 {
                     PeakCycle potentialPeak = PEAKS_TO_CHECK[day - 1][i];
                     int expectedPrevious = getSupplyOnDayByPeak(potentialPeak, day - 1);
-                    int expectedSupply = getSupplyOnDayByPeak(potentialPeak, day);
-                    ObservedSupply expectedObservation = new ObservedSupply(getSupplyBucket(crafted + expectedSupply),
+                    int expectedSupply = getSupplyOnDayByPeak(potentialPeak, day) + craftedToday;
+                    ObservedSupply expectedObservation = new ObservedSupply(getSupplyBucket(craftedPreviously + expectedSupply),
                             getDemandShift(expectedPrevious, expectedSupply));
                     if (Solver.verboseCalculatorLogging)
                         Dalamud.Chat.Print("Checking against peak " + potentialPeak + ", expecting: " + expectedObservation);

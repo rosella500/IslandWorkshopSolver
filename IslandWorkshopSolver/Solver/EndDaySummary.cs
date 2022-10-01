@@ -10,8 +10,8 @@ public class EndDaySummary
 {
     private List<int> numCrafted;
     public int endingGroove { get; private set; }
-    public int endingGross { get; private set; }
-    public int endingNet { get; private set; }  
+    public int endingGross { get; set; }
+    public int endingNet { get; set; }  
 
     public List<Item> crafts { get; private set; }
     public List<int> valuesPerCraft { get; set; }

@@ -83,28 +83,52 @@ public class MainWindow : Window, IDisposable
         return sb.ToString();
     }
 
+    private void AddNewSuggestions(List<(int day, SuggestedSchedules? sch)>? schedules)
+    {
+        for (int c = 0; c < selectedSchedules.Length; c++)
+            selectedSchedules[c] = -1;
+
+        if (schedules != null)
+        {
+            foreach (var schedule in schedules)
+            {
+                scheduleSuggestions.Remove(schedule.day);
+                scheduleSuggestions.Add(schedule.day, schedule.sch);
+            }
+        }
+
+        foreach (var schedule in scheduleSuggestions)
+        {
+            int day = schedule.Key;
+            if (Solver.Solver.schedulesPerDay.ContainsKey(day) && schedule.Value != null)
+            {
+                int i = 0;
+                foreach (var suggestion in schedule.Value.orderedSuggestions)
+                {
+                    if (suggestion.Key.hasSameCrafts(Solver.Solver.schedulesPerDay[day].schedule.workshops[0]))
+                    {
+                        selectedSchedules[day] = i;
+                        break;
+                    }
+                    i++;
+                }
+            }
+        }
+    }
+
     public override void Draw()
     {
         try
         {
-
             if (ImGui.Button("Run Solver"))
             {
                 //Dalamud.Chat.Print("Hitting button, "+rootPath);
-                for (int c = 0; c < selectedSchedules.Length; c++)
-                    selectedSchedules[c] = -1;
+                
                 try
                 {
                     Solver.Solver.Init(config);
                     List<(int day, SuggestedSchedules? sch)>? schedules = Solver.Solver.RunSolver();
-                    if (schedules != null)
-                    {
-                        foreach (var schedule in schedules)
-                        {
-                            scheduleSuggestions.Remove(schedule.day);
-                            scheduleSuggestions.Add(schedule.day, schedule.sch);
-                        }
-                    }
+                    AddNewSuggestions(schedules);
 
                 }
                 catch (Exception e)
@@ -114,8 +138,9 @@ public class MainWindow : Window, IDisposable
             }
             ImGui.SameLine(100);
             ImGui.Text("Total Cowries this season: " + Solver.Solver.totalGross);
-            
-            ImGui.SameLine(ImGui.GetWindowWidth() - 60);
+
+            ImGui.GetContentRegionAvail();
+            ImGui.SameLine(ImGui.GetContentRegionAvail().X - 50);
             if (ImGui.Button("Settings"))
             {
                 Plugin.DrawConfigUI();
@@ -151,7 +176,8 @@ public class MainWindow : Window, IDisposable
                                     ImGui.TableSetColumnIndex(column++);
                                     ImGui.Text((i==0?3:6).ToString()); //I'm just hard-coding in that these are efficient, idgaf
                                     ImGui.TableSetColumnIndex(column++);
-                                    ImGui.Text(endDaySummaries[day].valuesPerCraft[i].ToString());
+                                    if(i < endDaySummaries[day].valuesPerCraft.Count)
+                                        ImGui.Text(endDaySummaries[day].valuesPerCraft[i].ToString());
                                 }
                                 ImGui.EndTable();
                                 ImGui.Spacing();
@@ -200,6 +226,8 @@ public class MainWindow : Window, IDisposable
                                         if (ImGui.RadioButton("##" + (i + 1), ref selectedSchedules[day], i))
                                         {
                                             Solver.Solver.setDay(suggestion.Key.getItems(), day);
+                                            if (scheduleSuggestions.Count > 1) //If we have multiple days, committing to this probably changed something
+                                                AddNewSuggestions(Solver.Solver.calculateLastDays());
                                         }
                                         ImGui.TableSetColumnIndex(column++);
                                         ImGui.Text(suggestion.Value.ToString());
@@ -220,6 +248,7 @@ public class MainWindow : Window, IDisposable
                         }
                     }
                 }
+
                 ImGui.EndTabBar();
                 ImGui.Separator();
             }

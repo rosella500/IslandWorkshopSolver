@@ -12,7 +12,7 @@ public class CycleSchedule
     private int day;
     public int startingGroove { get; set; }
     public int endingGroove { get; private set; }
-    WorkshopSchedule[] workshops = new WorkshopSchedule[3];
+    public WorkshopSchedule[] workshops = new WorkshopSchedule[3];
     public Dictionary<Item, int> numCrafted { get; private set; }
 
     public List<int> cowriesPerHour { get; private set; }
@@ -111,6 +111,32 @@ public class CycleSchedule
        
        return totalCowries;
        
+    }
+
+    public int getCraftedBeforeHour(Item item, int currentHour)
+    {
+        for (int i = 0; i < workshops.Length; i++)
+            workshops[i].currentIndex = 0;
+
+        int totalCrafted = 0;
+        for (int hour = 4; hour <= currentHour; hour += 2) //Nothing can finish until hour 4
+        {
+            for (int i = 0; i < workshops.Length; i++)
+            {
+                if (workshops[i].currentCraftCompleted(hour))
+                {
+                    ItemInfo? completedCraft = workshops[i].getCurrentCraft();
+                    if (completedCraft == null)
+                        continue;
+                    if(completedCraft.item == item)
+                        totalCrafted += (workshops[i].currentCraftIsEfficient() ? 2 : 1);
+
+                   
+                    workshops[i].currentIndex++;
+                }
+            }
+        }
+        return totalCrafted;
     }
 
     public bool hasAnyUnsurePeaks()

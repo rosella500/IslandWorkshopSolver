@@ -73,6 +73,19 @@ public class WorkshopSchedule
         return crafts.Count;
     }
 
+    public bool hasSameCrafts(WorkshopSchedule other)
+    {
+        if (other.crafts.Count != crafts.Count)
+            return false;
+
+        for(int c=0;c<crafts.Count; c++)
+        {
+            if (crafts[c].item != other.crafts[c].item)
+                return false;
+        }
+        return true;
+    }
+
     public List<Item> getItems()
     {
         return items;
