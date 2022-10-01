@@ -71,7 +71,7 @@ public class ConfigWindow : Window, IDisposable
         if(ImGui.IsItemHovered())
         {
             ImGui.SetTooltip("Material weight is how much you care about the sale price of rare mats." +
-                "\n1 means \"I sell all excess mats and care about total cowries.\"" +
+                "\n1 means \"I sell all excess mats and only care about total cowries.\"" +
                 "\n0 means \"I only care about getting the highest workshop revenue.\"" +
                 "\n0.5 is a nice balance. Ctrl + click to type an exact value");
         }
