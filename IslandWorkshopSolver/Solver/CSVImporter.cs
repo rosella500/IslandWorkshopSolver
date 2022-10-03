@@ -11,7 +11,7 @@ public class CSVImporter
 {
     public PeakCycle[] lastWeekPeaks;
     public Popularity[] currentPopularity;
-    public List<List<ObservedSupply>> observedSupplies;
+    public List<Dictionary<int,ObservedSupply>> observedSupplies;
     public List<int> observedSupplyHours;
     public List<EndDaySummary> endDays;
     public PeakCycle[] currentPeaks;
@@ -22,7 +22,7 @@ public class CSVImporter
         lastWeekPeaks = new PeakCycle[Solver.items.Count];
         currentPopularity = new Popularity[Solver.items.Count];
         currentPeaks = new PeakCycle[Solver.items.Count];
-        observedSupplies = new List<List<ObservedSupply>>();
+        observedSupplies = new List<Dictionary<int, ObservedSupply>>();
         endDays = new List<EndDaySummary>();
         rootPath = root;
         currentWeek = week;
@@ -49,10 +49,10 @@ public class CSVImporter
 
                 if (productInfo.Length >= 4)
                 {
-                    newFileContents[itemIndex] = productInfo[0] + "," + productInfo[1] + "," + productInfo[2] + "," + productInfo[3];
+                    newFileContents[itemIndex] = productInfo[0] + "," + productInfo[1] ;
+                    parsePopularity(itemIndex, productInfo[1]);
                 }
             }
-            newFileContents[products.Length + 1] = ",," + Solver.getCurrentHour();
 
             File.WriteAllLines(path, newFileContents);
         }
@@ -71,7 +71,7 @@ public class CSVImporter
 
     public bool needNewTodayData(int currentDay)
     {
-        return observedSupplies[0].Count <= currentDay;
+        return observedSupplies.Count == 0 || !observedSupplies[0].ContainsKey(currentDay);
     }
 
     public void writeNewSupply(string[] products, int currentDay)
@@ -94,14 +94,20 @@ public class CSVImporter
             {
                 string currentFileLine = fileInfo[itemIndex];
                 string[] fileItemInfo = currentFileLine.Split(',');
-                if (fileItemInfo.Length == column) //We're ready for today's info
+                if (fileItemInfo.Length < column + 1) //We're ready for today's info
                 {
                     changedFile = true;
                     string[] productInfo = products[itemIndex].Split('\t');
                     if (productInfo.Length >= 4)
                     {
-                        currentFileLine = currentFileLine + "," + productInfo[2] + "," + productInfo[3];
-                        fileInfo[itemIndex] = currentFileLine;
+                        StringBuilder sb = new StringBuilder();
+                        sb.Append(currentFileLine);
+                        int commasToAdd = column + 1 - fileItemInfo.Length;
+                        for (int i = 0; i < commasToAdd; i++)
+                            sb.Append(',');
+                        sb.Append(productInfo[2]).Append(',').Append(productInfo[3]);
+                        fileInfo[itemIndex] = sb.ToString();
+                        parseObservedSupply(itemIndex, currentDay, productInfo[2], productInfo[3]);
                     }
                 }
                 else if (fileItemInfo.Length > column+1 && fileItemInfo[column].Length == 0)
@@ -113,6 +119,7 @@ public class CSVImporter
                         fileItemInfo[column] = productInfo[2];
                         fileItemInfo[column + 1] = productInfo[3];
                         fileInfo[itemIndex] = String.Join(",",fileItemInfo);
+                        parseObservedSupply(itemIndex, currentDay, productInfo[2], productInfo[3]);
                     }
                 }
                 else
@@ -125,6 +132,8 @@ public class CSVImporter
                 List<string> newFileInfo = new List<string>(fileInfo);
                 //Add summary line
                 int lastWroteHour = Solver.getCurrentHour();
+                while (observedSupplyHours.Count <= currentDay)
+                    observedSupplyHours.Add(lastWroteHour);
 
                 if (Solver.items.Count >= newFileInfo.Count()) //Missing two summary rows
                 {
@@ -153,9 +162,7 @@ public class CSVImporter
                 }
                 newFileInfo[Solver.items.Count + 1] = summaryRow;
 
-
                 File.WriteAllLines(path, newFileInfo);
-                initSupplyData();
             }
             else
             {
@@ -336,9 +343,18 @@ public class CSVImporter
         }
 
     }
+    public bool needCurrentPeaks()
+    {
+        foreach (var peak in currentPeaks)
+            if (peak != PeakCycle.Unknown)
+                return false;
+
+        return true;
+
+    }
     public void writeCurrentPeaks(int week)
     {
-        string path = rootPath +"\\Week" + (week) + "Supply.csv";
+        string path = rootPath + "\\Week" + (week) + "Supply.csv";
 
         if (!File.Exists(path))
         {
@@ -354,6 +370,7 @@ public class CSVImporter
 
             for (int c = 0; c < currentPeaks.Length; c++)
             {
+                currentPeaks[c] = Solver.items[c].peak;
                 string orig = original[c];
                 string[] split = orig.Split(",");
                 if (split.Length < 21)
@@ -387,22 +404,13 @@ public class CSVImporter
 
     }
 
-    public void initSupplyData() 
+    public void initSupplyData()
     {
         string path = getPathForWeek(currentWeek - 1);
-        PluginLog.LogDebug("Looking for file at " + path);
-
-        if (currentWeek > 1)
+        if (currentWeek > 1 && File.Exists(path))
         {
-            if (!File.Exists(path))
-            {
-                PluginLog.LogError("No file found with old peak data at " + path);
-                return;
-            }
-
-            
             string[] fileInfoOld = File.ReadAllLines(path);
-            for(int c=0; c<Solver.items.Count; c++)
+            for (int c = 0; c < Solver.items.Count; c++)
             {
                 string line = fileInfoOld[c];
 
@@ -410,25 +418,13 @@ public class CSVImporter
 
                 if (values.Length > 20)
                 {
-                    string peak = values[20].Replace(" ", "");
-
-                    PeakCycle peakEnum = Enum.Parse<PeakCycle>(peak);
-                    //PluginLog.LogDebug("Last week's peak: " + peak);
-                    lastWeekPeaks[c] = peakEnum;
+                    parsePeak(c, values[20], lastWeekPeaks);
                 }
             }
-            
         }
         else
         {
-            for (int c = 0; c < lastWeekPeaks.Length; c++)
-            {
-                lastWeekPeaks[c] = PeakCycle.Cycle2Weak;
-            }
-            lastWeekPeaks[(int)Item.Barbut] = PeakCycle.Cycle7Strong;
-            lastWeekPeaks[(int)Item.Tunic] = PeakCycle.Cycle7Strong;
-            lastWeekPeaks[(int)Item.Brush] = PeakCycle.Cycle3Strong;
-
+            PluginLog.LogWarning("No file found with old peak data at " + path + ". Day 2 prediction is going to be less accurate.");
         }
 
         path = getPathForWeek(currentWeek);
@@ -441,128 +437,138 @@ public class CSVImporter
         {
             PluginLog.LogError("No file found with observed data at " + path);
             return;
-        }     
+        }
 
-       
-            string[] fileInfo = File.ReadAllLines(path);
-            
-            for (int c = 0; c <= 20; c += 3)
+
+        string[] fileInfo = File.ReadAllLines(path);
+        PluginLog.LogDebug("Reading file at {0} with {1} lines", path, fileInfo.Length);
+
+        for (int c = 0; c <= 20; c += 3)
+        {
+            if (c == 3)
+                c--;
+            List<int> numCrafted = new List<int>();
+            for (int row = 0; row <= Solver.items.Count && row < fileInfo.Length; row++)
             {
-                if (c == 3)
-                    c--;
-                List<int> numCrafted = new List<int>();
-                for (int row = 0; row <= Solver.items.Count && row <fileInfo.Length; row++)
+                string line = fileInfo[row];
+                string[] values = line.Split(",");
+
+                string data1 = "";
+                string data2 = "";
+                string data3 = "";
+                if (c < values.Length)
+                    data1 = values[c];
+                if (c + 1 < values.Length)
+                    data2 = values[c + 1];
+                if (c + 2 < values.Length)
+                    data3 = values[c + 2];
+
+                bool parseAsSummary = row == Solver.items.Count;
+                //PluginLog.LogDebug("Parsing column " + c + " d1: " + data1 + " d2: " + data2 + " d3: " + data3 + " summary: " + parseAsSummary);
+
+
+                if (row == Solver.items.Count) //Summary row
                 {
-                    string line = fileInfo[row];
-                    string[] values = line.Split(",");
-                    if(values.Length <= c) //This can happen with summary rows
+                    //PluginLog.LogDebug("Found first summary row, looking at column {0} ", c);
+                    if (c > 0)
                     {
-                        continue;
-                    }
-                   
-                    
-                    string data1 = values[c];
-                    string data2 = "";
-                    string data3 = "";
-                    if (c + 1 < values.Length)
-                        data2 = values[c + 1];
-                    if (c + 2 < values.Length)
-                        data3 = values[c + 2];
-
-                    bool parseAsSummary = row == Solver.items.Count;
-                    //PluginLog.LogDebug("Parsing column " + c+" d1: "+data1+" d2: "+data2+" d3: "+data3 +" summary: "+parseAsSummary);
-
-
-                    if (row == Solver.items.Count) //Summary row
-                    {
-                        if(c > 0)
-                        {
-                            string craftsStr = "";
+                        string craftsStr = "";
                         string hourRecorded = "";
-                            if(fileInfo.Length>row+1)
+
+                        if (fileInfo.Length > row + 1)
+                        {
+                            string itemRow = fileInfo[row + 1];
+
+                            string[] itemValues = itemRow.Split(",");
+                            if (itemValues.Length > c)
+                                hourRecorded = itemValues[c];
+                            if (itemValues.Length > c + 2)
                             {
-                                string itemRow = fileInfo[row + 1];
-                                string[] itemValues = itemRow.Split(",");
-                                if (itemValues.Length > c)
-                                    hourRecorded = itemValues[c];
-                                if(itemValues.Length > c+2)
-                                {
-                                    craftsStr = itemValues[c + 2];
-                                }
+                                craftsStr = itemValues[c + 2];
                             }
-                            addSummaryValues(numCrafted, data1, data2, data3, hourRecorded, craftsStr);
                         }
-
-                        continue;
+                        addSummaryValues(numCrafted, data1, data2, data3, hourRecorded, craftsStr);
                     }
 
-                    switch (c)
-                    {
-                        case 0:
-                            data2 = data2.Replace(" ", "");
-                            Enum.TryParse(data2, out Popularity pop);
-                            currentPopularity[row] = pop;
-                            break;
-                        case 2:
-                            if(Enum.TryParse(data1, out Supply supp1) && Enum.TryParse(data2, out DemandShift demand1))
-                            {
-                                ObservedSupply ob = new ObservedSupply(supp1, demand1);
-                                observedSupplies.Add(new List<ObservedSupply>());
-                                observedSupplies[row].Add(ob);
-                            }                            
-                            int.TryParse(data3, out int crafted1);
-                            numCrafted.Add(crafted1);
-                            break;
-                        case 5:
-                        if(Enum.TryParse(data1, out Supply supp2) && Enum.TryParse(data2, out DemandShift demand2))
-                        {
-                            ObservedSupply ob = new ObservedSupply(supp2, demand2);
-                            observedSupplies[row].Add(ob);
-                        }
-                            
-                            int.TryParse(data3, out int crafted2);
-                            numCrafted.Add(crafted2);
-                            break;
-                        case 8:
-                        if (Enum.TryParse(data1, out Supply supp3) && Enum.TryParse(data2, out DemandShift demand3))
-                        {
-                            ObservedSupply ob = new ObservedSupply(supp3, demand3);
-                            observedSupplies[row].Add(ob);
-                        }
+                    continue;
+                }
+
+                switch (c)
+                {
+                    case 0:
+                        parsePopularity(row, data2);
+                        break;
+                    case 2:
+                        parseObservedSupply(row, 0, data1, data2);
+                        int.TryParse(data3, out int crafted1);
+                        numCrafted.Add(crafted1);
+                        break;
+                    case 5:
+                        parseObservedSupply(row, 1, data1, data2);
+
+                        int.TryParse(data3, out int crafted2);
+                        numCrafted.Add(crafted2);
+                        break;
+                    case 8:
+                        parseObservedSupply(row, 2, data1, data2);
                         int.TryParse(data3, out int crafted3);
-                            numCrafted.Add(crafted3);
-                            break;
-                        case 11:
-                        if (Enum.TryParse(data1, out Supply supp4) && Enum.TryParse(data2, out DemandShift demand4))
-                        {
-                            ObservedSupply ob = new ObservedSupply(supp4, demand4);
-                            observedSupplies[row].Add(ob);
-                        }
+                        numCrafted.Add(crafted3);
+                        break;
+                    case 11:
+                        parseObservedSupply(row, 3, data1, data2);
                         int.TryParse(data3, out int crafted4);
-                            numCrafted.Add(crafted4);
-                            break;
-                        case 14:
-                            int.TryParse(data3, out int crafted5);
-                            numCrafted.Add(crafted5);
-                            break;
-                        case 17:
-                            int.TryParse(data3, out int crafted6);
-                            numCrafted.Add(crafted6);
-                            break;
-                        case 20:
-                            data1 = data1.Replace(" ", "");
-                            Enum.TryParse(data1, out PeakCycle peak);
-                            currentPeaks[row] = peak;
-                            break;
-                    }
+                        numCrafted.Add(crafted4);
+                        break;
+                    case 14:
+                        parseObservedSupply(row, 4, data1, data2);
+                        int.TryParse(data3, out int crafted5);
+                        numCrafted.Add(crafted5);
+                        break;
+                    case 17:
+                        parseObservedSupply(row, 5, data1, data2);
+                        int.TryParse(data3, out int crafted6);
+                        numCrafted.Add(crafted6);
+                        break;
+                    case 20:
+                        parsePeak(row, data1, currentPeaks);
+                        break;
                 }
             }
-        
+        }
     }
+
+    private void parsePopularity(int index, string popularity)
+    {
+        popularity = popularity.Replace(" ", "");
+        if(Enum.TryParse(popularity, out Popularity pop))
+            currentPopularity[index] = pop;
+    }
+
+    private void parseObservedSupply(int index, int day, string supply, string demandShift)
+    {
+        while (observedSupplies.Count <= index)
+            observedSupplies.Add(new Dictionary<int, ObservedSupply>());
+        if (Enum.TryParse(supply, out Supply supp) && Enum.TryParse(demandShift, out DemandShift demand))
+        {
+            ObservedSupply ob = new ObservedSupply(supp, demand);
+            if(observedSupplies[index].ContainsKey(day))
+                observedSupplies[index][day] = ob;
+            else
+                observedSupplies[index].Add(day, ob);
+        }
+    }
+
+    private void parsePeak(int index, string peakStr, PeakCycle[] peaks)
+    {
+        peakStr = peakStr.Replace(" ", "");
+        if(Enum.TryParse(peakStr, out PeakCycle peak))
+        peaks[index] = peak;
+    }
+
 
     private void addSummaryValues(List<int> crafted, string data1, string data2, string data3, string hourRecorded, string craftsStr)
     {
-        PluginLog.LogDebug("Adding summary row of groove {0}, gross {1], net {2}, hourRecorded: {3}, and crafts {4}",
+        PluginLog.LogDebug("Adding summary row of groove {0}, gross {1}, net {2}, hourRecorded: {3}, and crafts {4}",
             data1, data2, data3, hourRecorded, craftsStr);
         int.TryParse(data1, out int groove);
         int.TryParse(data2, out int gross);
@@ -572,8 +578,8 @@ public class CSVImporter
         List<Item> schedule = new List<Item>();
         foreach (var itemStr in items)
         {
-            Enum.TryParse(itemStr, out Item item);
-            schedule.Add(item);
+            if(Enum.TryParse(itemStr, out Item item))
+                schedule.Add(item);
         }
         endDays.Add(new EndDaySummary(crafted, groove, gross, net, schedule));
         observedSupplyHours.Add(currentHour);

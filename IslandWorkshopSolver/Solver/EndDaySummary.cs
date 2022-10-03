@@ -24,17 +24,6 @@ public class EndDaySummary
     {
         return numCrafted[itemIndex];
     }
-
-    public int totalCraftedItems()
-    {
-        int sum = 0;
-        foreach(var item in numCrafted)
-        {
-            sum += item;
-        }
-        return sum;
-    }
-
     public int craftedItems()
     {
         return numCrafted.Count;

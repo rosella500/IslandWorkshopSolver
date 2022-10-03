@@ -157,7 +157,7 @@ public class MainWindow : Window, IDisposable
                             string title = "Crafted";
                             if (day == Solver.Solver.currentDay)
                                 title = "Scheduled";
-                            if (endDaySummaries[day].totalCraftedItems() > 0 && ImGui.BeginTable(title, 3))
+                            if (endDaySummaries[day].crafts.Count > 0 && ImGui.BeginTable(title, 3))
                             {
                                 ImGui.TableSetupColumn("Product", ImGuiTableColumnFlags.WidthFixed, 180);
                                 ImGui.TableSetupColumn("Qty.", ImGuiTableColumnFlags.WidthFixed, 100);

@@ -34,11 +34,13 @@ public class ItemInfo
             new int[]{0, -1, 8, 0, -7, -6, 0} //6/7
             };
 
-    static PeakCycle[][] PEAKS_TO_CHECK = new PeakCycle[3][]
+    static PeakCycle[][] PEAKS_TO_CHECK = new PeakCycle[5][]
     {
         new PeakCycle[]{Cycle3Weak, Cycle3Strong, Cycle67, Cycle45}, //Day2
         new PeakCycle[] {Cycle4Weak, Cycle4Strong, Cycle6Weak, Cycle5, Cycle67}, //Day3
-        new PeakCycle[] { Cycle5Weak, Cycle5Strong, Cycle6Strong, Cycle7Weak, Cycle7Strong} //Day4
+        new PeakCycle[] { Cycle5Weak, Cycle5Strong, Cycle6Strong, Cycle7Weak, Cycle7Strong}, //Day4
+        new PeakCycle[] { Cycle6Weak, Cycle6Strong, Cycle7Weak, Cycle7Strong}, //Day5 (remedial)
+        new PeakCycle[] { Cycle7Weak, Cycle7Strong} //Day6 (remedial)
     };
 
 //Constant info
@@ -55,7 +57,7 @@ public class ItemInfo
     public PeakCycle previousPeak { get; private set; }
     public PeakCycle peak { get; set; } //This should be a private set but I'm allowing it so I can test different peaks
     public int[] craftedPerDay { get; private set; }
-    private List<ObservedSupply> observedSupplies;
+    private Dictionary<int,ObservedSupply> observedSupplies;
     public int rankUnlocked { get; private set; }
 
     public ItemInfo(Item i, ItemCategory cat1, ItemCategory cat2, int value, int hours, int rank, Dictionary<RareMaterial, int>? mats)
@@ -69,7 +71,7 @@ public class ItemInfo
         materialValue = 0;
         rankUnlocked = rank;
         craftedPerDay = new int[7];
-        observedSupplies = new List<ObservedSupply>();
+        observedSupplies = new Dictionary<int, ObservedSupply>();
 
         if (mats != null)
         {
@@ -95,19 +97,19 @@ public class ItemInfo
     }
 
     //Set start-of-week data
-    public void setInitialData(Popularity pop, PeakCycle prev, ObservedSupply ob)
+    public void setInitialData(Popularity pop, PeakCycle prev)
     {
         popularity = pop;
         previousPeak = prev;
-        addObservedDay(ob, 0, 0);
     }
 
     public void addObservedDay(ObservedSupply ob, int day, int hour)
     {
-        if (observedSupplies.Count > day)
+        PluginLog.LogDebug("Found observed supply {0} for item {1} on day {2} hour {3}", ob, item, day+1, hour);
+        if (observedSupplies.ContainsKey(day))
             observedSupplies[day] = ob;
         else
-            observedSupplies.Add(ob);
+            observedSupplies.Add(day, ob);
         setPeakBasedOnObserved(hour);
     }
 
@@ -132,13 +134,23 @@ public class ItemInfo
 
         CycleSchedule? currentDaySchedule = null;
 
-        if (observedSupplies[0].supply == Insufficient)
+        if (observedSupplies.ContainsKey(0) && observedSupplies[0].supply == Insufficient)
         {
             DemandShift observedDemand = observedSupplies[0].demandShift;
 
-            if (previousPeak.IsReliable())
+            if(observedDemand == None)
             {
-                if (observedDemand == None || observedDemand == Skyrocketing)
+                peak = Cycle2Strong;
+                return;
+            }
+            else if(observedDemand == Increasing || observedDemand == Decreasing)
+            {
+                peak = Cycle2Weak;
+                return;
+            }
+            else if (previousPeak.IsReliable())
+            {
+                if (observedDemand == Skyrocketing)
                 {
                     peak = Cycle2Strong;
                     return;
@@ -149,7 +161,7 @@ public class ItemInfo
                     return;
                 }
             }
-            else if (observedSupplies.Count > 1)
+            else if (observedSupplies.ContainsKey(1))
             {
                 int day = 1;
                 if (Solver.importer.endDays.Count > day)
@@ -183,7 +195,7 @@ public class ItemInfo
                     return;
                 }
                 else
-                    PluginLog.LogWarning(item + " does not match any known demand shifts for day 2: " + observedSupplies[1]);
+                    PluginLog.LogWarning(item + " does not match any known demand shifts for day 2: " + observedSupplies[1] +" with "+craftedToday+" crafts.");
             }
             else
             {
@@ -192,19 +204,21 @@ public class ItemInfo
                 Solver.addUnknownD2(item);
             }
         }
-        else if (observedSupplies.Count > 1)
+        else 
         {
-            int daysToCheck = Math.Min(4, observedSupplies.Count);
-            for (int day = 1; day < daysToCheck; day++)
+            for (int day = 1; day < 6; day++)
             {
+                if (!observedSupplies.ContainsKey(day))
+                {
+                    continue;
+                }
                 if (Solver.importer.endDays.Count > day)
                 {
                     currentDaySchedule = new CycleSchedule(day, 0);
                     currentDaySchedule.setForAllWorkshops(Solver.importer.endDays[day].crafts);
                 }
-
                 ObservedSupply observedToday = observedSupplies[day];
-                PluginLog.LogDebug(item + " observed: " + observedToday);
+                PluginLog.LogDebug(item + " observed: " + observedToday+" on day "+(day+1));
                 int craftedPreviously = getCraftedBeforeDay(day);
                 int craftedToday = currentDaySchedule == null? 0 : currentDaySchedule.getCraftedBeforeHour(item, currentHour);
                 bool found = false;
@@ -229,20 +243,9 @@ public class ItemInfo
                 }
 
                 if (!found)
-                    PluginLog.LogWarning(item + " does not match any known patterns for day " + (day + 1));
+                    PluginLog.LogWarning(item + " does not match any known patterns for day " + (day + 1) + " with observed "+ observedSupplies[day] + " and " + craftedToday + " crafts.");
             }
         }
-    }
-
-    public int getValueWithSupply(Supply supply)
-    {
-        int workshopBase = baseValue * Solver.WORKSHOP_BONUS / 100;
-        return workshopBase * SupplyHelper.GetMultiplier(supply) * PopularityHelper.GetMultiplier(popularity) / 10000;
-    }
-
-    public int getSupplyAfterCraft(int day, int newCrafts)
-    {
-        return getSupplyOnDay(day) + newCrafts;
     }
 
     public int getSupplyOnDay(int day)
@@ -255,15 +258,6 @@ public class ItemInfo
         }
 
         return supply;
-    }
-
-    public Supply getSupplyBucketOnDay(int day)
-    {
-        return getSupplyBucket(getSupplyOnDay(day));
-    }
-    public Supply getSupplyBucketAfterCraft(int day, int newCrafts)
-    {
-        return getSupplyBucket(getSupplyAfterCraft(day, newCrafts));
     }
 
     public bool Equals(ItemInfo other)

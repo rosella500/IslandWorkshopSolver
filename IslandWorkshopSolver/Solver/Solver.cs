@@ -71,7 +71,7 @@ public class Solver
         int dayToSolve = currentDay + 1;
 
         setInitialFromCSV();
-        for (int i = 1; i < dayToSolve; i++)
+        for (int i = 0; i < dayToSolve; i++)
             setObservedFromCSV(i);
 
         for(int summary = 1; summary < importer.endDays.Count && summary <= currentDay; summary++)
@@ -147,7 +147,7 @@ public class Solver
         }
         else if (dayToSolve < 7)
         {
-            if (importer.currentPeaks == null || importer.currentPeaks[0] == Unknown)
+            if (importer.needCurrentPeaks())
                 importer.writeCurrentPeaks(week);
 
             if (dayToSolve == 4)
@@ -719,7 +719,7 @@ public class Solver
     {
         for (int i = 0; i < items.Count; i++)
         {
-            items[i].setInitialData(importer.currentPopularity[i], importer.lastWeekPeaks[i], importer.observedSupplies[i][0]);
+            items[i].setInitialData(importer.currentPopularity[i], importer.lastWeekPeaks[i]);
         }
     }
 
@@ -729,8 +729,9 @@ public class Solver
 
         for (int i = 0; i < importer.observedSupplies.Count; i++)
         {
-            if (day < importer.observedSupplies[i].Count && day < 4)
+            if (day < 6 && importer.observedSupplies[i].ContainsKey(day))
             {
+                
                 ObservedSupply ob = importer.observedSupplies[i][day];
                 int observedHour = 0;
                 if (importer.observedSupplyHours.Count > day)
@@ -739,6 +740,8 @@ public class Solver
             }
             if (hasDaySummary && importer.endDays[day].craftedItems() > i)
                 items[i].setCrafted(importer.endDays[day].getCrafted(i), day);
+            else
+                items[i].setCrafted(0, day);
         }
         
         if(hasDaySummary && importer.endDays[day].endingGross > -1)
@@ -846,7 +849,7 @@ public class Solver
         else if (initStep > 1)
             return true;
 
-        bool needToWrite = (currentDay == 0 && importer.needNewWeekData(getCurrentWeek())) || (currentDay > 0 && currentDay < 4 && importer.needNewTodayData(currentDay));
+        bool needToWrite = importer.needNewWeekData(getCurrentWeek()) || (currentDay < 6 && importer.needNewTodayData(currentDay));
         if (!needToWrite)
             return true;
 
@@ -854,11 +857,12 @@ public class Solver
         PluginLog.LogInformation("Trying to write supply info starting with " + products[0]);
         if (isProductsValid(products))
         {
-            if (currentDay == 0)
+            if (importer.needNewWeekData(getCurrentWeek()))
             {
                 importer.writeWeekStart(products);
             }
-            else
+            
+            if(importer.needNewTodayData(currentDay))
             {
                 importer.writeNewSupply(products, currentDay);
             }
