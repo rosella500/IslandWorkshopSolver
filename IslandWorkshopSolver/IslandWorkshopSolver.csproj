@@ -20,9 +20,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="..\Data\*.csv">
+    <Content Include="..\images\icon.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>false</Visible>
+      <TargetPath>images\icon.png</TargetPath>
     </Content>
   </ItemGroup>
 
