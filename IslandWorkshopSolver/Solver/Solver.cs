@@ -20,7 +20,7 @@ public class Solver
     public static bool rested;
 
     public static int groovePerFullDay = 40;
-    public static int groovePerPartDay = 15;
+    public static int groovePerPartDay = 20;
     private static int islandRank = 10;
     public static double materialWeight = 0.5;
     public static CSVImporter importer;
@@ -161,7 +161,7 @@ public class Solver
         }
         //Technically speaking we can log in on D7 but there's nothing we can really do
 
-        PluginLog.LogInformation("Took {0} ms to calculate suggestions for day {1}.", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time, dayToSolve+1);
+        PluginLog.LogInformation("Took {0} ms to calculate suggestions for day {1}. Suggestions length: {2}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time, dayToSolve+1, toReturn.Count);
 
         return toReturn;
 
@@ -348,7 +348,7 @@ public class Solver
     private static int getWorstFutureDay(KeyValuePair<WorkshopSchedule, int> rec, int day)
     {
         int worstInFuture = 99999;
-        //PluginLog.LogVerbose("Comparing d" + (day + 1) + " (" + rec.Value + ") to worst-case future days");
+        PluginLog.LogDebug("Comparing d" + (day + 1) + " (" + rec.Value + ") to worst-case future days");
         HashSet<Item> reservedSet = new HashSet<Item>(rec.Key.getItems());
         for (int d = day + 1; d < 7; d++)
         {
@@ -357,11 +357,17 @@ public class Solver
                 solution = getD5EV();
             else
                 solution = getBestSchedule(d, reservedSet, false);
-                //PluginLog.LogVerbose("Day " + (d + 1) + ", crafts: " + String.Join(", ", solution.Key.getItems()) + " value: " + solution.Value);
-            worstInFuture = Math.Min(worstInFuture, solution.Value);
-            reservedSet.UnionWith(solution.Key.getItems());
+
+            if(solution.Key!=null)
+            {
+
+                PluginLog.LogDebug("Day " + (d + 1) + ", crafts: " + String.Join(", ", solution.Key.getItems()) + " value: " + solution.Value);
+                worstInFuture = Math.Min(worstInFuture, solution.Value);
+                reservedSet.UnionWith(solution.Key.getItems());
+            }
+
         }
-            //PluginLog.LogVerbose("Worst future day: " + worstInFuture);
+            PluginLog.LogDebug("Worst future day: " + worstInFuture);
 
         return worstInFuture;
     }

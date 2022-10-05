@@ -224,7 +224,9 @@ public class MainWindow : Window, IDisposable
                                         if (ImGui.RadioButton("##" + (i + 1), ref selectedSchedules[day], i))
                                         {
                                             Solver.Solver.setDay(suggestion.Key.getItems(), day);
-                                            if (scheduleSuggestions.Count > 1) //If we have multiple days, committing to this probably changed something
+                                            if (Solver.Solver.currentDay == 3) //If we're on day 4, we're calculating for 5, 6 and 7
+                                                AddNewSuggestions(Solver.Solver.calculateLastThreeDays());
+                                            else if(Solver.Solver.currentDay == 4) //If we're on day 5, we're calculating for 6 and 7
                                                 AddNewSuggestions(Solver.Solver.calculateLastTwoDays());
                                         }
                                         ImGui.TableSetColumnIndex(column++);

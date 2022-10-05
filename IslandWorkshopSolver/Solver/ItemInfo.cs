@@ -16,7 +16,7 @@ public class ItemInfo
     //Contains exact supply values for concrete paths and worst-case supply values for tentative ones
     static int[][] SUPPLY_PATH = new int[16][]
     { 
-        new int[]{0, 0, 0, 0, 0, 0, 0}, //Unknown
+        new int[]{0, 0, -6, 0, 0, 0, 0}, //Unknown
             new int[]{-4, -4, 10, 0, 0, 0, 0}, //Cycle2Weak 
             new int[]{-8, -7, 15, 0, 0, 0, 0}, //Cycle2Strong
             new int[]{0, -4, -4, 10, 0, 0, 0}, //Cycle3Weak
@@ -105,7 +105,7 @@ public class ItemInfo
 
     public void addObservedDay(ObservedSupply ob, int day, int hour)
     {
-        PluginLog.LogDebug("Found observed supply {0} for item {1} on day {2} hour {3}", ob, item, day+1, hour);
+        //PluginLog.LogDebug("Found observed supply {0} for item {1} on day {2} hour {3}", ob, item, day+1, hour);
         if (observedSupplies.ContainsKey(day))
             observedSupplies[day] = ob;
         else
@@ -271,7 +271,7 @@ public class ItemInfo
             return true;
         if (peak == Cycle2Weak || peak == Cycle2Strong)
             return day > 0;
-        if (peak == Cycle3Weak || peak == Cycle3Strong)
+        if (peak == Cycle3Weak || peak == Cycle3Strong || peak == Unknown)
             return day > 1;
         if (peak == Cycle4Weak || peak == Cycle4Strong || peak == Cycle45)
             return day > 2;
