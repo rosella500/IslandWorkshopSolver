@@ -34,7 +34,7 @@ public class MainWindow : Window, IDisposable
 
         
         scheduleSuggestions = new Dictionary<int, SuggestedSchedules?>();
-        endDaySummaries = Solver.Solver.importer.endDays;
+        endDaySummaries = Solver.Solver.Importer.endDays;
     }
 
     public override void OnOpen()
@@ -42,11 +42,11 @@ public class MainWindow : Window, IDisposable
         string[] products = reader.ExportIsleData().Split('\n', StringSplitOptions.None);
         try
         {
-            if(Solver.Solver.writeTodaySupply(products))
+            if(Solver.Solver.WriteTodaySupply(products))
             {
                 Solver.Solver.InitAfterWritingTodaysData();
 
-                endDaySummaries = Solver.Solver.importer.endDays;
+                endDaySummaries = Solver.Solver.Importer.endDays;
 
                 base.OnOpen();
             }
@@ -97,12 +97,12 @@ public class MainWindow : Window, IDisposable
         foreach (var schedule in scheduleSuggestions)
         {
             int day = schedule.Key;
-            if (Solver.Solver.schedulesPerDay.ContainsKey(day) && schedule.Value != null)
+            if (Solver.Solver.SchedulesPerDay.ContainsKey(day) && schedule.Value != null)
             {
                 int i = 0;
                 foreach (var suggestion in schedule.Value.orderedSuggestions)
                 {
-                    if (suggestion.Key.hasSameCrafts(Solver.Solver.schedulesPerDay[day].schedule.workshops[0]))
+                    if (suggestion.Key.HasSameCrafts(Solver.Solver.SchedulesPerDay[day].schedule.workshops[0]))
                     {
                         selectedSchedules[day] = i;
                         break;
@@ -132,9 +132,9 @@ public class MainWindow : Window, IDisposable
                 }
             }
             ImGui.SameLine(100);
-            string totalCowries = "Total cowries this season: " + Solver.Solver.totalGross;
+            string totalCowries = "Total cowries this season: " + Solver.Solver.TotalGross;
             if (config.showNetCowries)
-                totalCowries += " (" + Solver.Solver.totalNet + " net)";
+                totalCowries += " (" + Solver.Solver.TotalNet + " net)";
             ImGui.Text(totalCowries);
 
             ImGui.GetContentRegionAvail();
@@ -150,12 +150,12 @@ public class MainWindow : Window, IDisposable
             {
                 for (int day = 0; day < 7; day++)
                 {
-                    if (day <= Solver.Solver.currentDay && endDaySummaries.Count > day)
+                    if (day <= Solver.Solver.CurrentDay && endDaySummaries.Count > day)
                     {
                         if (ImGui.BeginTabItem("Day " + (day + 1)))
                         {
                             string title = "Crafted";
-                            if (day == Solver.Solver.currentDay)
+                            if (day == Solver.Solver.CurrentDay)
                                 title = "Scheduled";
                             if (endDaySummaries[day].crafts.Count > 0 && ImGui.BeginTable(title, 3))
                             {
@@ -187,7 +187,7 @@ public class MainWindow : Window, IDisposable
                             }
                             else
                             {
-                                if(day==Solver.Solver.currentDay)
+                                if(day==Solver.Solver.CurrentDay)
                                     ImGui.Text("Resting");
                                 else
                                     ImGui.Text("Rested");
@@ -223,17 +223,17 @@ public class MainWindow : Window, IDisposable
                                         ImGui.TableSetColumnIndex(column++);
                                         if (ImGui.RadioButton("##" + (i + 1), ref selectedSchedules[day], i))
                                         {
-                                            Solver.Solver.setDay(suggestion.Key.getItems(), day);
-                                            if (Solver.Solver.currentDay == 3) //If we're on day 4, we're calculating for 5, 6 and 7
-                                                AddNewSuggestions(Solver.Solver.calculateLastThreeDays());
-                                            else if(Solver.Solver.currentDay == 4) //If we're on day 5, we're calculating for 6 and 7
-                                                AddNewSuggestions(Solver.Solver.calculateLastTwoDays());
+                                            Solver.Solver.SetDay(suggestion.Key.GetItems(), day);
+                                            if (Solver.Solver.CurrentDay == 3) //If we're on day 4, we're calculating for 5, 6 and 7
+                                                AddNewSuggestions(Solver.Solver.GetLastThreeDays());
+                                            else if(Solver.Solver.CurrentDay == 4) //If we're on day 5, we're calculating for 6 and 7
+                                                AddNewSuggestions(Solver.Solver.GetLastTwoDays());
                                         }
                                         ImGui.TableSetColumnIndex(column++);
                                         ImGui.Text(suggestion.Value.ToString());
                                         ImGui.TableSetColumnIndex(column++);
-                                        if (suggestion.Key.getNumCrafts() > 0)
-                                            ImGui.Text(JoinItems(" - ", suggestion.Key.getItems()));
+                                        if (suggestion.Key.GetNumCrafts() > 0)
+                                            ImGui.Text(JoinItems(" - ", suggestion.Key.GetItems()));
                                         else
                                             ImGui.Text("Rest");
                                     }

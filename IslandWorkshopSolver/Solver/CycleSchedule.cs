@@ -22,22 +22,22 @@ public class CycleSchedule
         cowriesPerHour = new List<int>();
     }
 
-    public void setForAllWorkshops(List<Item> crafts)
+    public void SetForAllWorkshops(List<Item> crafts)
     {
         workshops[0] = new WorkshopSchedule(crafts);
         workshops[1] = new WorkshopSchedule(crafts);
         workshops[2] = new WorkshopSchedule(crafts);
     }
 
-    public void setWorkshop(int index, List<Item> crafts)
+    public void SetWorkshop(int index, List<Item> crafts)
     {
         if (workshops[index] == null)
             workshops[index] = new WorkshopSchedule(crafts);
         else
-            workshops[index].setCrafts(crafts);
+            workshops[index].SetCrafts(crafts);
     }
 
-    public int getValue()
+    public int GetValue()
     {
         cowriesPerHour.Clear();
         numCrafted.Clear();
@@ -55,12 +55,12 @@ public class CycleSchedule
             int cowriesThisHour = 0;
             for (int i = 0; i < workshops.Length; i++)
             {
-                if (workshops[i].currentCraftCompleted(hour))
+                if (workshops[i].CurrentCraftCompleted(hour))
                 {
-                    ItemInfo? completedCraft = workshops[i].getCurrentCraft();
+                    ItemInfo? completedCraft = workshops[i].GetCurrentCraft();
                     if (completedCraft == null)
                         continue;
-                    bool efficient = workshops[i].currentCraftIsEfficient();
+                    bool efficient = workshops[i].CurrentCraftIsEfficient();
 
 
                     int craftedEarlierThisHour = 0;
@@ -76,10 +76,10 @@ public class CycleSchedule
 
                     //PluginLog.LogVerbose("Found completed "+completedCraft.item+" at hour "+hour+". Efficient? "+efficient);
 
-                    cowriesThisHour += workshops[i].getValueForCurrent(day, (numCrafted.TryGetValue(completedCraft.item, out int craftedPreviously) ? craftedPreviously: 0), currentGroove, efficient);
+                    cowriesThisHour += workshops[i].GetValueForCurrent(day, (numCrafted.TryGetValue(completedCraft.item, out int craftedPreviously) ? craftedPreviously: 0), currentGroove, efficient);
 
                     workshops[i].currentIndex++;
-                    if (workshops[i].currentCraftIsEfficient())
+                    if (workshops[i].CurrentCraftIsEfficient())
                         grooveToAdd++;
                 }
             }
@@ -109,7 +109,7 @@ public class CycleSchedule
        
     }
 
-    public int getCraftedBeforeHour(Item item, int currentHour)
+    public int GetCraftedBeforeHour(Item item, int currentHour)
     {
         for (int i = 0; i < workshops.Length; i++)
             workshops[i].currentIndex = 0;
@@ -119,13 +119,13 @@ public class CycleSchedule
         {
             for (int i = 0; i < workshops.Length; i++)
             {
-                if (workshops[i].currentCraftCompleted(hour))
+                if (workshops[i].CurrentCraftCompleted(hour))
                 {
-                    ItemInfo? completedCraft = workshops[i].getCurrentCraft();
+                    ItemInfo? completedCraft = workshops[i].GetCurrentCraft();
                     if (completedCraft == null)
                         continue;
                     if(completedCraft.item == item)
-                        totalCrafted += (workshops[i].currentCraftIsEfficient() ? 2 : 1);
+                        totalCrafted += (workshops[i].CurrentCraftIsEfficient() ? 2 : 1);
 
                    
                     workshops[i].currentIndex++;
@@ -135,17 +135,17 @@ public class CycleSchedule
         return totalCrafted;
     }
 
-    public bool hasAnyUnsurePeaks()
+    public bool HasAnyUnsurePeaks()
     {
-        return workshops[0].hasAnyUnsurePeaks();
+        return workshops[0].HasAnyUnsurePeaks();
     }
 
-    public int getMaterialCost()
+    public int GetMaterialCost()
     {
         int cost = 0;
         foreach(WorkshopSchedule shop in workshops)
         {
-            cost += shop.getMaterialCost();
+            cost += shop.GetMaterialCost();
         }
         return cost;
     }

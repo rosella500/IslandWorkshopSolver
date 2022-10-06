@@ -82,7 +82,7 @@ public class ItemInfo
         }        
     }
     
-    public bool getsEfficiencyBonus(ItemInfo other)
+    public bool GetsEfficiencyBonus(ItemInfo other)
     {
         if (other == null)
         {
@@ -97,28 +97,28 @@ public class ItemInfo
     }
 
     //Set start-of-week data
-    public void setInitialData(Popularity pop, PeakCycle prev)
+    public void SetInitialData(Popularity pop, PeakCycle prev)
     {
         popularity = pop;
         previousPeak = prev;
     }
 
-    public void addObservedDay(ObservedSupply ob, int day, int hour)
+    public void AddObservedDay(ObservedSupply ob, int day, int hour)
     {
         //PluginLog.LogDebug("Found observed supply {0} for item {1} on day {2} hour {3}", ob, item, day+1, hour);
         if (observedSupplies.ContainsKey(day))
             observedSupplies[day] = ob;
         else
             observedSupplies.Add(day, ob);
-        setPeakBasedOnObserved(hour);
+        SetPeakBasedOnObserved(hour);
     }
 
-    public void setCrafted(int num, int day)
+    public void SetCrafted(int num, int day)
     {
         craftedPerDay[day] = num;
     }
 
-    private int getCraftedBeforeDay(int day)
+    private int GetCraftedBeforeDay(int day)
     {
         int sum = 0;
         for (int c = 0; c < day; c++)
@@ -127,7 +127,7 @@ public class ItemInfo
         return sum;
     }
 
-    private void setPeakBasedOnObserved(int currentHour)
+    private void SetPeakBasedOnObserved(int currentHour)
     {
         if (peak.IsTerminal() && peak != Cycle2Weak)
             return;
@@ -164,18 +164,18 @@ public class ItemInfo
             else if (observedSupplies.ContainsKey(1))
             {
                 int day = 1;
-                if (Solver.importer.endDays.Count > day)
+                if (Solver.Importer.endDays.Count > day)
                 {
                     currentDaySchedule = new CycleSchedule(day, 0);
-                    currentDaySchedule.setForAllWorkshops(Solver.importer.endDays[day].crafts);
+                    currentDaySchedule.SetForAllWorkshops(Solver.Importer.endDays[day].crafts);
 
                 }
                 PluginLog.LogDebug(item + " observed: " + observedSupplies[day]);
-                int craftedToday = currentDaySchedule == null ? 0 : currentDaySchedule.getCraftedBeforeHour(item, currentHour);
-                int weakPrevious = getSupplyOnDayByPeak(Cycle2Weak, day - 1);
-                int weakSupply = getSupplyOnDayByPeak(Cycle2Weak, day) + craftedToday;
-                ObservedSupply expectedWeak = new ObservedSupply(getSupplyBucket(weakSupply),
-                        getDemandShift(weakPrevious, weakSupply));
+                int craftedToday = currentDaySchedule == null ? 0 : currentDaySchedule.GetCraftedBeforeHour(item, currentHour);
+                int weakPrevious = GetSupplyOnDayByPeak(Cycle2Weak, day - 1);
+                int weakSupply = GetSupplyOnDayByPeak(Cycle2Weak, day) + craftedToday;
+                ObservedSupply expectedWeak = new ObservedSupply(GetSupplyBucket(weakSupply),
+                        GetDemandShift(weakPrevious, weakSupply));
                 PluginLog.LogDebug("Checking against peak Cycle2Weak, expecting: " + expectedWeak);
                 if (observedSupplies[day].Equals(expectedWeak))
                 {
@@ -183,10 +183,10 @@ public class ItemInfo
                     return;
                 }
 
-                int strongPrevious = getSupplyOnDayByPeak(Cycle2Strong, day - 1);
-                int strongSupply = getSupplyOnDayByPeak(Cycle2Strong, day) + craftedToday;
-                ObservedSupply expectedStrong = new ObservedSupply(getSupplyBucket(strongSupply),
-                        getDemandShift(strongPrevious, strongSupply));
+                int strongPrevious = GetSupplyOnDayByPeak(Cycle2Strong, day - 1);
+                int strongSupply = GetSupplyOnDayByPeak(Cycle2Strong, day) + craftedToday;
+                ObservedSupply expectedStrong = new ObservedSupply(GetSupplyBucket(strongSupply),
+                        GetDemandShift(strongPrevious, strongSupply));
 
                 PluginLog.LogDebug("Checking against peak Cycle2Strong, expecting: " + expectedStrong);
                 if (observedSupplies[day].Equals(expectedStrong))
@@ -201,7 +201,7 @@ public class ItemInfo
             {
                 peak = Cycle2Weak;
 
-                Solver.addUnknownD2(item);
+                Solver.AddUnknownD2(item);
             }
         }
         else 
@@ -212,24 +212,24 @@ public class ItemInfo
                 {
                     continue;
                 }
-                if (Solver.importer.endDays.Count > day)
+                if (Solver.Importer.endDays.Count > day)
                 {
                     currentDaySchedule = new CycleSchedule(day, 0);
-                    currentDaySchedule.setForAllWorkshops(Solver.importer.endDays[day].crafts);
+                    currentDaySchedule.SetForAllWorkshops(Solver.Importer.endDays[day].crafts);
                 }
                 ObservedSupply observedToday = observedSupplies[day];
                 PluginLog.LogDebug(item + " observed: " + observedToday+" on day "+(day+1));
-                int craftedPreviously = getCraftedBeforeDay(day);
-                int craftedToday = currentDaySchedule == null? 0 : currentDaySchedule.getCraftedBeforeHour(item, currentHour);
+                int craftedPreviously = GetCraftedBeforeDay(day);
+                int craftedToday = currentDaySchedule == null? 0 : currentDaySchedule.GetCraftedBeforeHour(item, currentHour);
                 bool found = false;
 
                 for (int i = 0; i < PEAKS_TO_CHECK[day - 1].Length; i++)
                 {
                     PeakCycle potentialPeak = PEAKS_TO_CHECK[day - 1][i];
-                    int expectedPrevious = getSupplyOnDayByPeak(potentialPeak, day - 1);
-                    int expectedSupply = getSupplyOnDayByPeak(potentialPeak, day) + craftedToday;
-                    ObservedSupply expectedObservation = new ObservedSupply(getSupplyBucket(craftedPreviously + expectedSupply),
-                            getDemandShift(expectedPrevious, expectedSupply));
+                    int expectedPrevious = GetSupplyOnDayByPeak(potentialPeak, day - 1);
+                    int expectedSupply = GetSupplyOnDayByPeak(potentialPeak, day) + craftedToday;
+                    ObservedSupply expectedObservation = new ObservedSupply(GetSupplyBucket(craftedPreviously + expectedSupply),
+                            GetDemandShift(expectedPrevious, expectedSupply));
                         PluginLog.LogDebug("Checking against peak " + potentialPeak + ", expecting: " + expectedObservation);
 
                     if (observedToday.Equals(expectedObservation))
@@ -248,7 +248,7 @@ public class ItemInfo
         }
     }
 
-    public int getSupplyOnDay(int day)
+    public int GetSupplyOnDay(int day)
     {
         int supply = SUPPLY_PATH[(int)peak][0];
         for (int c = 1; c <= day; c++)
@@ -265,7 +265,7 @@ public class ItemInfo
         return item == other.item;
     }
 
-    public bool peaksOnOrBeforeDay(int day, bool borrow4Hours)
+    public bool PeaksOnOrBeforeDay(int day, bool borrow4Hours)
     {
         if (time == 4 && borrow4Hours)
             return true;
@@ -285,7 +285,7 @@ public class ItemInfo
         return false; //Peak is Unknown, so definitely hasn't passed
     }
 
-    public static Supply getSupplyBucket(int supply)
+    public static Supply GetSupplyBucket(int supply)
     {
         if (supply < -8)
             return Nonexistent;
@@ -298,7 +298,7 @@ public class ItemInfo
         return Overflowing;
     }
 
-    public static int getSupplyOnDayByPeak(PeakCycle peak, int day)
+    public static int GetSupplyOnDayByPeak(PeakCycle peak, int day)
     {
         int supply = SUPPLY_PATH[(int)peak][0];
         for (int c = 1; c <= day; c++)
@@ -307,7 +307,7 @@ public class ItemInfo
         return supply;
     }
 
-    public static DemandShift getDemandShift(int prevSupply, int newSupply)
+    public static DemandShift GetDemandShift(int prevSupply, int newSupply)
     {
         int diff = newSupply - prevSupply;
         if (diff < -5)

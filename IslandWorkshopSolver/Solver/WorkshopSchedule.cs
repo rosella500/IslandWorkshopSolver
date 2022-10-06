@@ -17,13 +17,13 @@ public class WorkshopSchedule
         this.crafts = new List<ItemInfo>();
         items = new List<Item>();
         rareMaterialsRequired = new Dictionary<RareMaterial, int>();
-        setCrafts(crafts);
+        SetCrafts(crafts);
     }
 
-    public void setCrafts(List<Item> newCrafts)
+    public void SetCrafts(List<Item> newCrafts)
     {
         crafts.Clear();
-        newCrafts.ForEach(delegate (Item item) { crafts.Add(Solver.items[(int)item]); });
+        newCrafts.ForEach(delegate (Item item) { crafts.Add(Solver.Items[(int)item]); });
         int currentHour = 0;
         completionHours.Clear();
         items.Clear();
@@ -57,19 +57,19 @@ public class WorkshopSchedule
 
     }
 
-    public ItemInfo? getCurrentCraft()
+    public ItemInfo? GetCurrentCraft()
     {
         if (currentIndex < crafts.Count)
             return crafts[currentIndex];
         return null;
     }
 
-    public int getNumCrafts()
+    public int GetNumCrafts()
     {
         return crafts.Count;
     }
 
-    public bool hasSameCrafts(WorkshopSchedule other)
+    public bool HasSameCrafts(WorkshopSchedule other)
     {
         if (other.crafts.Count != crafts.Count)
             return false;
@@ -82,12 +82,12 @@ public class WorkshopSchedule
         return true;
     }
 
-    public List<Item> getItems()
+    public List<Item> GetItems()
     {
         return items;
     }
 
-    public bool currentCraftCompleted(int hour)
+    public bool CurrentCraftCompleted(int hour)
     {
         if (currentIndex >= crafts.Count)
             return false;
@@ -97,12 +97,12 @@ public class WorkshopSchedule
         return false;
     }
 
-    public int getValueForCurrent(int day, int craftedSoFar, int currentGroove, bool isEfficient)
+    public int GetValueForCurrent(int day, int craftedSoFar, int currentGroove, bool isEfficient)
     {
         ItemInfo craft = crafts[currentIndex];
         int baseValue = craft.baseValue * Solver.WORKSHOP_BONUS * (100 + currentGroove) / 10000;
-        int supply = craft.getSupplyOnDay(day) + craftedSoFar;
-        int adjustedValue = baseValue * PopularityHelper.GetMultiplier(craft.popularity) * SupplyHelper.GetMultiplier(ItemInfo.getSupplyBucket(supply))/ 10000;
+        int supply = craft.GetSupplyOnDay(day) + craftedSoFar;
+        int adjustedValue = baseValue * PopularityHelper.GetMultiplier(craft.popularity) * SupplyHelper.GetMultiplier(ItemInfo.GetSupplyBucket(supply))/ 10000;
 
         if (isEfficient)
             adjustedValue *= 2;
@@ -111,16 +111,16 @@ public class WorkshopSchedule
         return adjustedValue;
     }
 
-    public bool currentCraftIsEfficient()
+    public bool CurrentCraftIsEfficient()
     {
         if (currentIndex > 0 && currentIndex < crafts.Count)
-            if (crafts[currentIndex].getsEfficiencyBonus(crafts[currentIndex - 1]))
+            if (crafts[currentIndex].GetsEfficiencyBonus(crafts[currentIndex - 1]))
                 return true;
 
         return false;
     }
 
-    public int getMaterialCost()
+    public int GetMaterialCost()
     {
         int cost = 0;
         foreach (ItemInfo craft in crafts)
@@ -130,32 +130,32 @@ public class WorkshopSchedule
         return cost;
     }
 
-    public int getValueWithGrooveEstimate(int day, int startingGroove)
+    public int GetValueWithGrooveEstimate(int day, int startingGroove)
     {
         int craftsAbove4 = 0;
-        craftsAbove4 += getNumCrafts() - 4;
+        craftsAbove4 += GetNumCrafts() - 4;
         int daysToGroove = 5 - day;
-        if (!Solver.rested)
+        if (!Solver.Rested)
             daysToGroove--;
 
         int grooveValue = 0;
 
         if (daysToGroove > 0)
         {
-            int fullGrooveBonus = (daysToGroove - 1) * Solver.groovePerFullDay;
-            grooveValue = fullGrooveBonus + Solver.groovePerPartDay;
+            int fullGrooveBonus = (daysToGroove - 1) * Solver.GroovePerFullDay;
+            grooveValue = fullGrooveBonus + Solver.GroovePerPartDay;
             grooveValue *= craftsAbove4;
         }
 
         int workshopValue = 0;
         Dictionary<Item, int> numCrafted = new Dictionary<Item, int>();
         currentIndex = 0;
-        for (int i = 0; i < getNumCrafts(); i++)
+        for (int i = 0; i < GetNumCrafts(); i++)
         {
-            ItemInfo? completedCraft = getCurrentCraft();
+            ItemInfo? completedCraft = GetCurrentCraft();
             if (completedCraft == null)
                 continue;
-            bool efficient = currentCraftIsEfficient();
+            bool efficient = CurrentCraftIsEfficient();
 
 
             int previouslyCrafted = 0;
@@ -168,27 +168,27 @@ public class WorkshopSchedule
                 numCrafted.Add(completedCraft.item, 0);
             }
 
-            workshopValue += getValueForCurrent(day, previouslyCrafted, startingGroove + i * 3, efficient);
+            workshopValue += GetValueForCurrent(day, previouslyCrafted, startingGroove + i * 3, efficient);
             currentIndex++;
             int amountCrafted = efficient ? 6 : 3;
             numCrafted[completedCraft.item]= previouslyCrafted + amountCrafted;
         }
 
         //Allow for the accounting for materials if desired
-        return grooveValue + workshopValue - (int)(getMaterialCost() * Solver.materialWeight);
+        return grooveValue + workshopValue - (int)(GetMaterialCost() * Solver.MaterialWeight);
     }
 
-    public bool isSafe(int day)
+    public bool IsSafe(int day)
     {
         foreach(var item in crafts)
         {
-            if (!item.peaksOnOrBeforeDay(day, false))
+            if (!item.PeaksOnOrBeforeDay(day, false))
                 return false;
         }
         return true;
     }
 
-    public bool hasAnyUnsurePeaks()
+    public bool HasAnyUnsurePeaks()
     {
         foreach(ItemInfo itemInfo in crafts)
         {

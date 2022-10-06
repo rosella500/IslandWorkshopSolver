@@ -10,7 +10,7 @@ using Lumina.Excel;
 
 namespace IslandWorkshopSolver
 {
-    // Lifted entirely from Rietty's AutoMammet. Bless you. <3
+    // Lifted entirely from Rietty's AutoMammet, who apparently took it from Otter. Bless you both. <3
     public class Reader
     {
         [Signature("E8 ?? ?? ?? ?? 8B 50 10")]

@@ -13,45 +13,45 @@ public class Solver
     public static int WORKSHOP_BONUS = 120;
     public static int GROOVE_MAX = 35;
 
-    public static List<ItemInfo> items;
+    public static List<ItemInfo> Items = new List<ItemInfo>();
 
-    public static int totalGross;
-    public static int totalNet;
-    public static bool rested;
+    public static int TotalGross;
+    public static int TotalNet;
+    public static bool Rested;
 
-    public static int groovePerFullDay = 40;
-    public static int groovePerPartDay = 20;
-    private static int islandRank = 10;
-    public static double materialWeight = 0.5;
-    public static CSVImporter importer;
-    public static int week = 5;
-    static int initStep = 0;
-    public static int currentDay = -1;
-    private static Configuration config;
-    public static Dictionary<int, (CycleSchedule schedule, int value)> schedulesPerDay = new Dictionary<int, (CycleSchedule schedule, int value)>();
-
+    public static int GroovePerFullDay = 40;
+    public static int GroovePerPartDay = 20;
+    private static int IslandRank = 10;
+    public static double MaterialWeight = 0.5;
+    public static CSVImporter Importer = new CSVImporter();
+    public static int Week = 5;
+    private static int InitStep = 0;
+    public static int CurrentDay = -1;
+    private static Configuration Config = new Configuration();
+    public static Dictionary<int, (CycleSchedule schedule, int value)> SchedulesPerDay = new Dictionary<int, (CycleSchedule schedule, int value)>();
+   
     public static void Init(Configuration newConfig)
     {
-        config = newConfig;
-        materialWeight = config.materialValue;
-        WORKSHOP_BONUS = config.workshopBonus;
-        GROOVE_MAX = config.maxGroove;
-        islandRank = config.islandRank;
+        Config = newConfig;
+        MaterialWeight = Config.materialValue;
+        WORKSHOP_BONUS = Config.workshopBonus;
+        GROOVE_MAX = Config.maxGroove;
+        IslandRank = Config.islandRank;
 
-        if (initStep!=0)
+        if (InitStep!=0)
             return;
         SupplyHelper.DefaultInit();
         PopularityHelper.DefaultInit();
         RareMaterialHelper.DefaultInit();
-        initItems();
-        week = getCurrentWeek();
-        currentDay = getCurrentDay();
-        config.day = currentDay;
-        config.Save();
+        InitItems();
+        Week = GetCurrentWeek();
+        CurrentDay = GetCurrentDay();
+        Config.day = CurrentDay;
+        Config.Save();
         try
         {
-            importer = new CSVImporter(config.rootPath, week);
-            initStep = 1;
+            Importer = new CSVImporter(Config.rootPath, Week);
+            InitStep = 1;
         }
         catch(Exception e)
         {
@@ -61,50 +61,58 @@ public class Solver
 
     public static void InitAfterWritingTodaysData()
     {
-        if (initStep != 1)
+        if (InitStep != 1)
             return;
 
-        totalGross = 0;
-        totalNet = 0;
-        rested = false;
+        TotalGross = 0;
+        TotalNet = 0;
+        Rested = false;
 
-        int dayToSolve = currentDay + 1;
+        int dayToSolve = CurrentDay + 1;
 
-        setInitialFromCSV();
+        SetInitialFromCSV();
         for (int i = 0; i < dayToSolve; i++)
-            setObservedFromCSV(i);
+            SetObservedFromCSV(i);
 
-        for(int summary = 1; summary < importer.endDays.Count && summary <= currentDay; summary++)
+        for(int summary = 1; summary < Importer.endDays.Count && summary <= CurrentDay; summary++)
         {
-            var prevDaySummary = importer.endDays[summary];
+            var prevDaySummary = Importer.endDays[summary];
             PluginLog.LogDebug("previous day summary: " + prevDaySummary);
             if (prevDaySummary.crafts != null)
             {
-                var twoDaysAgo = importer.endDays[summary-1];
+                var twoDaysAgo = Importer.endDays[summary-1];
                 CycleSchedule yesterdaySchedule = new CycleSchedule(summary, twoDaysAgo.endingGroove);
-                yesterdaySchedule.setForAllWorkshops(prevDaySummary.crafts);
-                int gross = yesterdaySchedule.getValue();
+                yesterdaySchedule.SetForAllWorkshops(prevDaySummary.crafts);
+                int gross = yesterdaySchedule.GetValue();
 
                 if(prevDaySummary.endingGross == -1)
                 {
                     PluginLog.LogDebug("Writing summary to file. Gross: " + gross);
-                    int net = gross - yesterdaySchedule.getMaterialCost();
-                    importer.writeEndDay(summary, prevDaySummary.endingGroove, gross, net, prevDaySummary.crafts);
-                    totalGross += gross;
-                    totalNet += net;
+                    int net = gross - yesterdaySchedule.GetMaterialCost();
+                    Importer.WriteEndDay(summary, prevDaySummary.endingGroove, gross, net, prevDaySummary.crafts);
+                    TotalGross += gross;
+                    TotalNet += net;
                     prevDaySummary.endingGross = gross;
                     prevDaySummary.endingNet = net;
                 }
                 prevDaySummary.valuesPerCraft = yesterdaySchedule.cowriesPerHour;
             }
         }
-        updateRestedStatus();
-        initStep = 2;
+        Rested = false;
+        for (int i = 1; i < Importer.endDays.Count && i <= CurrentDay; i++)
+        {
+            if (Importer.endDays[i].endingGross == 0)
+            {
+                PluginLog.LogInformation("Rest day found on day " + (i + 1));
+                Rested = true;
+            }
+        }
+        InitStep = 2;
 
     }
     static public List<(int, SuggestedSchedules?)>? RunSolver()
     {
-        if (initStep != 2)
+        if (InitStep != 2)
         {
             PluginLog.LogError("Trying to run solver before solver initiated");
             return null;
@@ -113,14 +121,14 @@ public class Solver
         //TODO: Figure out how to handle D2 because no one's going to craft things D1 to find out
         long time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-        int dayToSolve = currentDay + 1;
+        int dayToSolve = CurrentDay + 1;
 
-        if (currentDay == 0 && config.unknownD2Items != null)
+        if (CurrentDay == 0 && Config.unknownD2Items != null)
         {
             //Set each peak according to config
-            foreach (var item in config.unknownD2Items)
+            foreach (var item in Config.unknownD2Items)
             {
-                items[(int)(item.Key)].peak = item.Value ? Cycle2Strong : Cycle2Weak;
+                Items[(int)(item.Key)].peak = item.Value ? Cycle2Strong : Cycle2Weak;
             }
         }
 
@@ -129,33 +137,33 @@ public class Solver
         {
             toReturn.Add((0, null));
 
-            setDay(new List<Item>(), 0);
+            SetDay(new List<Item>(), 0);
         }
 
         if (dayToSolve < 4)
         {
-            Dictionary<WorkshopSchedule, int> safeSchedules = getSuggestedSchedules(dayToSolve, -1, null);
+            Dictionary<WorkshopSchedule, int> safeSchedules = GetSuggestedSchedules(dayToSolve, -1, null);
 
             //This is faster than just using LINQ, lol
-            var bestSched = getBestSchedule(safeSchedules);
+            var bestSched = GetBestSchedule(safeSchedules);
 
-            if (!rested)
-                addRestDayValue(safeSchedules, getWorstFutureDay(bestSched, dayToSolve));
+            if (!Rested)
+                AddRestDayValue(safeSchedules, GetWorstFutureDay(bestSched, dayToSolve));
 
 
             toReturn.Add((dayToSolve, new SuggestedSchedules(safeSchedules)));
         }
         else if (dayToSolve < 7)
         {
-            if (importer.needCurrentPeaks())
-                importer.writeCurrentPeaks(week);
+            if (Importer.NeedCurrentPeaks())
+                Importer.WriteCurrentPeaks(Week);
 
             if (dayToSolve == 4)
-                toReturn.AddRange(calculateLastThreeDays());
+                toReturn.AddRange(GetLastThreeDays());
             else if (dayToSolve == 5)
-                toReturn.AddRange(calculateLastTwoDays());
-            else if (rested)
-                toReturn.Add((dayToSolve, new SuggestedSchedules(getSuggestedSchedules(dayToSolve, -1, null))));
+                toReturn.AddRange(GetLastTwoDays());
+            else if (Rested)
+                toReturn.Add((dayToSolve, new SuggestedSchedules(GetSuggestedSchedules(dayToSolve, -1, null))));
             else
                 toReturn.Add((dayToSolve, null));
         }
@@ -167,20 +175,20 @@ public class Solver
 
     }
 
-    public static void addRestDayValue(Dictionary<WorkshopSchedule, int> safeSchedules, int restValue)
+    public static void AddRestDayValue(Dictionary<WorkshopSchedule, int> safeSchedules, int restValue)
     {
         safeSchedules.Add(new WorkshopSchedule(new List<Item>()), restValue);
     }
 
-    public static void addUnknownD2(Item item)
+    public static void AddUnknownD2(Item item)
     {
-        if (config.unknownD2Items == null)
-            config.unknownD2Items = new Dictionary<Item, bool>();
-        if (!config.unknownD2Items.ContainsKey(item))
-            config.unknownD2Items.Add(item, false);
+        if (Config.unknownD2Items == null)
+            Config.unknownD2Items = new Dictionary<Item, bool>();
+        if (!Config.unknownD2Items.ContainsKey(item))
+            Config.unknownD2Items.Add(item, false);
     }
 
-    private static KeyValuePair<WorkshopSchedule, int> getBestSchedule(Dictionary<WorkshopSchedule, int> schedulesAvailable)
+    private static KeyValuePair<WorkshopSchedule, int> GetBestSchedule(Dictionary<WorkshopSchedule, int> schedulesAvailable)
     {
         KeyValuePair<WorkshopSchedule, int> bestSched = schedulesAvailable.First();
         foreach (var sched in schedulesAvailable)
@@ -189,46 +197,46 @@ public class Solver
         }
         return bestSched;
     }
-    public static List<(int, SuggestedSchedules?)> calculateLastTwoDays()
+    public static List<(int, SuggestedSchedules?)> GetLastTwoDays()
     {
         HashSet<Item>? reservedFor6 = null;
-        int startingGroove = getEndingGrooveForDay(currentDay);
+        int startingGroove = GetEndingGrooveForDay(CurrentDay);
         bool sixSet = false;
         bool sevenSet = false;
         int dayRested = -1;
 
-        if (schedulesPerDay.TryGetValue(5, out var schedule6))
+        if (SchedulesPerDay.TryGetValue(5, out var schedule6))
         {
             sixSet = true;
-            if (schedule6.schedule.workshops[0].getItems().Count == 0)
+            if (schedule6.schedule.workshops[0].GetItems().Count == 0)
                 dayRested = 5;
         }
 
-        if (schedulesPerDay.TryGetValue(6, out var schedule7))
+        if (SchedulesPerDay.TryGetValue(6, out var schedule7))
         {
             sevenSet = true;
-            List<Item> items7 = schedule7.schedule.workshops[0].getItems();
+            List<Item> items7 = schedule7.schedule.workshops[0].GetItems();
             if (sixSet)
             {
-                setDay(items7, 6); //Recalculate with 6's groove
+                SetDay(items7, 6); //Recalculate with 6's groove
             }
-            if (schedule7.schedule.workshops[0].getItems().Count == 0)
+            if (schedule7.schedule.workshops[0].GetItems().Count == 0)
                 dayRested = 7;
-            reservedFor6 = new HashSet<Item>(schedule7.schedule.workshops[0].getItems());
+            reservedFor6 = new HashSet<Item>(schedule7.schedule.workshops[0].GetItems());
         }
 
         List<Dictionary<WorkshopSchedule, int>> initialSchedules = new List<Dictionary<WorkshopSchedule, int>>
         {
-            getSuggestedSchedules(5, startingGroove, reservedFor6),
-            getSuggestedSchedules(6, startingGroove, null)
+            GetSuggestedSchedules(5, startingGroove, reservedFor6),
+            GetSuggestedSchedules(6, startingGroove, null)
         };
         List<KeyValuePair<WorkshopSchedule, int>> initialBests = new List<KeyValuePair<WorkshopSchedule, int>>
         {
-            getBestSchedule(initialSchedules[0]),
-            getBestSchedule(initialSchedules[1])
+            GetBestSchedule(initialSchedules[0]),
+            GetBestSchedule(initialSchedules[1])
         };
 
-        if (!rested)
+        if (!Rested)
         {
             if (dayRested == -1)
             {
@@ -237,13 +245,13 @@ public class Solver
                 if (sixSet) //Must rest 7
                     initialSchedules[1].Clear();
 
-                addRestDayValue(initialSchedules[0], initialBests[1].Value);
-                addRestDayValue(initialSchedules[1], initialBests[0].Value);
+                AddRestDayValue(initialSchedules[0], initialBests[1].Value);
+                AddRestDayValue(initialSchedules[1], initialBests[0].Value);
             }
             else if (dayRested == 5)
-                addRestDayValue(initialSchedules[0], initialBests[1].Value);
+                AddRestDayValue(initialSchedules[0], initialBests[1].Value);
             else if (dayRested == 6)
-                addRestDayValue(initialSchedules[1], initialBests[0].Value);
+                AddRestDayValue(initialSchedules[1], initialBests[0].Value);
         }
 
         List<(int, SuggestedSchedules?)> suggested = new List<(int, SuggestedSchedules?)>();
@@ -251,65 +259,65 @@ public class Solver
         suggested.Add((6, new SuggestedSchedules(initialSchedules[1])));
         return suggested;
     }
-    public static List<(int, SuggestedSchedules?)> calculateLastThreeDays()
+    public static List<(int, SuggestedSchedules?)> GetLastThreeDays()
     {
         HashSet<Item> reservedFor6 = new HashSet<Item>();
         HashSet<Item> reservedFor5 = new HashSet<Item>();
-        int startingGroove = getEndingGrooveForDay(currentDay);
+        int startingGroove = GetEndingGrooveForDay(CurrentDay);
         bool fiveSet = false;
         bool sixSet = false;
         bool sevenSet = false;
         int dayRested = -1;
 
-        if (schedulesPerDay.TryGetValue(4, out var schedule5))
+        if (SchedulesPerDay.TryGetValue(4, out var schedule5))
         {
             fiveSet = true;
-            if (schedule5.schedule.workshops[0].getItems().Count == 0)
+            if (schedule5.schedule.workshops[0].GetItems().Count == 0)
                 dayRested = 4;
         }
 
-        if (schedulesPerDay.TryGetValue(5, out var schedule6))
+        if (SchedulesPerDay.TryGetValue(5, out var schedule6))
         {
-            List<Item> items6 = schedule6.schedule.workshops[0].getItems();
+            List<Item> items6 = schedule6.schedule.workshops[0].GetItems();
             if (fiveSet)
             {
-                setDay(items6, 5); //Recalculate with 5's groove
+                SetDay(items6, 5); //Recalculate with 5's groove
                 sixSet = true;
             }
-            if (schedule6.schedule.workshops[0].getItems().Count == 0)
+            if (schedule6.schedule.workshops[0].GetItems().Count == 0)
                 dayRested = 5;
 
-            reservedFor5.UnionWith(schedule6.schedule.workshops[0].getItems());
+            reservedFor5.UnionWith(schedule6.schedule.workshops[0].GetItems());
         }
 
-        if (schedulesPerDay.TryGetValue(6, out var schedule7))
+        if (SchedulesPerDay.TryGetValue(6, out var schedule7))
         {
             sevenSet = true;
-            List<Item> items7 = schedule7.schedule.workshops[0].getItems();
+            List<Item> items7 = schedule7.schedule.workshops[0].GetItems();
             if (sixSet)
             {
-                setDay(items7, 6); //Recalculate with 6's groove
+                SetDay(items7, 6); //Recalculate with 6's groove
             }
-            if (schedule7.schedule.workshops[0].getItems().Count == 0)
+            if (schedule7.schedule.workshops[0].GetItems().Count == 0)
                 dayRested = 7;
-            reservedFor5.UnionWith(schedule7.schedule.workshops[0].getItems());
-            reservedFor6.UnionWith(schedule7.schedule.workshops[0].getItems());
+            reservedFor5.UnionWith(schedule7.schedule.workshops[0].GetItems());
+            reservedFor6.UnionWith(schedule7.schedule.workshops[0].GetItems());
         }
 
         List<Dictionary<WorkshopSchedule, int>> initialSchedules = new List<Dictionary<WorkshopSchedule, int>>
         {
-            getSuggestedSchedules(4, startingGroove, reservedFor5),
-            getSuggestedSchedules(5, startingGroove, reservedFor6),
-            getSuggestedSchedules(6, startingGroove, null)
+            GetSuggestedSchedules(4, startingGroove, reservedFor5),
+            GetSuggestedSchedules(5, startingGroove, reservedFor6),
+            GetSuggestedSchedules(6, startingGroove, null)
         };
         List<KeyValuePair<WorkshopSchedule, int>> initialBests = new List<KeyValuePair<WorkshopSchedule, int>>
         {
-            getBestSchedule(initialSchedules[0]),
-            getBestSchedule(initialSchedules[1]),
-            getBestSchedule(initialSchedules[2])
+            GetBestSchedule(initialSchedules[0]),
+            GetBestSchedule(initialSchedules[1]),
+            GetBestSchedule(initialSchedules[2])
         };
 
-        if (!rested)
+        if (!Rested)
         {
             if (dayRested == -1)
             {
@@ -320,16 +328,16 @@ public class Solver
                 if (fiveSet && sixSet) //Must rest 7
                     initialSchedules[2].Clear();
 
-                addRestDayValue(initialSchedules[0], Math.Min(initialBests[1].Value, initialBests[2].Value));
-                addRestDayValue(initialSchedules[1], Math.Min(initialBests[0].Value, initialBests[2].Value));
-                addRestDayValue(initialSchedules[2], Math.Min(initialBests[1].Value, initialBests[0].Value));
+                AddRestDayValue(initialSchedules[0], Math.Min(initialBests[1].Value, initialBests[2].Value));
+                AddRestDayValue(initialSchedules[1], Math.Min(initialBests[0].Value, initialBests[2].Value));
+                AddRestDayValue(initialSchedules[2], Math.Min(initialBests[1].Value, initialBests[0].Value));
             }
             else if (dayRested == 4)
-                addRestDayValue(initialSchedules[0], Math.Min(initialBests[1].Value, initialBests[2].Value));
+                AddRestDayValue(initialSchedules[0], Math.Min(initialBests[1].Value, initialBests[2].Value));
             else if (dayRested == 5)
-                addRestDayValue(initialSchedules[1], Math.Min(initialBests[0].Value, initialBests[2].Value));
+                AddRestDayValue(initialSchedules[1], Math.Min(initialBests[0].Value, initialBests[2].Value));
             else if (dayRested == 6)
-                addRestDayValue(initialSchedules[2], Math.Min(initialBests[1].Value, initialBests[0].Value));
+                AddRestDayValue(initialSchedules[2], Math.Min(initialBests[1].Value, initialBests[0].Value));
         }
 
         List<(int, SuggestedSchedules?)> suggested = new List<(int, SuggestedSchedules?)>();
@@ -339,31 +347,25 @@ public class Solver
         return suggested;
     }
 
-    private static int getGrooveAfterSchedule(int startingGroove, WorkshopSchedule schedule)
-    {
-        int scheduleGroove = (schedule.getNumCrafts() - 1) * 3;
-        return Math.Min(scheduleGroove + startingGroove, GROOVE_MAX);
-    }
-
-    private static int getWorstFutureDay(KeyValuePair<WorkshopSchedule, int> rec, int day)
+    private static int GetWorstFutureDay(KeyValuePair<WorkshopSchedule, int> rec, int day)
     {
         int worstInFuture = 99999;
         PluginLog.LogDebug("Comparing d" + (day + 1) + " (" + rec.Value + ") to worst-case future days");
-        HashSet<Item> reservedSet = new HashSet<Item>(rec.Key.getItems());
+        HashSet<Item> reservedSet = new HashSet<Item>(rec.Key.GetItems());
         for (int d = day + 1; d < 7; d++)
         {
             KeyValuePair<WorkshopSchedule, int> solution;
             if (day == 3 && d == 4) //We have a lot of info about this specific pair so we might as well use it
-                solution = getD5EV();
+                solution = GetD5EV();
             else
-                solution = getBestSchedule(d, reservedSet, false);
+                solution = GetBestSchedule(d, reservedSet, false);
 
             if(solution.Key!=null)
             {
 
-                PluginLog.LogDebug("Day " + (d + 1) + ", crafts: " + String.Join(", ", solution.Key.getItems()) + " value: " + solution.Value);
+                PluginLog.LogDebug("Day " + (d + 1) + ", crafts: " + String.Join(", ", solution.Key.GetItems()) + " value: " + solution.Value);
                 worstInFuture = Math.Min(worstInFuture, solution.Value);
-                reservedSet.UnionWith(solution.Key.getItems());
+                reservedSet.UnionWith(solution.Key.GetItems());
             }
 
         }
@@ -373,14 +375,14 @@ public class Solver
     }
 
     //Specifically for comparing D4 to D5
-    public static KeyValuePair<WorkshopSchedule, int> getD5EV()
+    public static KeyValuePair<WorkshopSchedule, int> GetD5EV()
     {
-        KeyValuePair<WorkshopSchedule, int> solution = getBestSchedule(4, null);
+        KeyValuePair<WorkshopSchedule, int> solution = GetBestSchedule(4, null);
             //PluginLog.LogVerbose("Testing against D5 solution " + solution.Key.getItems());
         List<ItemInfo> c5Peaks = new List<ItemInfo>();
-        foreach (Item item in solution.Key.getItems())
-            if (items[(int)item].peak == Cycle5 && !c5Peaks.Contains(items[(int)item]))
-                c5Peaks.Add(items[(int)item]);
+        foreach (Item item in solution.Key.GetItems())
+            if (Items[(int)item].peak == Cycle5 && !c5Peaks.Contains(Items[(int)item]))
+                c5Peaks.Add(Items[(int)item]);
         int sum = solution.Value;
         int permutations = (int)Math.Pow(2, c5Peaks.Count);
 
@@ -398,7 +400,7 @@ public class Solver
                     c5Peaks[i].peak = Cycle5Weak;
             }
 
-            int toAdd = solution.Key.getValueWithGrooveEstimate(4, getEndingGrooveForDay(currentDay));
+            int toAdd = solution.Key.GetValueWithGrooveEstimate(4, GetEndingGrooveForDay(CurrentDay));
                 //PluginLog.LogVerbose("Permutation " + p + " has value " + toAdd);
             sum += toAdd;
         }
@@ -416,11 +418,11 @@ public class Solver
     }
 
 
-    private static int getEndingGrooveForDay(int day)
+    private static int GetEndingGrooveForDay(int day)
     {
-        if (importer.endDays.Count > day && day >=0)
-            return importer.endDays[day].endingGroove;
-        else if(schedulesPerDay.TryGetValue(day, out var schedule))
+        if (Importer.endDays.Count > day && day >=0)
+            return Importer.endDays[day].endingGroove;
+        else if(SchedulesPerDay.TryGetValue(day, out var schedule))
         {
             PluginLog.LogDebug("Getting ending groove from scheduled day " +day+": " + schedule.schedule.endingGroove);
             return schedule.schedule.endingGroove;
@@ -429,30 +431,30 @@ public class Solver
         return 0;
     }
 
-    public static void setDay(List<Item> crafts, int day)
+    public static void SetDay(List<Item> crafts, int day)
     {
         if (day != 0)
             PluginLog.LogInformation("Day {0}, crafts: {1}", day+1, crafts);
 
 
         CycleSchedule schedule = new CycleSchedule(day, 0);
-        schedule.setForAllWorkshops(crafts);
+        schedule.SetForAllWorkshops(crafts);
 
-        if(schedulesPerDay.TryGetValue(day, out var previousSchedule))
+        if(SchedulesPerDay.TryGetValue(day, out var previousSchedule))
         {
-            totalGross -= previousSchedule.value;
-            totalNet -= (previousSchedule.value - previousSchedule.schedule.getMaterialCost());
-            schedulesPerDay.Remove(day);
+            TotalGross -= previousSchedule.value;
+            TotalNet -= (previousSchedule.value - previousSchedule.schedule.GetMaterialCost());
+            SchedulesPerDay.Remove(day);
         }
 
-        int zeroGrooveValue = schedule.getValue();
-        int groove = getEndingGrooveForDay(day - 1);
+        int zeroGrooveValue = schedule.GetValue();
+        int groove = GetEndingGrooveForDay(day - 1);
         schedule.startingGroove = groove;
-        int gross = schedule.getValue();
-        totalGross += gross;
+        int gross = schedule.GetValue();
+        TotalGross += gross;
 
-        int net = gross - schedule.getMaterialCost();
-        totalNet += net;
+        int net = gross - schedule.GetMaterialCost();
+        TotalNet += net;
         groove = schedule.endingGroove;
 
         if (day != 0)
@@ -460,36 +462,22 @@ public class Solver
 
         foreach (var kvp in schedule.numCrafted)
         {
-            items[(int)kvp.Key].setCrafted(kvp.Value, day);
+            Items[(int)kvp.Key].SetCrafted(kvp.Value, day);
         }
-        schedulesPerDay.Add(day, (schedule, gross));
+        SchedulesPerDay.Add(day, (schedule, gross));
 
-        if (schedule.hasAnyUnsurePeaks())
-            importer.writeEndDay(day, groove, -1, -1, crafts);
+        if (schedule.HasAnyUnsurePeaks())
+            Importer.WriteEndDay(day, groove, -1, -1, crafts);
         else
-            importer.writeEndDay(day, groove, gross, net, crafts);
+            Importer.WriteEndDay(day, groove, gross, net, crafts);
 
         //Don't think we should do this
         //updateRestedStatus();
     }
-
-    public static void updateRestedStatus()
-    {
-        rested = false;
-        for(int i=1; i<importer.endDays.Count && i <= currentDay; i++)
-        {
-            if (importer.endDays[i].endingGross == 0)
-            {
-                PluginLog.LogInformation("Rest day found on day " + (i+1));
-                rested = true;
-            }
-        }
-    }
-
-    private static Dictionary<WorkshopSchedule, int> getSuggestedSchedules(int day, int startingGroove, HashSet<Item>? reservedForLater, bool allowAllOthers = true)
+    private static Dictionary<WorkshopSchedule, int> GetSuggestedSchedules(int day, int startingGroove, HashSet<Item>? reservedForLater, bool allowAllOthers = true)
     {
         if (startingGroove == -1)
-            startingGroove = getEndingGrooveForDay(currentDay - 1);
+            startingGroove = GetEndingGrooveForDay(CurrentDay - 1);
 
         var fourHour = new List<ItemInfo>();
         var eightHour = new List<ItemInfo>();
@@ -498,18 +486,18 @@ public class Solver
         if (reservedForLater == null || reservedForLater.Count == 0)
             allowAllOthers = false;
 
-        foreach (ItemInfo item in items)
+        foreach (ItemInfo item in Items)
         {
             List<ItemInfo>? bucket = null;
 
             if (reservedForLater != null && reservedForLater.Contains(item.item))
                 continue;
 
-            if (item.time == 4 && item.rankUnlocked <= islandRank && (allowAllOthers || item.peaksOnOrBeforeDay(day, true)))
+            if (item.time == 4 && item.rankUnlocked <= IslandRank && (allowAllOthers || item.PeaksOnOrBeforeDay(day, true)))
                 bucket = fourHour;
-            else if (item.time == 6 && item.rankUnlocked <= islandRank && (allowAllOthers || item.peaksOnOrBeforeDay(day, false)))
+            else if (item.time == 6 && item.rankUnlocked <= IslandRank && (allowAllOthers || item.PeaksOnOrBeforeDay(day, false)))
                 bucket = sixHour;
-            else if (item.time == 8 && item.rankUnlocked <= islandRank && (allowAllOthers || item.peaksOnOrBeforeDay(day, false)))
+            else if (item.time == 8 && item.rankUnlocked <= IslandRank && (allowAllOthers || item.PeaksOnOrBeforeDay(day, false)))
                 bucket = eightHour;
 
             if (bucket != null)
@@ -531,7 +519,7 @@ public class Solver
             var eightMatchEnum = eightHour.GetEnumerator();
             while (eightMatchEnum.MoveNext())
             {
-                addScheduleIfEfficient(eightMatchEnum.Current, topItem,
+                AddScheduleIfEfficient(eightMatchEnum.Current, topItem,
                     new List<Item> { topItem.item, eightMatchEnum.Current.item, topItem.item }, day, safeSchedules, startingGroove);
             }
 
@@ -539,7 +527,7 @@ public class Solver
             var firstFourMatchEnum = fourHour.GetEnumerator();
             while (firstFourMatchEnum.MoveNext())
             {
-                if (!firstFourMatchEnum.Current.getsEfficiencyBonus(topItem))
+                if (!firstFourMatchEnum.Current.GetsEfficiencyBonus(topItem))
                     continue;
 
                     //PluginLog.LogVerbose("Found 4hr match, matching with " + firstFourMatchEnum.Current.item);
@@ -548,25 +536,25 @@ public class Solver
                 while (secondFourMatchEnum.MoveNext())
                 {
                         //PluginLog.LogVerbose("Checking potential 4hr match: " + secondFourMatchEnum.Current.item);
-                    addScheduleIfEfficient(secondFourMatchEnum.Current, topItem,
+                    AddScheduleIfEfficient(secondFourMatchEnum.Current, topItem,
                         new List<Item> { firstFourMatchEnum.Current.item, topItem.item, secondFourMatchEnum.Current.item, topItem.item },
                         day, safeSchedules, startingGroove);
 
 
-                    if (!secondFourMatchEnum.Current.getsEfficiencyBonus(firstFourMatchEnum.Current))
+                    if (!secondFourMatchEnum.Current.GetsEfficiencyBonus(firstFourMatchEnum.Current))
                         continue;
 
                     var thirdFourMatchEnum = fourHour.GetEnumerator();
                     while (thirdFourMatchEnum.MoveNext())
                     {
-                        if (!secondFourMatchEnum.Current.getsEfficiencyBonus(thirdFourMatchEnum.Current))
+                        if (!secondFourMatchEnum.Current.GetsEfficiencyBonus(thirdFourMatchEnum.Current))
                             continue;
 
 
                         var fourthFourMatchEnum = fourHour.GetEnumerator();
                         while (fourthFourMatchEnum.MoveNext())
                         {
-                            addScheduleIfEfficient(fourthFourMatchEnum.Current, thirdFourMatchEnum.Current,
+                            AddScheduleIfEfficient(fourthFourMatchEnum.Current, thirdFourMatchEnum.Current,
                                 new List<Item> { fourthFourMatchEnum.Current.item, thirdFourMatchEnum.Current.item, secondFourMatchEnum.Current.item, firstFourMatchEnum.Current.item, topItem.item },
                                 day, safeSchedules, startingGroove);
                         }
@@ -579,12 +567,12 @@ public class Solver
             while (sixMatchEnum.MoveNext())
             {
                 var sixHourMatch = sixMatchEnum.Current;
-                if (!sixHourMatch.getsEfficiencyBonus(topItem))
+                if (!sixHourMatch.GetsEfficiencyBonus(topItem))
                     continue;
                 var fourMatchEnum = fourHour.GetEnumerator();
                 while (fourMatchEnum.MoveNext())
                 {
-                    addScheduleIfEfficient(fourMatchEnum.Current, sixHourMatch,
+                    AddScheduleIfEfficient(fourMatchEnum.Current, sixHourMatch,
                         new List<Item> { fourMatchEnum.Current.item, sixHourMatch.item, topItem.item, sixHourMatch.item },
                         day, safeSchedules, startingGroove);
                 }
@@ -605,7 +593,7 @@ public class Solver
             var sixMatchEnum = sixHour.GetEnumerator();
             while (sixMatchEnum.MoveNext())
             {
-                if (!sixMatchEnum.Current.getsEfficiencyBonus(topItem))
+                if (!sixMatchEnum.Current.GetsEfficiencyBonus(topItem))
                     continue;
                 sixMatches.Add(sixMatchEnum.Current);
             }
@@ -614,7 +602,7 @@ public class Solver
                 foreach (ItemInfo secondSix in sixMatches)
                 {
                         //PluginLog.LogVerbose("Adding 6-6-6-6 schedule made out of helpers " + firstSix.item + ", " + secondSix.item + ", and top item: " + topItem.item);
-                    addToScheduleMap(new List<Item> { secondSix.item, topItem.item, firstSix.item, topItem.item },
+                    AddToScheduleMap(new List<Item> { secondSix.item, topItem.item, firstSix.item, topItem.item },
                     day, safeSchedules, startingGroove);
                 }
             }
@@ -623,7 +611,7 @@ public class Solver
             var firstFourMatchEnum = fourHour.GetEnumerator();
             while (firstFourMatchEnum.MoveNext())
             {
-                if (!firstFourMatchEnum.Current.getsEfficiencyBonus(topItem))
+                if (!firstFourMatchEnum.Current.GetsEfficiencyBonus(topItem))
                     continue;
 
 
@@ -631,31 +619,31 @@ public class Solver
                 //4-6-6-6
                 while (sixFourMatchEnum.MoveNext())
                 {
-                    addToScheduleMap(new List<Item> { firstFourMatchEnum.Current.item, topItem.item, sixFourMatchEnum.Current.item, topItem.item },
+                    AddToScheduleMap(new List<Item> { firstFourMatchEnum.Current.item, topItem.item, sixFourMatchEnum.Current.item, topItem.item },
                         day, safeSchedules, startingGroove);
                 }
 
                 var secondFourMatchEnum = fourHour.GetEnumerator();
                 while (secondFourMatchEnum.MoveNext())
                 {
-                    if (!secondFourMatchEnum.Current.getsEfficiencyBonus(firstFourMatchEnum.Current))
+                    if (!secondFourMatchEnum.Current.GetsEfficiencyBonus(firstFourMatchEnum.Current))
                         continue;
 
-                    addScheduleIfEfficient(secondFourMatchEnum.Current, topItem,
+                    AddScheduleIfEfficient(secondFourMatchEnum.Current, topItem,
                         new List<Item> { firstFourMatchEnum.Current.item, secondFourMatchEnum.Current.item, topItem.item, firstFourMatchEnum.Current.item, topItem.item },
                         day, safeSchedules, startingGroove);
-                    addToScheduleMap(new List<Item> { secondFourMatchEnum.Current.item, firstFourMatchEnum.Current.item, topItem.item, firstFourMatchEnum.Current.item, topItem.item },
+                    AddToScheduleMap(new List<Item> { secondFourMatchEnum.Current.item, firstFourMatchEnum.Current.item, topItem.item, firstFourMatchEnum.Current.item, topItem.item },
                         day, safeSchedules, startingGroove);
 
                     var thirdFourMatchEnum = fourHour.GetEnumerator();
                     while (thirdFourMatchEnum.MoveNext())
                     {
-                        if (!secondFourMatchEnum.Current.getsEfficiencyBonus(thirdFourMatchEnum.Current))
+                        if (!secondFourMatchEnum.Current.GetsEfficiencyBonus(thirdFourMatchEnum.Current))
                             continue;
                         var fourthFourMatchEnum = fourHour.GetEnumerator();
                         while (fourthFourMatchEnum.MoveNext())
                         {
-                            addScheduleIfEfficient(fourthFourMatchEnum.Current, thirdFourMatchEnum.Current,
+                            AddScheduleIfEfficient(fourthFourMatchEnum.Current, thirdFourMatchEnum.Current,
                                 new List<Item> { fourthFourMatchEnum.Current.item, thirdFourMatchEnum.Current.item, secondFourMatchEnum.Current.item, firstFourMatchEnum.Current.item, topItem.item },
                                 day, safeSchedules, startingGroove);
                         }
@@ -667,9 +655,9 @@ public class Solver
         return safeSchedules;
     }
 
-    private static KeyValuePair<WorkshopSchedule, int> getBestSchedule(int day, HashSet<Item>? reservedForLater, bool allowAllOthers = true)
+    private static KeyValuePair<WorkshopSchedule, int> GetBestSchedule(int day, HashSet<Item>? reservedForLater, bool allowAllOthers = true)
     {
-        var suggested = new SuggestedSchedules(getSuggestedSchedules(day, -1, reservedForLater, allowAllOthers));
+        var suggested = new SuggestedSchedules(GetSuggestedSchedules(day, -1, reservedForLater, allowAllOthers));
         var scheduleEnum = suggested.orderedSuggestions.GetEnumerator();
         scheduleEnum.MoveNext();
         var bestSchedule = scheduleEnum.Current;
@@ -677,21 +665,21 @@ public class Solver
         return bestSchedule;//new KeyValuePair<WorkshopSchedule, int>(new WorkshopSchedule(bestSchedule.Key), bestSchedule.Value);
     }
 
-    public static bool addScheduleIfEfficient(ItemInfo newItem, ItemInfo origItem, List<Item> scheduledItems, int day, Dictionary<WorkshopSchedule, int> safeSchedules, int startingGroove)
+    public static bool AddScheduleIfEfficient(ItemInfo newItem, ItemInfo origItem, List<Item> scheduledItems, int day, Dictionary<WorkshopSchedule, int> safeSchedules, int startingGroove)
     {
-        if (!newItem.getsEfficiencyBonus(origItem))
+        if (!newItem.GetsEfficiencyBonus(origItem))
             return false;
 
 
-        addToScheduleMap(scheduledItems, day, safeSchedules, startingGroove);
+        AddToScheduleMap(scheduledItems, day, safeSchedules, startingGroove);
         return true;
     }
 
-    private static int addToScheduleMap(List<Item> list, int day, Dictionary<WorkshopSchedule, int> safeSchedules, int startingGroove)
+    private static int AddToScheduleMap(List<Item> list, int day, Dictionary<WorkshopSchedule, int> safeSchedules, int startingGroove)
     {
         WorkshopSchedule workshop = new WorkshopSchedule(list);
 
-        int value = workshop.getValueWithGrooveEstimate(day, startingGroove);
+        int value = workshop.GetValueWithGrooveEstimate(day, startingGroove);
         //Only add if we don't already have one with this schedule or ours is better
         if(safeSchedules.TryGetValue(workshop, out int oldValue))
         {
@@ -721,99 +709,99 @@ public class Solver
 
     }
 
-    private static void setInitialFromCSV()
+    private static void SetInitialFromCSV()
     {
-        for (int i = 0; i < items.Count; i++)
+        for (int i = 0; i < Items.Count; i++)
         {
-            items[i].setInitialData(importer.currentPopularity[i], importer.lastWeekPeaks[i]);
+            Items[i].SetInitialData(Importer.currentPopularity[i], Importer.lastWeekPeaks[i]);
         }
     }
 
-    private static void setObservedFromCSV(int day)
+    private static void SetObservedFromCSV(int day)
     {
-        bool hasDaySummary = day < importer.endDays.Count;
+        bool hasDaySummary = day < Importer.endDays.Count;
 
-        for (int i = 0; i < importer.observedSupplies.Count; i++)
+        for (int i = 0; i < Importer.observedSupplies.Count; i++)
         {
-            if (day < 6 && importer.observedSupplies[i].ContainsKey(day))
+            if (day < 6 && Importer.observedSupplies[i].ContainsKey(day))
             {
                 
-                ObservedSupply ob = importer.observedSupplies[i][day];
+                ObservedSupply ob = Importer.observedSupplies[i][day];
                 int observedHour = 0;
-                if (importer.observedSupplyHours.Count > day)
-                    observedHour = importer.observedSupplyHours[day];
-                items[i].addObservedDay(ob, day, observedHour);
+                if (Importer.observedSupplyHours.Count > day)
+                    observedHour = Importer.observedSupplyHours[day];
+                Items[i].AddObservedDay(ob, day, observedHour);
             }
-            if (hasDaySummary && importer.endDays[day].craftedItems() > i)
-                items[i].setCrafted(importer.endDays[day].getCrafted(i), day);
+            if (hasDaySummary && Importer.endDays[day].NumCraftedCount() > i)
+                Items[i].SetCrafted(Importer.endDays[day].GetCrafted(i), day);
             else
-                items[i].setCrafted(0, day);
+                Items[i].SetCrafted(0, day);
         }
         
-        if(hasDaySummary && importer.endDays[day].endingGross > -1)
+        if(hasDaySummary && Importer.endDays[day].endingGross > -1)
         {
-            PluginLog.LogDebug("Adding totals from day " + day + ": " + importer.endDays[day]);
-            totalGross += importer.endDays[day].endingGross;
-            totalNet += importer.endDays[day].endingNet;
+            PluginLog.LogDebug("Adding totals from day " + day + ": " + Importer.endDays[day]);
+            TotalGross += Importer.endDays[day].endingGross;
+            TotalNet += Importer.endDays[day].endingNet;
         }
     }
 
-    public static void initItems()
+    public static void InitItems()
     {
-        items = new List<ItemInfo>();
-        items.Add(new ItemInfo(Potion, Concoctions, Invalid, 28, 4, 1, null));
-        items.Add(new ItemInfo(Firesand, Concoctions, UnburiedTreasures, 28, 4, 1, null));
-        items.Add(new ItemInfo(WoodenChair, Furnishings, Woodworks, 42, 6, 1, null));
-        items.Add(new ItemInfo(GrilledClam, Foodstuffs, MarineMerchandise, 28, 4, 1, null));
-        items.Add(new ItemInfo(Necklace, Accessories, Woodworks, 28, 4, 1, null));
-        items.Add(new ItemInfo(CoralRing, Accessories, MarineMerchandise, 42, 6, 1, null));
-        items.Add(new ItemInfo(Barbut, Attire, Metalworks, 42, 6, 1, null));
-        items.Add(new ItemInfo(Macuahuitl, Arms, Woodworks, 42, 6, 1, null));
-        items.Add(new ItemInfo(Sauerkraut, PreservedFood, Invalid, 40, 4, 1, new Dictionary<RareMaterial, int>() { { Cabbage, 1 } }));
-        items.Add(new ItemInfo(BakedPumpkin, Foodstuffs, Invalid, 40, 4, 1, new Dictionary<RareMaterial, int>() { { Pumpkin, 1 } }));
-        items.Add(new ItemInfo(Tunic, Attire, Textiles, 72, 6, 1, new Dictionary<RareMaterial, int>() { { Fleece, 2 } }));
-        items.Add(new ItemInfo(CulinaryKnife, Sundries, CreatureCreations, 44, 4, 1, new Dictionary<RareMaterial, int>() { { Claw, 1 } }));
-        items.Add(new ItemInfo(Brush, Sundries, Woodworks, 44, 4, 1, new Dictionary<RareMaterial, int>() { { Fur, 1 } }));
-        items.Add(new ItemInfo(BoiledEgg, Foodstuffs, CreatureCreations, 44, 4, 1, new Dictionary<RareMaterial, int>() { { Egg, 1 } }));
-        items.Add(new ItemInfo(Hora, Arms, CreatureCreations, 72, 6, 1, new Dictionary<RareMaterial, int>() { { Carapace, 2 } }));
-        items.Add(new ItemInfo(Earrings, Accessories, CreatureCreations, 44, 4, 1, new Dictionary<RareMaterial, int>() { { Fang, 1 } }));
-        items.Add(new ItemInfo(Butter, Ingredients, CreatureCreations, 44, 4, 1, new Dictionary<RareMaterial, int>() { { Milk, 1 } }));
-        items.Add(new ItemInfo(BrickCounter, Furnishings, UnburiedTreasures, 48, 6, 5, null));
-        items.Add(new ItemInfo(BronzeSheep, Furnishings, Metalworks, 64, 8, 5, null));
-        items.Add(new ItemInfo(GrowthFormula, Concoctions, Invalid, 136, 8, 5, new Dictionary<RareMaterial, int>() { { Alyssum, 2 } }));
-        items.Add(new ItemInfo(GarnetRapier, Arms, UnburiedTreasures, 136, 8, 5, new Dictionary<RareMaterial, int>() { { Garnet, 2 } }));
-        items.Add(new ItemInfo(SpruceRoundShield, Attire, Woodworks, 136, 8, 5, new Dictionary<RareMaterial, int>() { { Spruce, 2 } }));
-        items.Add(new ItemInfo(SharkOil, Sundries, MarineMerchandise, 136, 8, 5, new Dictionary<RareMaterial, int>() { { Shark, 2 } }));
-        items.Add(new ItemInfo(SilverEarCuffs, Accessories, Metalworks, 136, 8, 5, new Dictionary<RareMaterial, int>() { { Silver, 2 } }));
-        items.Add(new ItemInfo(SweetPopoto, Confections, Invalid, 72, 6, 5, new Dictionary<RareMaterial, int>() { { Popoto, 2 }, { Milk, 1 } }));
-        items.Add(new ItemInfo(ParsnipSalad, Foodstuffs, Invalid, 48, 4, 5, new Dictionary<RareMaterial, int>() { { Parsnip, 2 } }));
-        items.Add(new ItemInfo(Caramels, Confections, Invalid, 81, 6, 6, new Dictionary<RareMaterial, int>() { { Milk, 2 } }));
-        items.Add(new ItemInfo(Ribbon, Accessories, Textiles, 54, 6, 6, null));
-        items.Add(new ItemInfo(Rope, Sundries, Textiles, 36, 4, 6, null));
-        items.Add(new ItemInfo(CavaliersHat, Attire, Textiles, 81, 6, 6, new Dictionary<RareMaterial, int>() { { Feather, 2 } }));
-        items.Add(new ItemInfo(Item.Horn, Sundries, CreatureCreations, 81, 6, 6, new Dictionary<RareMaterial, int>() { { RareMaterial.Horn, 2 } }));
-        items.Add(new ItemInfo(SaltCod, PreservedFood, MarineMerchandise, 54, 6, 7, null));
-        items.Add(new ItemInfo(SquidInk, Ingredients, MarineMerchandise, 36, 4, 7, null));
-        items.Add(new ItemInfo(EssentialDraught, Concoctions, MarineMerchandise, 54, 6, 7, null));
-        items.Add(new ItemInfo(Jam, Ingredients, Invalid, 78, 6, 7, new Dictionary<RareMaterial, int>() { { Isleberry, 3 } }));
-        items.Add(new ItemInfo(TomatoRelish, Ingredients, Invalid, 52, 4, 7, new Dictionary<RareMaterial, int>() { { Tomato, 2 } }));
-        items.Add(new ItemInfo(OnionSoup, Foodstuffs, Invalid, 78, 6, 7, new Dictionary<RareMaterial, int>() { { Onion, 3 } }));
-        items.Add(new ItemInfo(Pie, Confections, MarineMerchandise, 78, 6, 7, new Dictionary<RareMaterial, int>() { { Wheat, 3 } }));
-        items.Add(new ItemInfo(CornFlakes, PreservedFood, Invalid, 52, 4, 7, new Dictionary<RareMaterial, int>() { { Corn, 2 } }));
-        items.Add(new ItemInfo(PickledRadish, PreservedFood, Invalid, 104, 8, 7, new Dictionary<RareMaterial, int>() { { Radish, 4 } }));
-        items.Add(new ItemInfo(IronAxe, Arms, Metalworks, 72, 8, 8, null));
-        items.Add(new ItemInfo(QuartzRing, Accessories, UnburiedTreasures, 72, 8, 8, null));
-        items.Add(new ItemInfo(PorcelainVase, Sundries, UnburiedTreasures, 72, 8, 8, null));
-        items.Add(new ItemInfo(VegetableJuice, Concoctions, Invalid, 78, 6, 8, new Dictionary<RareMaterial, int>() { { Cabbage, 3 } }));
-        items.Add(new ItemInfo(PumpkinPudding, Confections, Invalid, 78, 6, 8, new Dictionary<RareMaterial, int>() { { Pumpkin, 3 }, { Egg, 1 }, { Milk, 1 } }));
-        items.Add(new ItemInfo(SheepfluffRug, Furnishings, CreatureCreations, 90, 6, 8, new Dictionary<RareMaterial, int>() { { Fleece, 3 } }));
-        items.Add(new ItemInfo(GardenScythe, Sundries, Metalworks, 90, 6, 9, new Dictionary<RareMaterial, int>() { { Claw, 3 } }));
-        items.Add(new ItemInfo(Bed, Furnishings, Textiles, 120, 8, 9, new Dictionary<RareMaterial, int>() { { Fur, 4 } }));
-        items.Add(new ItemInfo(ScaleFingers, Attire, CreatureCreations, 120, 8, 9, new Dictionary<RareMaterial, int>() { { Carapace, 4 } }));
-        items.Add(new ItemInfo(Crook, Arms, Woodworks, 120, 8, 9, new Dictionary<RareMaterial, int>() { { Fang, 4 } }));
+        Items = new List<ItemInfo>();
+        Items.Add(new ItemInfo(Potion, Concoctions, Invalid, 28, 4, 1, null));
+        Items.Add(new ItemInfo(Firesand, Concoctions, UnburiedTreasures, 28, 4, 1, null));
+        Items.Add(new ItemInfo(WoodenChair, Furnishings, Woodworks, 42, 6, 1, null));
+        Items.Add(new ItemInfo(GrilledClam, Foodstuffs, MarineMerchandise, 28, 4, 1, null));
+        Items.Add(new ItemInfo(Necklace, Accessories, Woodworks, 28, 4, 1, null));
+        Items.Add(new ItemInfo(CoralRing, Accessories, MarineMerchandise, 42, 6, 1, null));
+        Items.Add(new ItemInfo(Barbut, Attire, Metalworks, 42, 6, 1, null));
+        Items.Add(new ItemInfo(Macuahuitl, Arms, Woodworks, 42, 6, 1, null));
+        Items.Add(new ItemInfo(Sauerkraut, PreservedFood, Invalid, 40, 4, 1, new Dictionary<RareMaterial, int>() { { Cabbage, 1 } }));
+        Items.Add(new ItemInfo(BakedPumpkin, Foodstuffs, Invalid, 40, 4, 1, new Dictionary<RareMaterial, int>() { { Pumpkin, 1 } }));
+        Items.Add(new ItemInfo(Tunic, Attire, Textiles, 72, 6, 1, new Dictionary<RareMaterial, int>() { { Fleece, 2 } }));
+        Items.Add(new ItemInfo(CulinaryKnife, Sundries, CreatureCreations, 44, 4, 1, new Dictionary<RareMaterial, int>() { { Claw, 1 } }));
+        Items.Add(new ItemInfo(Brush, Sundries, Woodworks, 44, 4, 1, new Dictionary<RareMaterial, int>() { { Fur, 1 } }));
+        Items.Add(new ItemInfo(BoiledEgg, Foodstuffs, CreatureCreations, 44, 4, 1, new Dictionary<RareMaterial, int>() { { Egg, 1 } }));
+        Items.Add(new ItemInfo(Hora, Arms, CreatureCreations, 72, 6, 1, new Dictionary<RareMaterial, int>() { { Carapace, 2 } }));
+        Items.Add(new ItemInfo(Earrings, Accessories, CreatureCreations, 44, 4, 1, new Dictionary<RareMaterial, int>() { { Fang, 1 } }));
+        Items.Add(new ItemInfo(Butter, Ingredients, CreatureCreations, 44, 4, 1, new Dictionary<RareMaterial, int>() { { Milk, 1 } }));
+        Items.Add(new ItemInfo(BrickCounter, Furnishings, UnburiedTreasures, 48, 6, 5, null));
+        Items.Add(new ItemInfo(BronzeSheep, Furnishings, Metalworks, 64, 8, 5, null));
+        Items.Add(new ItemInfo(GrowthFormula, Concoctions, Invalid, 136, 8, 5, new Dictionary<RareMaterial, int>() { { Alyssum, 2 } }));
+        Items.Add(new ItemInfo(GarnetRapier, Arms, UnburiedTreasures, 136, 8, 5, new Dictionary<RareMaterial, int>() { { Garnet, 2 } }));
+        Items.Add(new ItemInfo(SpruceRoundShield, Attire, Woodworks, 136, 8, 5, new Dictionary<RareMaterial, int>() { { Spruce, 2 } }));
+        Items.Add(new ItemInfo(SharkOil, Sundries, MarineMerchandise, 136, 8, 5, new Dictionary<RareMaterial, int>() { { Shark, 2 } }));
+        Items.Add(new ItemInfo(SilverEarCuffs, Accessories, Metalworks, 136, 8, 5, new Dictionary<RareMaterial, int>() { { Silver, 2 } }));
+        Items.Add(new ItemInfo(SweetPopoto, Confections, Invalid, 72, 6, 5, new Dictionary<RareMaterial, int>() { { Popoto, 2 }, { Milk, 1 } }));
+        Items.Add(new ItemInfo(ParsnipSalad, Foodstuffs, Invalid, 48, 4, 5, new Dictionary<RareMaterial, int>() { { Parsnip, 2 } }));
+        Items.Add(new ItemInfo(Caramels, Confections, Invalid, 81, 6, 6, new Dictionary<RareMaterial, int>() { { Milk, 2 } }));
+        Items.Add(new ItemInfo(Ribbon, Accessories, Textiles, 54, 6, 6, null));
+        Items.Add(new ItemInfo(Rope, Sundries, Textiles, 36, 4, 6, null));
+        Items.Add(new ItemInfo(CavaliersHat, Attire, Textiles, 81, 6, 6, new Dictionary<RareMaterial, int>() { { Feather, 2 } }));
+        Items.Add(new ItemInfo(Item.Horn, Sundries, CreatureCreations, 81, 6, 6, new Dictionary<RareMaterial, int>() { { RareMaterial.Horn, 2 } }));
+        Items.Add(new ItemInfo(SaltCod, PreservedFood, MarineMerchandise, 54, 6, 7, null));
+        Items.Add(new ItemInfo(SquidInk, Ingredients, MarineMerchandise, 36, 4, 7, null));
+        Items.Add(new ItemInfo(EssentialDraught, Concoctions, MarineMerchandise, 54, 6, 7, null));
+        Items.Add(new ItemInfo(Jam, Ingredients, Invalid, 78, 6, 7, new Dictionary<RareMaterial, int>() { { Isleberry, 3 } }));
+        Items.Add(new ItemInfo(TomatoRelish, Ingredients, Invalid, 52, 4, 7, new Dictionary<RareMaterial, int>() { { Tomato, 2 } }));
+        Items.Add(new ItemInfo(OnionSoup, Foodstuffs, Invalid, 78, 6, 7, new Dictionary<RareMaterial, int>() { { Onion, 3 } }));
+        Items.Add(new ItemInfo(Pie, Confections, MarineMerchandise, 78, 6, 7, new Dictionary<RareMaterial, int>() { { Wheat, 3 } }));
+        Items.Add(new ItemInfo(CornFlakes, PreservedFood, Invalid, 52, 4, 7, new Dictionary<RareMaterial, int>() { { Corn, 2 } }));
+        Items.Add(new ItemInfo(PickledRadish, PreservedFood, Invalid, 104, 8, 7, new Dictionary<RareMaterial, int>() { { Radish, 4 } }));
+        Items.Add(new ItemInfo(IronAxe, Arms, Metalworks, 72, 8, 8, null));
+        Items.Add(new ItemInfo(QuartzRing, Accessories, UnburiedTreasures, 72, 8, 8, null));
+        Items.Add(new ItemInfo(PorcelainVase, Sundries, UnburiedTreasures, 72, 8, 8, null));
+        Items.Add(new ItemInfo(VegetableJuice, Concoctions, Invalid, 78, 6, 8, new Dictionary<RareMaterial, int>() { { Cabbage, 3 } }));
+        Items.Add(new ItemInfo(PumpkinPudding, Confections, Invalid, 78, 6, 8, new Dictionary<RareMaterial, int>() { { Pumpkin, 3 }, { Egg, 1 }, { Milk, 1 } }));
+        Items.Add(new ItemInfo(SheepfluffRug, Furnishings, CreatureCreations, 90, 6, 8, new Dictionary<RareMaterial, int>() { { Fleece, 3 } }));
+        Items.Add(new ItemInfo(GardenScythe, Sundries, Metalworks, 90, 6, 9, new Dictionary<RareMaterial, int>() { { Claw, 3 } }));
+        Items.Add(new ItemInfo(Bed, Furnishings, Textiles, 120, 8, 9, new Dictionary<RareMaterial, int>() { { Fur, 4 } }));
+        Items.Add(new ItemInfo(ScaleFingers, Attire, CreatureCreations, 120, 8, 9, new Dictionary<RareMaterial, int>() { { Carapace, 4 } }));
+        Items.Add(new ItemInfo(Crook, Arms, Woodworks, 120, 8, 9, new Dictionary<RareMaterial, int>() { { Fang, 4 } }));
     }
 
-    public static int getCurrentWeek()
+    public static int GetCurrentWeek()
     {
         //August 23 2022
         DateTime startOfIS = new DateTime(2022, 8, 23, 8, 0, 0, DateTimeKind.Utc);
@@ -827,7 +815,7 @@ public class Solver
         return week;
     }
 
-    public static int getCurrentDay()
+    public static int GetCurrentDay()
     {
         DateTime startOfIS = new DateTime(2022, 8, 23, 8, 0, 0, DateTimeKind.Utc);
         DateTime current = DateTime.UtcNow;
@@ -836,7 +824,7 @@ public class Solver
         return timeSinceStart.Days % 7;
     }
 
-    public static int getCurrentHour()
+    public static int GetCurrentHour()
     {
         DateTime startOfIS = new DateTime(2022, 8, 23, 8, 0, 0, DateTimeKind.Utc);
         DateTime current = DateTime.UtcNow;
@@ -844,33 +832,33 @@ public class Solver
         return timeSinceStart.Hours;
     }
 
-    public static bool writeTodaySupply(string[] products)
+    public static bool WriteTodaySupply(string[] products)
     {
-        currentDay = getCurrentDay();
-        if (initStep < 1)
+        CurrentDay = GetCurrentDay();
+        if (InitStep < 1)
         {
             PluginLog.LogError("Trying to run solver before solver initiated");
             return false;
         }
-        else if (initStep > 1)
+        else if (InitStep > 1)
             return true;
 
-        bool needToWrite = importer.needNewWeekData(getCurrentWeek()) || (currentDay < 6 && importer.needNewTodayData(currentDay));
+        bool needToWrite = Importer.NeedNewWeekData(GetCurrentWeek()) || (CurrentDay < 6 && Importer.NeedNewTodayData(CurrentDay));
         if (!needToWrite)
             return true;
 
 
         PluginLog.LogInformation("Trying to write supply info starting with " + products[0]);
-        if (isProductsValid(products))
+        if (IsProductsValid(products))
         {
-            if (importer.needNewWeekData(getCurrentWeek()))
+            if (Importer.NeedNewWeekData(GetCurrentWeek()))
             {
-                importer.writeWeekStart(products);
+                Importer.WriteWeekStart(products);
             }
             
-            if(importer.needNewTodayData(currentDay))
+            if(Importer.NeedNewTodayData(CurrentDay))
             {
-                importer.writeNewSupply(products, currentDay);
+                Importer.WriteNewSupply(products, CurrentDay);
             }
             return true;
         }
@@ -880,9 +868,9 @@ public class Solver
         
     }
 
-    private static bool isProductsValid(string[] products)
+    private static bool IsProductsValid(string[] products)
     {
-        if (products.Length < Solver.items.Count)
+        if (products.Length < Solver.Items.Count)
             return false;
 
         int numNE = 0;
@@ -893,10 +881,35 @@ public class Solver
                 numNE++;
             }
 
-            if (numNE > 5)
+            if (numNE > 4)
                 return false;
         }
 
-        return true;
+        //Make sure this isn't just yesterday's data
+        if(CurrentDay>1 && Importer.observedSupplies.Count > 0 && Importer.observedSupplies[0].ContainsKey(CurrentDay-1))
+        {
+            for (int i = 0; i < Solver.Items.Count; i++)
+            {
+                string product = products[i];
+                Supply yesterdaySupp = Importer.observedSupplies[i][CurrentDay - 1].supply;
+
+                //Check to see if any of the products have supply lower than we recorded it
+                //(this should apply to at least 16 things each day and we can't have made all of them)
+                for(int s = (int)yesterdaySupp+1; s<=(int)Supply.Nonexistent; s++)
+                {
+                    if (product.Contains(((Supply)s).ToString()))
+                        return true;
+                }
+            }
+        }
+        else //If we don't have yesterday's data then this is probably fine? 
+        {
+            return true;
+        }
+
+        //This uses currentDay to refer to yesterday because it'd be currentDay - 1 (for yesterday)
+        //+ 1 (for displaying 1-indexed) and that's just silly
+        PluginLog.LogWarning("No products have gone down in supply since day {0}'s supply data. We probably haven't updated today.", CurrentDay);
+        return false;
     }
 }

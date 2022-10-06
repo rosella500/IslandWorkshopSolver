@@ -50,11 +50,11 @@ public static class Peaks
 
     private static PeakAttr GetAttr(PeakCycle p)
     {
-        return (PeakAttr)Attribute.GetCustomAttribute(ForValue(p), typeof(PeakAttr));
+        return (PeakAttr)Attribute.GetCustomAttribute(ForValue(p), typeof(PeakAttr))!;
     }
 
     private static MemberInfo ForValue(PeakCycle p)
     {
-        return typeof(PeakCycle).GetField(Enum.GetName(typeof(PeakCycle), p));
+        return typeof(PeakCycle).GetField(Enum.GetName(typeof(PeakCycle), p)!)!;
     }
 }

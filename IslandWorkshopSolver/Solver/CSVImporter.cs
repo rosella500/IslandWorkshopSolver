@@ -17,23 +17,35 @@ public class CSVImporter
     public PeakCycle[] currentPeaks;
     private string rootPath;
     private int currentWeek;
+
+    //Don't ever call this, it's just there to make the compiler happy
+    public CSVImporter()
+    {
+        lastWeekPeaks = new PeakCycle[0];
+        currentPopularity = new Popularity[0];
+        currentPeaks = new PeakCycle[0];
+        observedSupplies = new List<Dictionary<int, ObservedSupply>>();
+        endDays = new List<EndDaySummary>();
+        observedSupplyHours = new List<int>();
+        rootPath = "";
+    }
     public CSVImporter(string root, int week)
     {
-        lastWeekPeaks = new PeakCycle[Solver.items.Count];
-        currentPopularity = new Popularity[Solver.items.Count];
-        currentPeaks = new PeakCycle[Solver.items.Count];
+        lastWeekPeaks = new PeakCycle[Solver.Items.Count];
+        currentPopularity = new Popularity[Solver.Items.Count];
+        currentPeaks = new PeakCycle[Solver.Items.Count];
         observedSupplies = new List<Dictionary<int, ObservedSupply>>();
         endDays = new List<EndDaySummary>();
         rootPath = root;
         currentWeek = week;
         observedSupplyHours = new List<int>();
-        initSupplyData();
+        InitSupplyData();
     }
 
-    public void writeWeekStart(string[] products)
+    public void WriteWeekStart(string[] products)
     {
         //Make new CSV for current week
-        string path = getPathForWeek(currentWeek);
+        string path = GetPathForWeek(currentWeek);
         if (File.Exists(path))
         {
             PluginLog.LogError("This week's file already exists at {0} ", path);
@@ -50,7 +62,7 @@ public class CSVImporter
                 if (productInfo.Length >= 4)
                 {
                     newFileContents[itemIndex] = productInfo[0] + "," + productInfo[1] ;
-                    parsePopularity(itemIndex, productInfo[1]);
+                    ParsePopularity(itemIndex, productInfo[1]);
                 }
             }
 
@@ -62,21 +74,21 @@ public class CSVImporter
         }
     }
 
-    public bool needNewWeekData(int currentWeek)
+    public bool NeedNewWeekData(int currentWeek)
     {
         this.currentWeek = currentWeek;
-        string path = getPathForWeek(currentWeek);
+        string path = GetPathForWeek(currentWeek);
         return !File.Exists(path);
     }
 
-    public bool needNewTodayData(int currentDay)
+    public bool NeedNewTodayData(int currentDay)
     {
         return observedSupplies.Count == 0 || !observedSupplies[0].ContainsKey(currentDay);
     }
 
-    public void writeNewSupply(string[] products, int currentDay)
+    public void WriteNewSupply(string[] products, int currentDay)
     {
-        string path = getPathForWeek(currentWeek);
+        string path = GetPathForWeek(currentWeek);
         if (!File.Exists(path))
         {
             PluginLog.LogError("No file found to add supply to at " + path);
@@ -90,7 +102,7 @@ public class CSVImporter
 
             bool changedFile = false;
             int column = 2 + (currentDay * 3);
-            for (int itemIndex = 0; itemIndex < Solver.items.Count; itemIndex++)
+            for (int itemIndex = 0; itemIndex < Solver.Items.Count; itemIndex++)
             {
                 string currentFileLine = fileInfo[itemIndex];
                 string[] fileItemInfo = currentFileLine.Split(',');
@@ -107,7 +119,7 @@ public class CSVImporter
                             sb.Append(',');
                         sb.Append(productInfo[2]).Append(',').Append(productInfo[3]);
                         fileInfo[itemIndex] = sb.ToString();
-                        parseObservedSupply(itemIndex, currentDay, productInfo[2], productInfo[3]);
+                        ParseObservedSupply(itemIndex, currentDay, productInfo[2], productInfo[3]);
                     }
                 }
                 else if (fileItemInfo.Length > column+1 && fileItemInfo[column].Length == 0)
@@ -119,7 +131,7 @@ public class CSVImporter
                         fileItemInfo[column] = productInfo[2];
                         fileItemInfo[column + 1] = productInfo[3];
                         fileInfo[itemIndex] = String.Join(",",fileItemInfo);
-                        parseObservedSupply(itemIndex, currentDay, productInfo[2], productInfo[3]);
+                        ParseObservedSupply(itemIndex, currentDay, productInfo[2], productInfo[3]);
                     }
                 }
                 else
@@ -131,19 +143,19 @@ public class CSVImporter
             {
                 List<string> newFileInfo = new List<string>(fileInfo);
                 //Add summary line
-                int lastWroteHour = Solver.getCurrentHour();
+                int lastWroteHour = Solver.GetCurrentHour();
                 while (observedSupplyHours.Count <= currentDay)
                     observedSupplyHours.Add(lastWroteHour);
 
-                if (Solver.items.Count >= newFileInfo.Count()) //Missing two summary rows
+                if (Solver.Items.Count >= newFileInfo.Count()) //Missing two summary rows
                 {
                     newFileInfo.Add("");
                     newFileInfo.Add("");
                 }
-                else if (Solver.items.Count + 1 >= newFileInfo.Count()) //Missing one summary row
+                else if (Solver.Items.Count + 1 >= newFileInfo.Count()) //Missing one summary row
                     newFileInfo.Add("");
 
-                string summaryRow = newFileInfo[Solver.items.Count + 1];
+                string summaryRow = newFileInfo[Solver.Items.Count + 1];
                 string[] split = summaryRow.Split(',');
                 if (split.Length < column + 1)
                 {
@@ -160,7 +172,7 @@ public class CSVImporter
                     split[column] = lastWroteHour.ToString();
                     summaryRow = String.Join(',', split);
                 }
-                newFileInfo[Solver.items.Count + 1] = summaryRow;
+                newFileInfo[Solver.Items.Count + 1] = summaryRow;
 
                 File.WriteAllLines(path, newFileInfo);
             }
@@ -175,13 +187,13 @@ public class CSVImporter
         }
     }
 
-    public void writeEndDay(int day, int groove, int gross, int net, List<Item> crafts)
+    public void WriteEndDay(int day, int groove, int gross, int net, List<Item> crafts)
     {
         PluginLog.LogDebug("Writing end day for day " + (day+1));
 
         int column = (day+1) * 3 + 1;
 
-        string path = rootPath + "\\Week" + (Solver.week) + "Supply.csv";
+        string path = rootPath + "\\Week" + (Solver.Week) + "Supply.csv";
 
         if (!File.Exists(path))
         {
@@ -197,7 +209,7 @@ public class CSVImporter
 
             if(day < 6)
             {
-                for (int c = 0; c < Solver.items.Count; c++)
+                for (int c = 0; c < Solver.Items.Count; c++)
                 {
                     string orig = original[c];
                     string[] split = orig.Split(",");
@@ -209,14 +221,14 @@ public class CSVImporter
                         for (int i = 0; i < commasToAdd; i++)
                             sb.Append(",");
 
-                        sb.Append(Solver.items[c].craftedPerDay[day]);
+                        sb.Append(Solver.Items[c].craftedPerDay[day]);
                         /*if (Solver.items[c].craftedPerDay[day] > 0)
                             PluginLog.LogDebug("Adding " + Solver.items[c].craftedPerDay[day] + "x " + Solver.items[c].item + " to end day summary");*/
                         updated.Add(sb.ToString());
                     }
                     else
                     {
-                        split[column] = "" + Solver.items[c].craftedPerDay[day];
+                        split[column] = "" + Solver.Items[c].craftedPerDay[day];
                         string joined = String.Join(",", split);
                         //PluginLog.LogDebug("Column set to " + split[column]+", new row: "+joined);
                         updated.Add(joined);
@@ -227,16 +239,16 @@ public class CSVImporter
             }
             else
             {
-                for(int i=0;i<Solver.items.Count;i++)
+                for(int i=0;i<Solver.Items.Count;i++)
                 {
                     updated.Add(original[i]);
                 }
             }
 
             //Handle summary lines
-            if(Solver.items.Count < original.Length)
+            if(Solver.Items.Count < original.Length)
             {
-                string orig = original[Solver.items.Count];
+                string orig = original[Solver.Items.Count];
                 //PluginLog.LogDebug("Summary line exists: " + orig+" trying to write to column "+column);
                 string[] split = orig.Split(",");
                 if (split.Length < column - 1)
@@ -295,9 +307,9 @@ public class CSVImporter
                 //PluginLog.LogDebug("Adding new row: " + sb.ToString());
             }
 
-            if (Solver.items.Count + 1 < original.Length)
+            if (Solver.Items.Count + 1 < original.Length)
             {
-                string orig = original[Solver.items.Count + 1];
+                string orig = original[Solver.Items.Count + 1];
                 //PluginLog.LogDebug("Summary line 2 exists: " + orig+" trying to write to column "+column);
                 string[] split = orig.Split(",");
                 if (split.Length < column + 1)
@@ -343,7 +355,7 @@ public class CSVImporter
         }
 
     }
-    public bool needCurrentPeaks()
+    public bool NeedCurrentPeaks()
     {
         foreach (var peak in currentPeaks)
             if (peak != PeakCycle.Unknown)
@@ -352,7 +364,7 @@ public class CSVImporter
         return true;
 
     }
-    public void writeCurrentPeaks(int week)
+    public void WriteCurrentPeaks(int week)
     {
         string path = rootPath + "\\Week" + (week) + "Supply.csv";
 
@@ -370,7 +382,7 @@ public class CSVImporter
 
             for (int c = 0; c < currentPeaks.Length; c++)
             {
-                currentPeaks[c] = Solver.items[c].peak;
+                currentPeaks[c] = Solver.Items[c].peak;
                 string orig = original[c];
                 string[] split = orig.Split(",");
                 if (split.Length < 21)
@@ -381,12 +393,12 @@ public class CSVImporter
                     for (int i = 0; i < commasToAdd; i++)
                         sb.Append(",");
 
-                    sb.Append(Solver.items[c].peak);
+                    sb.Append(Solver.Items[c].peak);
                     updated.Add(sb.ToString());
                 }
                 else
                 {
-                    split[20] = Solver.items[c].peak.ToString();
+                    split[20] = Solver.Items[c].peak.ToString();
                     updated.Add(String.Join(",", split));
                     PluginLog.LogWarning("Trying to write new peaks but we already have them? " + orig);
                 }
@@ -404,13 +416,13 @@ public class CSVImporter
 
     }
 
-    public void initSupplyData()
+    public void InitSupplyData()
     {
-        string path = getPathForWeek(currentWeek - 1);
+        string path = GetPathForWeek(currentWeek - 1);
         if (currentWeek > 1 && File.Exists(path))
         {
             string[] fileInfoOld = File.ReadAllLines(path);
-            for (int c = 0; c < Solver.items.Count; c++)
+            for (int c = 0; c < Solver.Items.Count; c++)
             {
                 string line = fileInfoOld[c];
 
@@ -418,7 +430,7 @@ public class CSVImporter
 
                 if (values.Length > 20)
                 {
-                    parsePeak(c, values[20], lastWeekPeaks);
+                    ParsePeak(c, values[20], lastWeekPeaks);
                 }
             }
         }
@@ -427,7 +439,7 @@ public class CSVImporter
             PluginLog.LogWarning("No file found with old peak data at " + path + ". Day 2 prediction is going to be less accurate.");
         }
 
-        path = getPathForWeek(currentWeek);
+        path = GetPathForWeek(currentWeek);
 
         observedSupplies.Clear();
         endDays.Clear();
@@ -448,7 +460,7 @@ public class CSVImporter
             if (c == 3)
                 c--;
             List<int> numCrafted = new List<int>();
-            for (int row = 0; row <= Solver.items.Count && row < fileInfo.Length; row++)
+            for (int row = 0; row <= Solver.Items.Count && row < fileInfo.Length; row++)
             {
                 string line = fileInfo[row];
                 string[] values = line.Split(",");
@@ -463,11 +475,11 @@ public class CSVImporter
                 if (c + 2 < values.Length)
                     data3 = values[c + 2];
 
-                bool parseAsSummary = row == Solver.items.Count;
+                bool parseAsSummary = row == Solver.Items.Count;
                 //PluginLog.LogDebug("Parsing column " + c + " d1: " + data1 + " d2: " + data2 + " d3: " + data3 + " summary: " + parseAsSummary);
 
 
-                if (row == Solver.items.Count) //Summary row
+                if (row == Solver.Items.Count) //Summary row
                 {
                     //PluginLog.LogDebug("Found first summary row, looking at column {0} ", c);
                     if (c > 0)
@@ -487,7 +499,7 @@ public class CSVImporter
                                 craftsStr = itemValues[c + 2];
                             }
                         }
-                        addSummaryValues(numCrafted, data1, data2, data3, hourRecorded, craftsStr);
+                        AddSummaryValues(numCrafted, data1, data2, data3, hourRecorded, craftsStr);
                     }
 
                     continue;
@@ -496,55 +508,55 @@ public class CSVImporter
                 switch (c)
                 {
                     case 0:
-                        parsePopularity(row, data2);
+                        ParsePopularity(row, data2);
                         break;
                     case 2:
-                        parseObservedSupply(row, 0, data1, data2);
+                        ParseObservedSupply(row, 0, data1, data2);
                         int.TryParse(data3, out int crafted1);
                         numCrafted.Add(crafted1);
                         break;
                     case 5:
-                        parseObservedSupply(row, 1, data1, data2);
+                        ParseObservedSupply(row, 1, data1, data2);
 
                         int.TryParse(data3, out int crafted2);
                         numCrafted.Add(crafted2);
                         break;
                     case 8:
-                        parseObservedSupply(row, 2, data1, data2);
+                        ParseObservedSupply(row, 2, data1, data2);
                         int.TryParse(data3, out int crafted3);
                         numCrafted.Add(crafted3);
                         break;
                     case 11:
-                        parseObservedSupply(row, 3, data1, data2);
+                        ParseObservedSupply(row, 3, data1, data2);
                         int.TryParse(data3, out int crafted4);
                         numCrafted.Add(crafted4);
                         break;
                     case 14:
-                        parseObservedSupply(row, 4, data1, data2);
+                        ParseObservedSupply(row, 4, data1, data2);
                         int.TryParse(data3, out int crafted5);
                         numCrafted.Add(crafted5);
                         break;
                     case 17:
-                        parseObservedSupply(row, 5, data1, data2);
+                        ParseObservedSupply(row, 5, data1, data2);
                         int.TryParse(data3, out int crafted6);
                         numCrafted.Add(crafted6);
                         break;
                     case 20:
-                        parsePeak(row, data1, currentPeaks);
+                        ParsePeak(row, data1, currentPeaks);
                         break;
                 }
             }
         }
     }
 
-    private void parsePopularity(int index, string popularity)
+    private void ParsePopularity(int index, string popularity)
     {
         popularity = popularity.Replace(" ", "");
         if(Enum.TryParse(popularity, out Popularity pop))
             currentPopularity[index] = pop;
     }
 
-    private void parseObservedSupply(int index, int day, string supply, string demandShift)
+    private void ParseObservedSupply(int index, int day, string supply, string demandShift)
     {
         while (observedSupplies.Count <= index)
             observedSupplies.Add(new Dictionary<int, ObservedSupply>());
@@ -558,7 +570,7 @@ public class CSVImporter
         }
     }
 
-    private void parsePeak(int index, string peakStr, PeakCycle[] peaks)
+    private void ParsePeak(int index, string peakStr, PeakCycle[] peaks)
     {
         peakStr = peakStr.Replace(" ", "");
         if(Enum.TryParse(peakStr, out PeakCycle peak))
@@ -566,7 +578,7 @@ public class CSVImporter
     }
 
 
-    private void addSummaryValues(List<int> crafted, string data1, string data2, string data3, string hourRecorded, string craftsStr)
+    private void AddSummaryValues(List<int> crafted, string data1, string data2, string data3, string hourRecorded, string craftsStr)
     {
         PluginLog.LogDebug("Adding summary row of groove {0}, gross {1}, net {2}, hourRecorded: {3}, and crafts {4}",
             data1, data2, data3, hourRecorded, craftsStr);
@@ -585,7 +597,7 @@ public class CSVImporter
         observedSupplyHours.Add(currentHour);
     }
 
-    public string getPathForWeek(int week)
+    public string GetPathForWeek(int week)
     {
         return rootPath + "\\" + "Week" + week + "Supply.csv";
     }

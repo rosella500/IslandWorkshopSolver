@@ -20,11 +20,11 @@ public class EndDaySummary
         valuesPerCraft = new List<int>();
     }
 
-    public int getCrafted(int itemIndex)
+    public int GetCrafted(int itemIndex)
     {
         return numCrafted[itemIndex];
     }
-    public int craftedItems()
+    public int NumCraftedCount()
     {
         return numCrafted.Count;
     }
