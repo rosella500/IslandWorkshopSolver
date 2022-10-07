@@ -106,7 +106,8 @@ public class Solver
 
                 PluginLog.LogDebug("Writing summary to file. Gross: " + gross);
                 int net = gross - yesterdaySchedule.GetMaterialCost();
-                Importer.WriteEndDay(summary, prevDaySummary.endingGroove, gross, net, prevDaySummary.crafts);
+                if(gross != prevDaySummary.endingGross)
+                    Importer.WriteEndDay(summary, prevDaySummary.endingGroove, gross, net, prevDaySummary.crafts);
                 TotalGross += gross;
                 TotalNet += net;
                 prevDaySummary.endingGross = gross;
