@@ -16,6 +16,7 @@ namespace IslandWorkshopSolver
         public int workshopBonus { get; set; } = 120;
         public int maxGroove { get; set; } = 35;
         public bool showNetCowries { get; set; } = false;
+        public bool enforceRestDays { get; set; } = true;
         public string rootPath { get; set; } = "";
 
         public Dictionary<Item, bool>? unknownD2Items { get; set; } = null;

@@ -87,6 +87,17 @@ public class ConfigWindow : Window, IDisposable
             ImGui.SetTooltip("Net cowries is workshop revenue minus the value you would've gotten from exporting rare materials directly");
         }
 
+        bool enforceRest = Configuration.enforceRestDays;
+        if (ImGui.Checkbox("Enforce rest days", ref enforceRest))
+        {
+            Configuration.enforceRestDays = enforceRest;
+            Configuration.Save();
+        }
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Force you to rest one and only one day (other than day 1).");
+        }
+
 
         if (Configuration.day == 0 && Configuration.unknownD2Items != null)
         {

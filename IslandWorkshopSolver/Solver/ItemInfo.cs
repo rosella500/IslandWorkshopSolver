@@ -110,7 +110,9 @@ public class ItemInfo
             observedSupplies[day] = ob;
         else
             observedSupplies.Add(day, ob);
-        SetPeakBasedOnObserved(hour);
+
+        if(day == Solver.CurrentDay)
+            SetPeakBasedOnObserved(hour);
     }
 
     public void SetCrafted(int num, int day)
@@ -172,6 +174,9 @@ public class ItemInfo
                 }
                 PluginLog.LogDebug(item + " observed: " + observedSupplies[day]);
                 int craftedToday = currentDaySchedule == null ? 0 : currentDaySchedule.GetCraftedBeforeHour(item, currentHour);
+                if (craftedToday > 0)
+                    PluginLog.Debug("Found {0} crafted before hour {1} today, including in expected supply", craftedToday, currentHour);
+
                 int weakPrevious = GetSupplyOnDayByPeak(Cycle2Weak, day - 1);
                 int weakSupply = GetSupplyOnDayByPeak(Cycle2Weak, day) + craftedToday;
                 ObservedSupply expectedWeak = new ObservedSupply(GetSupplyBucket(weakSupply),
@@ -221,6 +226,8 @@ public class ItemInfo
                 PluginLog.LogDebug(item + " observed: " + observedToday+" on day "+(day+1));
                 int craftedPreviously = GetCraftedBeforeDay(day);
                 int craftedToday = currentDaySchedule == null? 0 : currentDaySchedule.GetCraftedBeforeHour(item, currentHour);
+                if (craftedToday > 0)
+                    PluginLog.Debug("Found {0} crafted before hour {1} today, including in expected supply along with the {2} crafted before today", craftedToday, currentHour, craftedPreviously);
                 bool found = false;
 
                 for (int i = 0; i < PEAKS_TO_CHECK[day - 1].Length; i++)

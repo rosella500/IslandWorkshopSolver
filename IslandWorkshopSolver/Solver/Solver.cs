@@ -71,8 +71,14 @@ public class Solver
         int dayToSolve = CurrentDay + 1;
 
         SetInitialFromCSV();
-        for (int i = 0; i < dayToSolve; i++)
+        for (int i = 0; i < CurrentDay; i++)
             SetObservedFromCSV(i);
+
+        if(!SetObservedFromCSV(CurrentDay))
+        {
+            DalamudPlugins.Chat.PrintError("Don't have supply info from current day. Try disabling and re-enabling the plugin?");
+            return;
+        }
 
         for(int summary = 1; summary < Importer.endDays.Count && summary <= CurrentDay; summary++)
         {
@@ -85,16 +91,13 @@ public class Solver
                 yesterdaySchedule.SetForAllWorkshops(prevDaySummary.crafts);
                 int gross = yesterdaySchedule.GetValue();
 
-                if(prevDaySummary.endingGross == -1)
-                {
-                    PluginLog.LogDebug("Writing summary to file. Gross: " + gross);
-                    int net = gross - yesterdaySchedule.GetMaterialCost();
-                    Importer.WriteEndDay(summary, prevDaySummary.endingGroove, gross, net, prevDaySummary.crafts);
-                    TotalGross += gross;
-                    TotalNet += net;
-                    prevDaySummary.endingGross = gross;
-                    prevDaySummary.endingNet = net;
-                }
+                PluginLog.LogDebug("Writing summary to file. Gross: " + gross);
+                int net = gross - yesterdaySchedule.GetMaterialCost();
+                Importer.WriteEndDay(summary, prevDaySummary.endingGroove, gross, net, prevDaySummary.crafts);
+                TotalGross += gross;
+                TotalNet += net;
+                prevDaySummary.endingGross = gross;
+                prevDaySummary.endingNet = net;
                 prevDaySummary.valuesPerCraft = yesterdaySchedule.cowriesPerHour;
             }
         }
@@ -147,7 +150,7 @@ public class Solver
             //This is faster than just using LINQ, lol
             var bestSched = GetBestSchedule(safeSchedules);
 
-            if (!Rested)
+            if (!Rested || !Config.enforceRestDays)
                 AddRestDayValue(safeSchedules, GetWorstFutureDay(bestSched, dayToSolve));
 
 
@@ -162,7 +165,7 @@ public class Solver
                 toReturn.AddRange(GetLastThreeDays());
             else if (dayToSolve == 5)
                 toReturn.AddRange(GetLastTwoDays());
-            else if (Rested)
+            else if (Rested || !Config.enforceRestDays)
                 toReturn.Add((dayToSolve, new SuggestedSchedules(GetSuggestedSchedules(dayToSolve, -1, null))));
             else
                 toReturn.Add((dayToSolve, null));
@@ -236,14 +239,17 @@ public class Solver
             GetBestSchedule(initialSchedules[1])
         };
 
-        if (!Rested)
+        if (!Rested || !Config.enforceRestDays)
         {
             if (dayRested == -1)
             {
-                if (sevenSet) //Must rest 6
-                    initialSchedules[0].Clear();
-                if (sixSet) //Must rest 7
-                    initialSchedules[1].Clear();
+                if(Config.enforceRestDays)
+                {
+                    if (sevenSet) //Must rest 6
+                        initialSchedules[0].Clear();
+                    if (sixSet) //Must rest 7
+                        initialSchedules[1].Clear();
+                }
 
                 AddRestDayValue(initialSchedules[0], initialBests[1].Value);
                 AddRestDayValue(initialSchedules[1], initialBests[0].Value);
@@ -317,16 +323,19 @@ public class Solver
             GetBestSchedule(initialSchedules[2])
         };
 
-        if (!Rested)
+        if (!Rested || !Config.enforceRestDays)
         {
-            if (dayRested == -1)
+            if (dayRested == -1 || !Config.enforceRestDays)
             {
-                if (sixSet && sevenSet) //Must rest 5
-                    initialSchedules[0].Clear();
-                if (sevenSet && fiveSet) //Must rest 6
-                    initialSchedules[1].Clear();
-                if (fiveSet && sixSet) //Must rest 7
-                    initialSchedules[2].Clear();
+                if(Config.enforceRestDays)
+                {
+                    if (sixSet && sevenSet) //Must rest 5
+                        initialSchedules[0].Clear();
+                    if (sevenSet && fiveSet) //Must rest 6
+                        initialSchedules[1].Clear();
+                    if (fiveSet && sixSet) //Must rest 7
+                        initialSchedules[2].Clear();
+                }
 
                 AddRestDayValue(initialSchedules[0], Math.Min(initialBests[1].Value, initialBests[2].Value));
                 AddRestDayValue(initialSchedules[1], Math.Min(initialBests[0].Value, initialBests[2].Value));
@@ -420,13 +429,14 @@ public class Solver
 
     private static int GetEndingGrooveForDay(int day)
     {
-        if (Importer.endDays.Count > day && day >=0)
+        if (Importer.endDays.Count > day && day >=0 && day<=CurrentDay)
             return Importer.endDays[day].endingGroove;
         else if(SchedulesPerDay.TryGetValue(day, out var schedule))
         {
             PluginLog.LogDebug("Getting ending groove from scheduled day " +day+": " + schedule.schedule.endingGroove);
             return schedule.schedule.endingGroove;
         }
+        PluginLog.LogDebug("Can't find day in summaries or schedules. Returning 0");
 
         return 0;
     }
@@ -717,15 +727,16 @@ public class Solver
         }
     }
 
-    private static void SetObservedFromCSV(int day)
+    private static bool SetObservedFromCSV(int day)
     {
         bool hasDaySummary = day < Importer.endDays.Count;
+        bool hasCurrentDay = day == 6;
 
         for (int i = 0; i < Importer.observedSupplies.Count; i++)
         {
             if (day < 6 && Importer.observedSupplies[i].ContainsKey(day))
             {
-                
+                hasCurrentDay = true;
                 ObservedSupply ob = Importer.observedSupplies[i][day];
                 int observedHour = 0;
                 if (Importer.observedSupplyHours.Count > day)
@@ -737,13 +748,7 @@ public class Solver
             else
                 Items[i].SetCrafted(0, day);
         }
-        
-        if(hasDaySummary && Importer.endDays[day].endingGross > -1)
-        {
-            PluginLog.LogDebug("Adding totals from day " + day + ": " + Importer.endDays[day]);
-            TotalGross += Importer.endDays[day].endingGross;
-            TotalNet += Importer.endDays[day].endingNet;
-        }
+        return hasCurrentDay;
     }
 
     public static void InitItems()
