@@ -102,8 +102,9 @@ public class ConfigWindow : Window, IDisposable
         if (Configuration.day == 0 && Configuration.unknownD2Items != null)
         {
             ImGui.Spacing();
-            ImGui.Spacing();
             ImGui.Text("Advanced Configuration");
+            ImGui.Spacing();
+            ImGui.Text(Solver.Solver.GetD2PeakDesc());
             ImGui.Spacing();
             var enumerator = Configuration.unknownD2Items.GetEnumerator();
             while (enumerator.MoveNext())

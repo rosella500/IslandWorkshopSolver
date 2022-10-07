@@ -205,6 +205,20 @@ public class Solver
             Config.unknownD2Items.Add(item, false);
     }
 
+    public static string GetD2PeakDesc()
+    {
+        int weak = 0;
+        int strong = 0;
+        foreach(var item in Items)
+        {
+            if (item.peak == Cycle2Strong)
+                strong++;
+            else if (item.peak == Cycle2Weak)
+                weak++;
+        }
+        return weak+"/4 weak peaks and " + strong + "/4 strong peaks";
+    }
+
     private static KeyValuePair<WorkshopSchedule, int> GetBestSchedule(Dictionary<WorkshopSchedule, int> schedulesAvailable)
     {
         KeyValuePair<WorkshopSchedule, int> bestSched = schedulesAvailable.First();

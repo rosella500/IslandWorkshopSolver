@@ -143,11 +143,13 @@ public class ItemInfo
             if(observedDemand == None)
             {
                 peak = Cycle2Strong;
+                PluginLog.LogDebug("{0} has reliable D2 peak {1}", item, peak);
                 return;
             }
             else if(observedDemand == Increasing || observedDemand == Decreasing)
             {
                 peak = Cycle2Weak;
+                PluginLog.LogDebug("{0} has reliable D2 peak {1}", item, peak);
                 return;
             }
             else if (previousPeak.IsReliable())
@@ -155,11 +157,13 @@ public class ItemInfo
                 if (observedDemand == Skyrocketing)
                 {
                     peak = Cycle2Strong;
+                    PluginLog.LogDebug("{0} has reliable D2 peak {1}", item, peak);
                     return;
                 }
                 else
                 {
                     peak = Cycle2Weak;
+                    PluginLog.LogDebug("{0} has reliable D2 peak {1}", item, peak);
                     return;
                 }
             }
@@ -172,7 +176,7 @@ public class ItemInfo
                     currentDaySchedule.SetForAllWorkshops(Solver.Importer.endDays[day].crafts);
 
                 }
-                PluginLog.LogDebug(item + " observed: " + observedSupplies[day]);
+                PluginLog.LogVerbose(item + " observed: " + observedSupplies[day]);
                 int craftedToday = currentDaySchedule == null ? 0 : currentDaySchedule.GetCraftedBeforeHour(item, currentHour);
                 if (craftedToday > 0)
                     PluginLog.Debug("Found {0} crafted before hour {1} today, including in expected supply", craftedToday, currentHour);
@@ -181,10 +185,11 @@ public class ItemInfo
                 int weakSupply = GetSupplyOnDayByPeak(Cycle2Weak, day) + craftedToday;
                 ObservedSupply expectedWeak = new ObservedSupply(GetSupplyBucket(weakSupply),
                         GetDemandShift(weakPrevious, weakSupply));
-                PluginLog.LogDebug("Checking against peak Cycle2Weak, expecting: " + expectedWeak);
+                PluginLog.LogVerbose("Checking against peak Cycle2Weak, expecting: " + expectedWeak);
                 if (observedSupplies[day].Equals(expectedWeak))
                 {
                     peak = Cycle2Weak;
+                    PluginLog.LogDebug("{0} has observed D2 peak {1}", item, peak);
                     return;
                 }
 
@@ -193,10 +198,11 @@ public class ItemInfo
                 ObservedSupply expectedStrong = new ObservedSupply(GetSupplyBucket(strongSupply),
                         GetDemandShift(strongPrevious, strongSupply));
 
-                PluginLog.LogDebug("Checking against peak Cycle2Strong, expecting: " + expectedStrong);
+                PluginLog.LogVerbose("Checking against peak Cycle2Strong, expecting: " + expectedStrong);
                 if (observedSupplies[day].Equals(expectedStrong))
                 {
                     peak = Cycle2Strong;
+                    PluginLog.LogDebug("{0} has observed D2 peak {1}", item, peak);
                     return;
                 }
                 else
@@ -205,7 +211,7 @@ public class ItemInfo
             else
             {
                 peak = Cycle2Weak;
-
+                PluginLog.LogDebug("{0} peaks D2 but strength is unknown", item);
                 Solver.AddUnknownD2(item);
             }
         }
@@ -223,7 +229,7 @@ public class ItemInfo
                     currentDaySchedule.SetForAllWorkshops(Solver.Importer.endDays[day].crafts);
                 }
                 ObservedSupply observedToday = observedSupplies[day];
-                PluginLog.LogDebug(item + " observed: " + observedToday+" on day "+(day+1));
+                PluginLog.LogVerbose(item + " observed: " + observedToday+" on day "+(day+1));
                 int craftedPreviously = GetCraftedBeforeDay(day);
                 int craftedToday = currentDaySchedule == null? 0 : currentDaySchedule.GetCraftedBeforeHour(item, currentHour);
                 if (craftedToday > 0)
@@ -237,12 +243,12 @@ public class ItemInfo
                     int expectedSupply = GetSupplyOnDayByPeak(potentialPeak, day) + craftedToday;
                     ObservedSupply expectedObservation = new ObservedSupply(GetSupplyBucket(craftedPreviously + expectedSupply),
                             GetDemandShift(expectedPrevious, expectedSupply));
-                        PluginLog.LogDebug("Checking against peak " + potentialPeak + ", expecting: " + expectedObservation);
+                        PluginLog.LogVerbose("Checking against peak " + potentialPeak + ", expecting: " + expectedObservation);
 
                     if (observedToday.Equals(expectedObservation))
                     {
-                            PluginLog.LogDebug("match found!");
                         peak = potentialPeak;
+                        PluginLog.Debug("{0} with {3} crafts matches pattern for peak {1}, terminal? {2}", item, peak, peak.IsTerminal(), craftedPreviously+craftedToday);
                         found = true;
                         if (peak.IsTerminal())
                             return;
@@ -250,7 +256,7 @@ public class ItemInfo
                 }
 
                 if (!found)
-                    PluginLog.LogWarning(item + " does not match any known patterns for day " + (day + 1) + " with observed "+ observedSupplies[day] + " and " + craftedToday + " crafts.");
+                    PluginLog.LogWarning("{0} does not match any known patterns for day {1} with observed {2}, {3} crafted before and {4} crafted today", item,day+1,observedSupplies[day], craftedPreviously,craftedToday);
             }
         }
     }
