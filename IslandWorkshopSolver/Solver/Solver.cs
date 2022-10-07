@@ -913,7 +913,7 @@ public class Solver
         }
 
         //Make sure this isn't just yesterday's data
-        if(CurrentDay>1 && Importer.observedSupplies.Count > 0 && Importer.observedSupplies[0].ContainsKey(CurrentDay-1))
+        if(CurrentDay>0 && Importer.observedSupplies.Count > 0 && Importer.observedSupplies[0].ContainsKey(CurrentDay-1))
         {
             for (int i = 0; i < Solver.Items.Count; i++)
             {
@@ -921,7 +921,7 @@ public class Solver
                 Supply yesterdaySupp = Importer.observedSupplies[i][CurrentDay - 1].supply;
 
                 //Check to see if any of the products have supply lower than we recorded it
-                //(this should apply to at least 16 things each day and we can't have made all of them)
+                //(this should apply to at least 8 things each day and we can't have made all of them)
                 for(int s = (int)yesterdaySupp+1; s<=(int)Supply.Nonexistent; s++)
                 {
                     if (product.Contains(((Supply)s).ToString()))
