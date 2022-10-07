@@ -25,7 +25,7 @@ public class Solver
     private static int IslandRank = 10;
     public static double MaterialWeight = 0.5;
     public static CSVImporter Importer = new CSVImporter();
-    public static int Week = 5;
+    public static int Week = -1;
     private static int InitStep = 0;
     public static int CurrentDay = -1;
     private static Configuration Config = new Configuration();
@@ -41,8 +41,9 @@ public class Solver
         GROOVE_MAX = Config.maxGroove;
         IslandRank = Config.islandRank;
 
-        if (CurrentDay != GetCurrentDay() || Week != GetCurrentWeek())
+        if (InitStep != 0 && (CurrentDay != GetCurrentDay() || Week != GetCurrentWeek()))
         {
+            DalamudPlugins.Chat.PrintError("New day detected. Closing workshop solver window");
             InitStep = 0;
             window.IsOpen = false;
         }

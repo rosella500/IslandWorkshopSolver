@@ -59,6 +59,7 @@ public class MainWindow : Window, IDisposable
         catch (Exception e)
         {
             PluginLog.LogError(e, "Error opening window and writing supply/initing");
+            DalamudPlugins.Chat.PrintError("Error opening window. See /xllog for more info.");
             IsOpen = false;
         }
 
