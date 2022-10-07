@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
 
 namespace IslandWorkshopSolver.Solver;
@@ -28,15 +29,23 @@ public class Solver
     private static int InitStep = 0;
     public static int CurrentDay = -1;
     private static Configuration Config = new Configuration();
+    private static Window? Window;
     public static Dictionary<int, (CycleSchedule schedule, int value)> SchedulesPerDay = new Dictionary<int, (CycleSchedule schedule, int value)>();
    
-    public static void Init(Configuration newConfig)
+    public static void Init(Configuration newConfig, Window window)
     {
         Config = newConfig;
+        Window = window;
         MaterialWeight = Config.materialValue;
         WORKSHOP_BONUS = Config.workshopBonus;
         GROOVE_MAX = Config.maxGroove;
         IslandRank = Config.islandRank;
+
+        if (CurrentDay != GetCurrentDay() || Week != GetCurrentWeek())
+        {
+            InitStep = 0;
+            window.IsOpen = false;
+        }
 
         if (InitStep!=0)
             return;
@@ -76,7 +85,10 @@ public class Solver
 
         if(!SetObservedFromCSV(CurrentDay))
         {
-            DalamudPlugins.Chat.PrintError("Don't have supply info from current day. Try disabling and re-enabling the plugin?");
+            DalamudPlugins.Chat.PrintError("Don't have supply info from current day. Make sure you've viewed the Supply/Demand chart and reopen the window.");
+            InitStep = 0;
+            Window!.IsOpen = false;
+            Init(Config,Window!);
             return;
         }
 
@@ -839,7 +851,14 @@ public class Solver
 
     public static bool WriteTodaySupply(string[] products)
     {
-        CurrentDay = GetCurrentDay();
+        if(CurrentDay != GetCurrentDay() || Week != GetCurrentWeek())
+        {
+            CurrentDay = GetCurrentDay();
+            Week = GetCurrentWeek();
+            InitStep = 0;
+            Init(Config, Window!);
+        }
+
         if (InitStep < 1)
         {
             PluginLog.LogError("Trying to run solver before solver initiated");
@@ -848,7 +867,7 @@ public class Solver
         else if (InitStep > 1)
             return true;
 
-        bool needToWrite = Importer.NeedNewWeekData(GetCurrentWeek()) || (CurrentDay < 6 && Importer.NeedNewTodayData(CurrentDay));
+        bool needToWrite = Importer.NeedNewWeekData(Week) || (CurrentDay < 6 && Importer.NeedNewTodayData(CurrentDay));
         if (!needToWrite)
             return true;
 
@@ -885,6 +904,8 @@ public class Solver
             {
                 numNE++;
             }
+            if (numNE > 0 && CurrentDay == 0)
+                return false;
 
             if (numNE > 4)
                 return false;

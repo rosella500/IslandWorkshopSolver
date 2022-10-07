@@ -23,14 +23,14 @@ public class MainWindow : Window, IDisposable
     {
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(375, 330),
+            MinimumSize = new Vector2(425, 300),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
 
         Plugin = plugin;
         this.reader = reader;
         config = plugin.Configuration;
-        Solver.Solver.Init(config);
+        Solver.Solver.Init(config, this);
 
         
         scheduleSuggestions = new Dictionary<int, SuggestedSchedules?>();
@@ -52,12 +52,14 @@ public class MainWindow : Window, IDisposable
             }
             else
             {
-                PluginLog.LogError("Failed to int today's supply. Init step wrong? No product info??");
+                PluginLog.LogError("Failed to init today's supply. Init step wrong? No product info??");
+                IsOpen = false;
             }
         }
         catch (Exception e)
         {
             PluginLog.LogError(e, "Error opening window and writing supply/initing");
+            IsOpen = false;
         }
 
 
@@ -121,7 +123,7 @@ public class MainWindow : Window, IDisposable
             {                
                 try
                 {
-                    Solver.Solver.Init(config);
+                    Solver.Solver.Init(config, this);
                     List<(int day, SuggestedSchedules? sch)>? schedules = Solver.Solver.RunSolver();
                     AddNewSuggestions(schedules);
 
@@ -144,6 +146,15 @@ public class MainWindow : Window, IDisposable
                 Plugin.DrawConfigUI();
             }
             ImGui.Spacing();
+
+            if((config.day == 4 || config.day == 3) && scheduleSuggestions.Count > 0)
+            {
+                ImGui.TextColored(new Vector4(1f, 1f, .1f, 1f), "There are suggestions for multiple days available!");
+                ImGui.Spacing();
+                ImGui.TextWrapped("These schedules affect each other! Select the highest-value schedules first to get better recommendations for the worse day(s).");
+                ImGui.Spacing();
+            
+            }
 
             // Create a new table to show relevant data.
             if ((scheduleSuggestions.Count > 0 || endDaySummaries.Count > 0) && ImGui.BeginTabBar("Workshop Schedules"))
