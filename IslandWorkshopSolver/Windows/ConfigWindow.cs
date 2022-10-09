@@ -99,7 +99,7 @@ public class ConfigWindow : Window, IDisposable
         }
 
 
-        if (Configuration.day == 0 && Configuration.unknownD2Items != null)
+        if (Configuration.day == 0 && Configuration.unknownD2Items != null && Configuration.unknownD2Items.Count > 0)
         {
             ImGui.Spacing();
             ImGui.Text("Advanced Configuration");
