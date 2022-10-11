@@ -50,9 +50,10 @@ public class Solver
 
         if (InitStep!=0)
             return;
-        SupplyHelper.DefaultInit();
+        /*SupplyHelper.DefaultInit();
         PopularityHelper.DefaultInit();
         RareMaterialHelper.DefaultInit();
+        ItemHelper.DefaultInit();*/
         InitItems();
         Week = GetCurrentWeek();
         CurrentDay = GetCurrentDay();
@@ -867,7 +868,8 @@ public class Solver
 
     public static bool WriteTodaySupply(string[] products)
     {
-        if(CurrentDay != GetCurrentDay() || Week != GetCurrentWeek())
+
+        if (CurrentDay != GetCurrentDay() || Week != GetCurrentWeek())
         {
             CurrentDay = GetCurrentDay();
             Week = GetCurrentWeek();
@@ -875,6 +877,7 @@ public class Solver
             Init(Config, Window!);
         }
 
+        PluginLog.LogInformation("Trying to write supply info starting with " + products[0]);
         if (InitStep < 1)
         {
             PluginLog.LogError("Trying to run solver before solver initiated");
@@ -937,7 +940,7 @@ public class Solver
 
                 //Check to see if any of the products have supply lower than we recorded it
                 //(this should apply to at least 8 things each day and we can't have made all of them)
-                for(int s = (int)yesterdaySupp+1; s<=(int)Supply.Nonexistent; s++)
+                for(int s = (int)yesterdaySupp-1; s>=(int)Supply.Nonexistent; s--)
                 {
                     if (product.Contains(((Supply)s).ToString()))
                         return true;

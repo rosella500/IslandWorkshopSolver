@@ -1,10 +1,16 @@
+using Dalamud.Logging;
+using System;
 using System.Collections.Generic;
 
 namespace IslandWorkshopSolver.Solver;
 using static Supply;
 public enum Supply
 {
-    Overflowing, Surplus, Sufficient, Insufficient, Nonexistent
+    Nonexistent,
+    Insufficient,
+    Sufficient,
+    Surplus,
+    Overflowing
 }
 
 public static class SupplyHelper
@@ -33,6 +39,18 @@ public static class SupplyHelper
         supplyModifiers.Add(Sufficient, 100);
         supplyModifiers.Add(Insufficient, 130);
         supplyModifiers.Add(Nonexistent, 160);
+    }
+
+    public static void InitFromGameData(Dictionary<uint, ushort> supplyData)
+    {
+        supplyModifiers.Clear();
+        foreach(var kvp in supplyData)
+        {
+            if (Enum.IsDefined((Supply)kvp.Key))
+                supplyModifiers.Add((Supply)kvp.Key, kvp.Value);
+        }
+        foreach (var kvp in supplyModifiers)
+            PluginLog.Debug("Supply: {0}, Modifier: {1}", kvp.Key, kvp.Value);
     }
 }
 

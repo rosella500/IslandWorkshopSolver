@@ -1,3 +1,5 @@
+using Dalamud.Logging;
+using System;
 using System.Collections.Generic;
 
 namespace IslandWorkshopSolver.Solver;
@@ -5,31 +7,31 @@ namespace IslandWorkshopSolver.Solver;
 using static RareMaterial;
 public enum RareMaterial
 {
-    None,
-    Fleece,
-    Claw,
-    Fur,
-    Egg,
-    Carapace,
-    Fang,
-    Milk,
-    Feather,
-    Horn,
-    Garnet,
-    Alyssum,
-    Spruce,
-    Shark,
-    Silver,
-    Cabbage,
-    Pumpkin,
-    Parsnip,
-    Popoto,
-    Isleberry,
-    Tomato,
-    Onion,
-    Wheat,
-    Corn,
-    Radish
+    None=0,
+    Fleece=52,
+    Claw=53,
+    Fur=54,
+    Egg=56,
+    Carapace=57,
+    Fang=58,
+    Milk=60,
+    Feather=55,
+    Horn=59,
+    Garnet=28,
+    Alyssum=27,
+    Spruce=29,
+    Shark=30,
+    Silver=31,
+    Cabbage=43,
+    Pumpkin=45,
+    Parsnip=50,
+    Popoto=42,
+    Isleberry=44,
+    Tomato=47,
+    Onion=46,
+    Wheat=48,
+    Corn=49,
+    Radish=51
 }
 
 public static class RareMaterialHelper
@@ -42,6 +44,19 @@ public static class RareMaterialHelper
         {
             materialValues.Add((RareMaterial)i, values[i]);
         }
+    }
+
+    public static void InitFromGameData(Dictionary<byte,ushort> matData)
+    {
+        materialValues.Clear();
+        materialValues.Add(None, 0);
+        foreach(var kvp in matData)
+        {
+            if (Enum.IsDefined((RareMaterial)kvp.Key))
+                materialValues.Add((RareMaterial)kvp.Key, kvp.Value);
+        }
+        foreach (var kvp in materialValues)
+            PluginLog.Debug("Mat: {0}, Value: {1}", kvp.Key, kvp.Value);
     }
 
     public static void DefaultInit()

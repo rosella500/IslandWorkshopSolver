@@ -1,10 +1,12 @@
+using Dalamud.Logging;
+using System;
 using System.Collections.Generic;
 
 namespace IslandWorkshopSolver.Solver;
 using static Popularity;
 public enum Popularity
 {
-    VeryHigh, High, Average, Low
+    VeryHigh=1, High=2, Average=3, Low=4
 };
 
 public static class PopularityHelper
@@ -34,5 +36,17 @@ public static class PopularityHelper
         popModifiers.Add(Average, 100);
         popModifiers.Add(High, 120);
         popModifiers.Add(VeryHigh, 140);
+    }
+
+    public static void InitFromGameData(Dictionary<uint, ushort> popData)
+    {
+        popModifiers.Clear();
+        foreach (var kvp in popData)
+        {
+            if(Enum.IsDefined((Popularity)kvp.Key))
+                popModifiers.Add((Popularity)kvp.Key, kvp.Value);
+        }
+        foreach (var kvp in popModifiers)
+            PluginLog.Debug("Popularity: {0}, Modifier: {1}", kvp.Key, kvp.Value);
     }
 }

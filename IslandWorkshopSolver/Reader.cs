@@ -7,6 +7,8 @@ using System.Reflection;
 using Dalamud.Utility.Signatures;
 using Lumina.Excel.GeneratedSheets;
 using Lumina.Excel;
+using Dalamud.Logging;
+using IslandWorkshopSolver.Solver;
 
 namespace IslandWorkshopSolver
 {
@@ -32,6 +34,25 @@ namespace IslandWorkshopSolver
             shifts = Enumerable.Range(15186, 5).Select(i => addon.GetRow((uint)i)!.Text.ToString()).ToArray();
             supplies = Enumerable.Range(15181, 5).Reverse().Select(i => addon.GetRow((uint)i)!.Text.ToString()).ToArray();
             popularities = Enumerable.Range(15177, 4).Select(i => addon.GetRow((uint)i)!.Text.ToString()).Prepend(string.Empty).ToArray();
+            
+
+
+            var firstItem = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Where(s => (s.Item.Value?.RowId ?? 0) == 37662).FirstOrDefault();
+            PluginLog.Debug("excel sheet row? {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}", firstItem.Item.Value!.Name, firstItem.Item.Value.RowId, firstItem.Unknown1, firstItem.Unknown2, firstItem.Unknown3, 
+                firstItem.Unknown4, firstItem.Unknown5, firstItem.Unknown6, firstItem.Unknown7, firstItem.Unknown8, firstItem.Unknown9, firstItem.Unknown10, 
+                firstItem.Unknown11, firstItem.Unknown12, firstItem.Unknown13, firstItem.Unknown14);
+
+            ItemHelper.InitFromGameData(items);
+            //Maps material ID to value
+            var rareMats = DalamudPlugins.GameData.GetExcelSheet<MJIDisposalShopItem>()!.Where(i => i.Unknown1 == 0).ToDictionary(i => i.Unknown0, i=> i.Unknown2);
+            RareMaterialHelper.InitFromGameData(rareMats);
+
+
+            var supplyMods = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksSupplyDefine>()!.ToDictionary(i => i.RowId, i => i.Unknown1);
+            SupplyHelper.InitFromGameData(supplyMods);
+
+            var popMods = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksPopularityType>()!.ToDictionary(i => i.RowId, i => i.Unknown0);
+            PopularityHelper.InitFromGameData(popMods);
 
             sheet = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksPopularity>()!;
         }
@@ -55,9 +76,9 @@ namespace IslandWorkshopSolver
                 var supply = *(byte*)(instance + 0x2EA + i);
                 var shift = supply & 0x7;
                 supply = (byte)(supply >> 4);
-                sb.Append(supplies[supply]);
+                sb.Append(supply);
                 sb.Append('\t');
-                sb.Append(shifts[shift]);
+                sb.Append(shift);
                 sb.Append('\t');
                 sb.Append(GetPopularity(nextPopularity, i));
                 sb.Append('\n');
@@ -66,10 +87,10 @@ namespace IslandWorkshopSolver
             return sb.ToString();
         }
 
-        private string GetPopularity(MJICraftworksPopularity pop, int idx)
+        private int GetPopularity(MJICraftworksPopularity pop, int idx)
         {
             var val = (byte?)pop.GetType().GetProperty($"Unknown{idx}", BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty)?.GetValue(pop, null);
-            return val == null ? string.Empty : popularities[val.Value];
+            return val == null ? 0 : val.Value; // string.Empty : popularities[val.Value];
         }
     }
 }

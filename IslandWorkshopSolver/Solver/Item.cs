@@ -1,116 +1,140 @@
 namespace IslandWorkshopSolver.Solver;
+
+using Dalamud.Logging;
+using Lumina.Excel.GeneratedSheets;
+using System;
+using System.Collections.Generic;
 using static Item;
+using static Lumina.Data.Parsing.Uld.UldRoot;
+
 public enum Item
 {
-    Potion,
-    Firesand,
-    WoodenChair,
-    GrilledClam,
-    Necklace,
-    CoralRing,
-    Barbut,
-    Macuahuitl,
-    Sauerkraut,
-    BakedPumpkin,
-    Tunic,
-    CulinaryKnife,
-    Brush,
-    BoiledEgg,
-    Hora,
-    Earrings,
-    Butter,
-    BrickCounter,
-    BronzeSheep,
-    GrowthFormula,
-    GarnetRapier,
-    SpruceRoundShield,
-    SharkOil,
-    SilverEarCuffs,
-    SweetPopoto,
-    ParsnipSalad,
-    Caramels,
-    Ribbon,
-    Rope,
-    CavaliersHat,
-    Horn,
-    SaltCod,
-    SquidInk,
-    EssentialDraught,
-    Jam,
-    TomatoRelish,
-    OnionSoup,
-    Pie,
-    CornFlakes,
-    PickledRadish,
-    IronAxe,
-    QuartzRing,
-    PorcelainVase,
-    VegetableJuice,
-    PumpkinPudding,
-    SheepfluffRug,
-    GardenScythe,
-    Bed,
-    ScaleFingers,
-    Crook
+    Potion = 1,
+    Firesand = 2,
+    WoodenChair = 3,
+    GrilledClam = 4,
+    Necklace = 5,
+    CoralRing = 6,
+    Barbut = 7,
+    Macuahuitl = 8,
+    Sauerkraut = 9,
+    BakedPumpkin = 10,
+    Tunic = 11,
+    CulinaryKnife = 12,
+    Brush =13,
+    BoiledEgg =14,
+    Hora=15,
+    Earrings=16,
+    Butter=17,
+    BrickCounter=18,
+    BronzeSheep=19,
+    GrowthFormula=20,
+    GarnetRapier=21,
+    SpruceRoundShield=22,
+    SharkOil=23,
+    SilverEarCuffs=24,
+    SweetPopoto=25,
+    ParsnipSalad=26,
+    Caramels=27,
+    Ribbon=28,
+    Rope=29,
+    CavaliersHat=30,
+    Horn=31,
+    SaltCod=32,
+    SquidInk=33,
+    EssentialDraught=34,
+    Jam=35,
+    TomatoRelish=36,
+    OnionSoup=37,
+    Pie=38,
+    CornFlakes=39,
+    PickledRadish=40,
+    IronAxe=41,
+    QuartzRing=42,
+    PorcelainVase=43,
+    VegetableJuice=44,
+    PumpkinPudding=45,
+    SheepfluffRug=46,
+    GardenScythe=47,
+    Bed=48,
+    ScaleFingers=49,
+    Crook=50 //Update InitFromGameData to be the last item if we add more
 }
 
 public static class ItemHelper
 {
+    private static Dictionary<Item, string> displayNames = new Dictionary<Item, string>();
+
+    public static void DefaultInit()
+    {
+        displayNames.Clear();
+        displayNames.Add(Potion, "Potion");
+        displayNames.Add(Firesand, "Firesand");
+        displayNames.Add(WoodenChair, "Wooden Chair");
+        displayNames.Add(GrilledClam, "Grilled Clam");
+        displayNames.Add(Necklace, "Necklace");
+        displayNames.Add(CoralRing, "Coral Ring");
+        displayNames.Add(Barbut, "Barbut");
+        displayNames.Add(Macuahuitl, "Macuahuitl");
+        displayNames.Add(Sauerkraut, "Sauerkraut");
+        displayNames.Add(BakedPumpkin, "Baked Pumpkin");
+        displayNames.Add(Tunic, "Tunic");
+        displayNames.Add(CulinaryKnife, "Culinary Knife");
+        displayNames.Add(Brush, "Brush");
+        displayNames.Add(BoiledEgg, "Boiled Egg");
+        displayNames.Add(Hora, "Hora");
+        displayNames.Add(Earrings, "Earrings");
+        displayNames.Add(Butter, "Butter");
+        displayNames.Add(BrickCounter, "Brick Counter");
+        displayNames.Add(BronzeSheep, "Bronze Sheep");
+        displayNames.Add(GrowthFormula, "Growth Formula");
+        displayNames.Add(GarnetRapier, "Garnet Rapier");
+        displayNames.Add(SpruceRoundShield, "Spruce Round Shield");
+        displayNames.Add(SharkOil, "Shark Oil");
+        displayNames.Add(SilverEarCuffs, "Silver Ear Cuffs");
+        displayNames.Add(SweetPopoto, "Sweet Popoto");
+        displayNames.Add(ParsnipSalad, "Parsnip Salad");
+        displayNames.Add(Caramels, "Caramels");
+        displayNames.Add(Ribbon, "Ribbon");
+        displayNames.Add(Rope, "Rope");
+        displayNames.Add(CavaliersHat, "Cavalier's Hat");
+        displayNames.Add(Horn, "Horn");
+        displayNames.Add(SaltCod, "Salt Cod");
+        displayNames.Add(SquidInk, "Squid Ink");
+        displayNames.Add(EssentialDraught, "Essential Draught");
+        displayNames.Add(Jam, "Isleberry Jam");
+        displayNames.Add(TomatoRelish, "Tomato Relish");
+        displayNames.Add(OnionSoup, "Onion Soup");
+        displayNames.Add(Pie, "Islefish Pie");
+        displayNames.Add(CornFlakes, "Corn Flakes");
+        displayNames.Add(PickledRadish, "Pickled Radish");
+        displayNames.Add(IronAxe, "Iron Axe");
+        displayNames.Add(QuartzRing, "Quartz Ring");
+        displayNames.Add(PorcelainVase, "Porcelain Vase");
+        displayNames.Add(VegetableJuice, "Vegetable Juice");
+        displayNames.Add(PumpkinPudding, "Pumpkin Pudding");
+        displayNames.Add(SheepfluffRug, "Sheepfluff Rug");
+        displayNames.Add(GardenScythe, "Garden Scythe");
+        displayNames.Add(Bed, "Bed");
+        displayNames.Add(ScaleFingers, "Scale Fingers");
+        displayNames.Add(Crook, "Crook");
+    }
     public static string GetDisplayName(Item item)
     {
-        switch(item)
+        if (displayNames.ContainsKey(item))
+            return displayNames[item];
+        else
+            return "???";
+    }
+
+    public static void InitFromGameData(IReadOnlyList<string> itemData)
+    {
+        for (int i= 0; i<(int)Crook; i++) //Update this to be the last item
         {
-            case Potion: return "Potion";
-            case Firesand: return "Firesand";
-            case WoodenChair: return "Wooden Chair";
-            case GrilledClam: return "Grilled Clam";
-            case Necklace: return "Necklace";
-            case CoralRing: return "Coral Ring";
-            case Barbut: return "Barbut";
-            case Macuahuitl: return "Macuahuitl";
-            case Sauerkraut: return "Sauerkraut";
-            case BakedPumpkin: return "Baked Pumpkin";
-            case Tunic: return "Tunic";
-            case CulinaryKnife: return "Culinary Knife";
-            case Brush: return "Brush";
-            case BoiledEgg: return "Boiled Egg";
-            case Hora: return "Hora";
-            case Earrings: return "Earrings";
-            case Butter: return "Butter";
-            case BrickCounter: return "Brick Counter";
-            case BronzeSheep: return "Bronze Sheep";
-            case GrowthFormula: return "Growth Formula";
-            case GarnetRapier: return "Garnet Rapier";
-            case SpruceRoundShield: return "Spruce Round Shield";
-            case SharkOil: return "Shark Oil";
-            case SilverEarCuffs: return "Silver Ear Cuffs";
-            case SweetPopoto: return "Sweet Popoto";
-            case ParsnipSalad: return "Parsnip Salad";
-            case Caramels: return "Caramels";
-            case Ribbon: return "Ribbon";
-            case Rope: return "Rope";
-            case CavaliersHat: return "Cavalier's Hat";
-            case Horn: return "Horn";
-            case SaltCod: return "Salt Cod";
-            case SquidInk: return "Squid Ink";
-            case EssentialDraught: return "Essential Draught";
-            case Jam: return "Isleberry Jam";
-            case TomatoRelish: return "Tomato Relish";
-            case OnionSoup: return "Onion Soup";
-            case Pie: return "Islefish Pie";
-            case CornFlakes: return "Corn Flakes";
-            case PickledRadish: return "Pickled Radish";
-            case IronAxe: return "Iron Axe";
-            case QuartzRing: return "Quartz Ring";
-            case PorcelainVase: return "Porcelain Vase";
-            case VegetableJuice: return "Vegetable Juice";
-            case PumpkinPudding: return "Pumpkin Pudding";
-            case SheepfluffRug: return "Sheepfluff Rug";
-            case GardenScythe: return "Garden Scythe";
-            case Bed: return "Bed";
-            case ScaleFingers: return "Scale Fingers";
-            case Crook: return "Crook";
-            default: return "Unknown";
+            if (Enum.IsDefined((Item)i))
+                displayNames.Add((Item)i, itemData[i]);
         }
+        foreach (var kvp in displayNames)
+            PluginLog.Debug("Item: {0}, Display: {1}", kvp.Key, kvp.Value);
     }
 }

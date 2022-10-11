@@ -362,8 +362,7 @@ public class CSVImporter
             var peak = currentPeaks[i];
             if (!peak.IsTerminal() && Solver.Items[i].peak.IsTerminal())
                 return true;
-        }
-            
+        }            
 
         return false;
 
@@ -555,18 +554,20 @@ public class CSVImporter
 
     private void ParsePopularity(int index, string popularity)
     {
-        popularity = popularity.Replace(" ", "");
-        if(Enum.TryParse(popularity, out Popularity pop))
-            currentPopularity[index] = pop;
+        if(int.TryParse(popularity, out int popInt) && Enum.IsDefined((Popularity)popInt))
+            currentPopularity[index] = (Popularity)popInt;
     }
 
     private void ParseObservedSupply(int index, int day, string supply, string demandShift)
     {
         while (observedSupplies.Count <= index)
             observedSupplies.Add(new Dictionary<int, ObservedSupply>());
-        if (Enum.TryParse(supply, out Supply supp) && Enum.TryParse(demandShift, out DemandShift demand))
+
+
+        if (int.TryParse(supply, out int supplyInt) && Enum.IsDefined((Supply)supplyInt) &&
+        int.TryParse(demandShift, out int demandInt) && Enum.IsDefined((DemandShift)demandInt))
         {
-            ObservedSupply ob = new ObservedSupply(supp, demand);
+            ObservedSupply ob = new ObservedSupply((Supply)supplyInt, (DemandShift)demandInt);
             if(observedSupplies[index].ContainsKey(day))
                 observedSupplies[index][day] = ob;
             else
