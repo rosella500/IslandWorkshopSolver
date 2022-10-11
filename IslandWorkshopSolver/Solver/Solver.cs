@@ -886,28 +886,37 @@ public class Solver
             Init(Config, Window!);
         }
 
-        PluginLog.LogInformation("Trying to write supply info starting with " + products[0] + ", last updated day "+updatedDay);
+        PluginLog.LogInformation("Trying to write supply info starting with " + products[0] + ", last updated day "+(updatedDay+1));
+
+        bool needOverwrite = CurrentDay < 6 && IsProductsValid(products) && Importer.NeedToOverwriteTodayData(CurrentDay, products);
+        if (needOverwrite)
+            PluginLog.Warning("Found new supply info that seems to be from a later day than what we currently have. Overwriting");
+
         if (InitStep < 1)
         {
             PluginLog.LogError("Trying to run solver before solver initiated");
             return false;
         }
-        else if (InitStep > 1)
+        else if (InitStep > 1 && !needOverwrite)
             return true;
 
-        bool needToWrite = Importer.NeedNewWeekData(Week) || (CurrentDay < 6 && Importer.NeedNewTodayData(CurrentDay));
-        if (!needToWrite)
+        InitStep = 1;
+
+        bool needNewWeek = Importer.NeedNewWeekData(Week);
+        bool needNewData = CurrentDay < 6 && Importer.NeedNewTodayData(CurrentDay);
+
+        if (!(needNewData || needNewWeek || needOverwrite))
             return true;
 
 
-        if (updatedDay == CurrentDay)
+        if (updatedDay == CurrentDay && IsProductsValid(products))
         {
-            if (Importer.NeedNewWeekData(GetCurrentWeek()))
+            if (needNewWeek || (CurrentDay == 0 && needOverwrite))
             {
                 Importer.WriteWeekStart(products);
             }
             
-            if(Importer.NeedNewTodayData(CurrentDay))
+            if(needNewData || needOverwrite)
             {
                 Importer.WriteNewSupply(products, CurrentDay);
             }
@@ -921,36 +930,36 @@ public class Solver
 
     private static bool IsProductsValid(string[] products)
     {
-        if (products.Length < Solver.Items.Count)
+        if (products.Length < Items.Count)
             return false;
 
-        int invalid = 0;
-        foreach(string product in products)
+        int numNE = 0;
+        List<int> todaySupply = new List<int>();
+        for (int i = 0; i < Items.Count; i++)
         {
-            if (product.Contains("\t1\t2\t3\t4"))
-            {
-                invalid++;
-            }
+            string product = products[i];
+            string[] productInfo = product.Split('\t');
+            todaySupply.Add(int.Parse(productInfo[2]));
+            if (todaySupply[i] == (int)Supply.Nonexistent)
+                numNE++;
 
-            if (invalid > 20)
+            if (CurrentDay == 0 && numNE > 0)
+                return false;
+            if (numNE > 4)
                 return false;
         }
 
-        //Make sure this isn't just yesterday's data
-        if(CurrentDay>0 && Importer.observedSupplies.Count > 0 && Importer.observedSupplies[0].ContainsKey(CurrentDay-1))
+        //Need to check this in a second loop because we don't want those fake NEs counting as supply going down
+        if (CurrentDay > 0 && Importer.observedSupplies.Count > 0 && Importer.observedSupplies[0].ContainsKey(CurrentDay - 1))
         {
-            for (int i = 0; i < Solver.Items.Count; i++)
+            for (int i = 0; i < Items.Count; i++)
             {
-                string product = products[i];
-                Supply yesterdaySupp = Importer.observedSupplies[i][CurrentDay - 1].supply;
+                int yesterdaySupp = (int)Importer.observedSupplies[i][CurrentDay - 1].supply;
 
-                //Check to see if any of the products have supply lower than we recorded it
+                //If any products have supply lower than it was yesterday, then this has to be a new day
                 //(this should apply to at least 8 things each day and we can't have made all of them)
-                for(int s = (int)yesterdaySupp-1; s>=(int)Supply.Nonexistent; s--)
-                {
-                    if (product.Contains(((Supply)s).ToString()))
-                        return true;
-                }
+                if (todaySupply[i] < yesterdaySupp) 
+                    return true;
             }
         }
         else //If we don't have yesterday's data then this is probably fine? 

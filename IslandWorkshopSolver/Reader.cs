@@ -130,7 +130,7 @@ namespace IslandWorkshopSolver
             string returnStr = sb.ToString();
             int newHash = returnStr.GetHashCode();
             if (numNE == items.Count - 1)
-                PluginLog.Warning("Reading invalid supply data (all Nonexistent). Need to talk to the boyyy");
+                PluginLog.Warning("Reading invalid supply data (all Nonexistent). Need to talk to the mammet");
             else if (lastHash == -1 || lastHash != newHash)
             {
                 int currentDay = Solver.Solver.GetCurrentDay();

@@ -48,8 +48,7 @@ public class CSVImporter
         string path = GetPathForWeek(currentWeek);
         if (File.Exists(path))
         {
-            PluginLog.LogError("This week's file already exists at {0} ", path);
-            return;
+            PluginLog.LogWarning("This week's file already exists at {0} ", path);
         }
         PluginLog.LogDebug("Starting to write a file to {0}", path);
         try
@@ -84,6 +83,33 @@ public class CSVImporter
     public bool NeedNewTodayData(int currentDay)
     {
         return observedSupplies.Count == 0 || !observedSupplies[0].ContainsKey(currentDay);
+    }
+
+    public bool NeedToOverwriteTodayData(int currentDay, string[] products)
+    {
+        int i = 0;
+
+        if (observedSupplies.Count == 0 || !observedSupplies[0].ContainsKey(currentDay))
+            return false;
+
+        foreach (var observedDict in observedSupplies)
+        {
+            int previousToday = (int)observedDict[currentDay].supply;
+            if (products.Length > i)
+            {
+                var split = products[i].Split('\t');
+                if (split.Length > 2)
+                {
+                    int newToday = int.Parse(split[2]);
+                    //If we have data for today, but the data we're trying to write has things going down, we somehow wrote bad data and should overwrite it now
+                    if (newToday < previousToday)
+                        return true;
+                }
+            }
+            i++;
+        }
+
+        return false;
     }
 
     public void WriteNewSupply(string[] products, int currentDay)
@@ -122,7 +148,7 @@ public class CSVImporter
                         ParseObservedSupply(itemIndex, currentDay, productInfo[2], productInfo[3]);
                     }
                 }
-                else if (fileItemInfo.Length > column+1 && fileItemInfo[column].Length == 0)
+                else if (fileItemInfo.Length > column+1)
                 {
                     changedFile = true;
                     string[] productInfo = products[itemIndex].Split('\t');
