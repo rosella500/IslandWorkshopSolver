@@ -105,10 +105,13 @@ public class Solver
                 yesterdaySchedule.SetForAllWorkshops(prevDaySummary.crafts);
                 int gross = yesterdaySchedule.GetValue();
 
-                PluginLog.LogDebug("Writing summary to file. Gross: " + gross);
                 int net = gross - yesterdaySchedule.GetMaterialCost();
                 if(gross != prevDaySummary.endingGross)
+                {
+                    PluginLog.LogDebug("Writing summary to file. New gross: " + gross);
+
                     Importer.WriteEndDay(summary, prevDaySummary.endingGroove, gross, net, prevDaySummary.crafts);
+                }
                 TotalGross += gross;
                 TotalNet += net;
                 prevDaySummary.endingGross = gross;
