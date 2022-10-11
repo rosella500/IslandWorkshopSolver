@@ -39,10 +39,11 @@ public class MainWindow : Window, IDisposable
 
     public override void OnOpen()
     {
-        string[] products = reader.ExportIsleData().Split('\n', StringSplitOptions.None);
+        (int day, string data) islandData = reader.ExportIsleData();
+        string[] products = islandData.data.Split('\n', StringSplitOptions.None);
         try
         {
-            if(Solver.Solver.WriteTodaySupply(products))
+            if(Solver.Solver.WriteTodaySupply(islandData.day, products))
             {
                 Solver.Solver.InitAfterWritingTodaysData();
 

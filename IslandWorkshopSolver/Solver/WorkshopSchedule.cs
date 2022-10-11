@@ -106,7 +106,7 @@ public class WorkshopSchedule
 
         if (isEfficient)
             adjustedValue *= 2;
-            //PluginLog.LogVerbose(craft.item + " is worth " + adjustedValue + " with " + currentGroove + " groove at " + ItemInfo.getSupplyBucket(supply) + " supply (" + supply + ") and " + craft.popularity + " popularity");
+        //PluginLog.LogVerbose(craft.item + " is worth " + adjustedValue + " with " + currentGroove + " groove at " + ItemInfo.GetSupplyBucket(supply) + " supply (" + supply + ") and " + craft.popularity + " popularity with peak "+craft.peak);
 
         return adjustedValue;
     }

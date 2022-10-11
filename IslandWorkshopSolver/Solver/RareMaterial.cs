@@ -56,7 +56,7 @@ public static class RareMaterialHelper
                 materialValues.Add((RareMaterial)kvp.Key, kvp.Value);
         }
         foreach (var kvp in materialValues)
-            PluginLog.Debug("Mat: {0}, Value: {1}", kvp.Key, kvp.Value);
+            PluginLog.Verbose("Mat: {0}, Value: {1}", kvp.Key, kvp.Value);
     }
 
     public static void DefaultInit()

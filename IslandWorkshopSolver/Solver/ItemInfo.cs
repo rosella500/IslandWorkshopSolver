@@ -130,7 +130,7 @@ public class ItemInfo
         return sum;
     }
 
-    private void SetPeakBasedOnObserved(int currentHour)
+    public void SetPeakBasedOnObserved(int currentHour)
     {
         if (peak.IsTerminal() && peak != Cycle2Weak)
             return;
@@ -269,6 +269,7 @@ public class ItemInfo
 
     public int GetSupplyOnDay(int day)
     {
+
         int supply = SUPPLY_PATH[(int)peak][0];
         for (int c = 1; c <= day; c++)
         {

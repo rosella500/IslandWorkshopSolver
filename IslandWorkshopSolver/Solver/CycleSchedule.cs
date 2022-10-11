@@ -63,21 +63,28 @@ public class CycleSchedule
                     bool efficient = workshops[i].CurrentCraftIsEfficient();
 
 
+                    //PluginLog.LogVerbose("Found completed " + completedCraft.item + " at hour " + hour + ". Efficient? " + efficient);
                     int craftedEarlierThisHour = 0;
                     if (craftedThisHour.ContainsKey(completedCraft.item))
                     {
                         craftedEarlierThisHour = craftedThisHour[completedCraft.item];
+                        //PluginLog.LogVerbose("Found completed " + completedCraft.item + " earlier this hour " + craftedEarlierThisHour);
                     }
                     else
                     {
                         craftedThisHour.Add(completedCraft.item, 0);
+
+                        //PluginLog.LogVerbose("Did not find completed " + completedCraft.item + " earlier " + craftedEarlierThisHour+", adding");
                     }
                     craftedThisHour[completedCraft.item] = craftedEarlierThisHour + (efficient ? 2 : 1);
 
-                    //PluginLog.LogVerbose("Found completed "+completedCraft.item+" at hour "+hour+". Efficient? "+efficient);
+                    //PluginLog.LogVerbose("total crafted " + completedCraft.item + " at hour "+hour+": " + craftedThisHour[completedCraft.item]);
+                    int numCraftedPreviously = numCrafted.TryGetValue(completedCraft.item, out int craftedPreviously) ? craftedPreviously : 0;
 
-                    cowriesThisHour += workshops[i].GetValueForCurrent(day, (numCrafted.TryGetValue(completedCraft.item, out int craftedPreviously) ? craftedPreviously: 0), currentGroove, efficient);
+                    //PluginLog.LogVerbose("total crafted " + completedCraft.item + " before hour " + hour + ": " + numCraftedPreviously);
+                    cowriesThisHour += workshops[i].GetValueForCurrent(day, numCraftedPreviously, currentGroove, efficient);
 
+                    //PluginLog.LogVerbose("cowries at hour " + hour + ": " + cowriesThisHour);
                     workshops[i].currentIndex++;
                     if (workshops[i].CurrentCraftIsEfficient())
                         grooveToAdd++;

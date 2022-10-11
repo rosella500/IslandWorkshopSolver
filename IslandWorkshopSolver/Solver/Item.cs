@@ -9,56 +9,56 @@ using static Lumina.Data.Parsing.Uld.UldRoot;
 
 public enum Item
 {
-    Potion = 1,
-    Firesand = 2,
-    WoodenChair = 3,
-    GrilledClam = 4,
-    Necklace = 5,
-    CoralRing = 6,
-    Barbut = 7,
-    Macuahuitl = 8,
-    Sauerkraut = 9,
-    BakedPumpkin = 10,
-    Tunic = 11,
-    CulinaryKnife = 12,
-    Brush =13,
-    BoiledEgg =14,
-    Hora=15,
-    Earrings=16,
-    Butter=17,
-    BrickCounter=18,
-    BronzeSheep=19,
-    GrowthFormula=20,
-    GarnetRapier=21,
-    SpruceRoundShield=22,
-    SharkOil=23,
-    SilverEarCuffs=24,
-    SweetPopoto=25,
-    ParsnipSalad=26,
-    Caramels=27,
-    Ribbon=28,
-    Rope=29,
-    CavaliersHat=30,
-    Horn=31,
-    SaltCod=32,
-    SquidInk=33,
-    EssentialDraught=34,
-    Jam=35,
-    TomatoRelish=36,
-    OnionSoup=37,
-    Pie=38,
-    CornFlakes=39,
-    PickledRadish=40,
-    IronAxe=41,
-    QuartzRing=42,
-    PorcelainVase=43,
-    VegetableJuice=44,
-    PumpkinPudding=45,
-    SheepfluffRug=46,
-    GardenScythe=47,
-    Bed=48,
-    ScaleFingers=49,
-    Crook=50 //Update InitFromGameData to be the last item if we add more
+    Potion,
+    Firesand,
+    WoodenChair,
+    GrilledClam,
+    Necklace,
+    CoralRing,
+    Barbut,
+    Macuahuitl,
+    Sauerkraut,
+    BakedPumpkin,
+    Tunic,
+    CulinaryKnife,
+    Brush,
+    BoiledEgg,
+    Hora,
+    Earrings,
+    Butter,
+    BrickCounter,
+    BronzeSheep,
+    GrowthFormula,
+    GarnetRapier,
+    SpruceRoundShield,
+    SharkOil,
+    SilverEarCuffs,
+    SweetPopoto,
+    ParsnipSalad,
+    Caramels,
+    Ribbon,
+    Rope,
+    CavaliersHat,
+    Horn,
+    SaltCod,
+    SquidInk,
+    EssentialDraught,
+    Jam,
+    TomatoRelish,
+    OnionSoup,
+    Pie,
+    CornFlakes,
+    PickledRadish,
+    IronAxe,
+    QuartzRing,
+    PorcelainVase,
+    VegetableJuice,
+    PumpkinPudding,
+    SheepfluffRug,
+    GardenScythe,
+    Bed,
+    ScaleFingers,
+    Crook //Update InitFromGameData to be the last item if we add more
 }
 
 public static class ItemHelper
@@ -129,12 +129,12 @@ public static class ItemHelper
 
     public static void InitFromGameData(IReadOnlyList<string> itemData)
     {
-        for (int i= 0; i<(int)Crook; i++) //Update this to be the last item
+        for (int i= 0; i<=(int)Crook; i++) //Update this to be the last item
         {
             if (Enum.IsDefined((Item)i))
                 displayNames.Add((Item)i, itemData[i]);
         }
         foreach (var kvp in displayNames)
-            PluginLog.Debug("Item: {0}, Display: {1}", kvp.Key, kvp.Value);
+            PluginLog.Verbose("Item: {0}, Display: {1}", kvp.Key, kvp.Value);
     }
 }

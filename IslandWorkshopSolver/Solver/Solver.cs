@@ -53,8 +53,8 @@ public class Solver
         /*SupplyHelper.DefaultInit();
         PopularityHelper.DefaultInit();
         RareMaterialHelper.DefaultInit();
-        ItemHelper.DefaultInit();*/
-        InitItems();
+        ItemHelper.DefaultInit();
+        DefaultInitItems();*/
         Week = GetCurrentWeek();
         CurrentDay = GetCurrentDay();
         Config.day = CurrentDay;
@@ -772,6 +772,9 @@ public class Solver
                     observedHour = Importer.observedSupplyHours[day];
                 Items[i].AddObservedDay(ob, day, observedHour);
             }
+            else if (day == 6)
+                Items[i].SetPeakBasedOnObserved(0);
+
             if (hasDaySummary && Importer.endDays[day].NumCraftedCount() > i)
                 Items[i].SetCrafted(Importer.endDays[day].GetCrafted(i), day);
             else
@@ -780,7 +783,11 @@ public class Solver
         return hasCurrentDay;
     }
 
-    public static void InitItems()
+    public static void InitItemsFromGameData(List<ItemInfo> items)
+    {
+        Items = items;
+    }
+    public static void DefaultInitItems()
     {
         Items = new List<ItemInfo>();
         Items.Add(new ItemInfo(Potion, Concoctions, Invalid, 28, 4, 1, null));
@@ -854,7 +861,6 @@ public class Solver
         DateTime startOfIS = new DateTime(2022, 8, 23, 8, 0, 0, DateTimeKind.Utc);
         DateTime current = DateTime.UtcNow;
         TimeSpan timeSinceStart = (current - startOfIS);
-
         return timeSinceStart.Days % 7;
     }
 
@@ -866,7 +872,7 @@ public class Solver
         return timeSinceStart.Hours;
     }
 
-    public static bool WriteTodaySupply(string[] products)
+    public static bool WriteTodaySupply(int updatedDay, string[] products)
     {
 
         if (CurrentDay != GetCurrentDay() || Week != GetCurrentWeek())
@@ -877,7 +883,7 @@ public class Solver
             Init(Config, Window!);
         }
 
-        PluginLog.LogInformation("Trying to write supply info starting with " + products[0]);
+        PluginLog.LogInformation("Trying to write supply info starting with " + products[0] + ", last updated day "+updatedDay);
         if (InitStep < 1)
         {
             PluginLog.LogError("Trying to run solver before solver initiated");
@@ -891,8 +897,7 @@ public class Solver
             return true;
 
 
-        PluginLog.LogInformation("Trying to write supply info starting with " + products[0]);
-        if (IsProductsValid(products))
+        if (updatedDay == CurrentDay)
         {
             if (Importer.NeedNewWeekData(GetCurrentWeek()))
             {
@@ -916,17 +921,15 @@ public class Solver
         if (products.Length < Solver.Items.Count)
             return false;
 
-        int numNE = 0;
+        int invalid = 0;
         foreach(string product in products)
         {
-            if (product.Contains("Nonexistent"))
+            if (product.Contains("\t1\t2\t3\t4"))
             {
-                numNE++;
+                invalid++;
             }
-            if (numNE > 0 && CurrentDay == 0)
-                return false;
 
-            if (numNE > 4)
+            if (invalid > 20)
                 return false;
         }
 

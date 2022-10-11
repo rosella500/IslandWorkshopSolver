@@ -47,6 +47,6 @@ public static class PopularityHelper
                 popModifiers.Add((Popularity)kvp.Key, kvp.Value);
         }
         foreach (var kvp in popModifiers)
-            PluginLog.Debug("Popularity: {0}, Modifier: {1}", kvp.Key, kvp.Value);
+            PluginLog.Verbose("Popularity: {0}, Modifier: {1}", kvp.Key, kvp.Value);
     }
 }
