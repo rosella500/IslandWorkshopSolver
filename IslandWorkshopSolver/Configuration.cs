@@ -19,6 +19,9 @@ namespace IslandWorkshopSolver
         public bool enforceRestDays { get; set; } = true;
         public string rootPath { get; set; } = "";
 
+        public string[] flavorText { get; set; } = new string[3] { "Isleworks", "Island", "Sanctuary" };
+
+
         public Dictionary<Item, bool>? unknownD2Items { get; set; } = null;
         private int _day;
         public int day
@@ -35,6 +38,16 @@ namespace IslandWorkshopSolver
                 if (_day == 0 && unknownD2Items == null)
                     unknownD2Items = new Dictionary<Item, bool>();
             }
+        }
+
+        public string RemoveFilteredWords(string s)
+        {
+            foreach (var word in flavorText)
+                if(word.Length > 0)
+                    s = s.Replace(word, "");
+
+            s = s.Trim();
+            return s;
         }
 
         // the below exist just to make saving less cumbersome

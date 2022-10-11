@@ -9,14 +9,14 @@ public class WorkshopSchedule
     private List<int> completionHours;
     public int currentIndex = 0; //Used for cycle scheduler to figure out crafts stuff
 
-    public Dictionary<RareMaterial, int> rareMaterialsRequired { get; private set; }
+    public Dictionary<Material, int> rareMaterialsRequired { get; private set; }
 
     public WorkshopSchedule(List<Item> crafts)
     {
         completionHours = new List<int>();
         this.crafts = new List<ItemInfo>();
         items = new List<Item>();
-        rareMaterialsRequired = new Dictionary<RareMaterial, int>();
+        rareMaterialsRequired = new Dictionary<Material, int>();
         SetCrafts(crafts);
     }
 
@@ -29,7 +29,7 @@ public class WorkshopSchedule
         items.Clear();
         if(newCrafts.Count == 0)
         {
-            rareMaterialsRequired.Add(RareMaterial.None, 1);
+            rareMaterialsRequired.Add(Material.None, 1);
         }
         foreach (ItemInfo craft in crafts)
         {
@@ -38,20 +38,21 @@ public class WorkshopSchedule
 
             completionHours.Add(currentHour);
 
-            if (craft.materialsRequired != null)
-                foreach (var indivMat in craft.materialsRequired)
+            foreach (var indivMat in craft.materialsRequired)
+            {
+                if (!RareMaterialHelper.GetMaterialValue(indivMat.Key, out _)) //If it's not a rare mat, ignore it
+                    continue;
+
+                if(rareMaterialsRequired.ContainsKey(indivMat.Key))
                 {
-                    int previouslyNeeded = 0;
-                    if(rareMaterialsRequired.ContainsKey(indivMat.Key))
-                    {
-                        previouslyNeeded = rareMaterialsRequired[indivMat.Key];
-                    }
-                    else
-                    {
-                        rareMaterialsRequired.Add(indivMat.Key, 0);
-                    }
-                    rareMaterialsRequired[indivMat.Key] = previouslyNeeded + indivMat.Value;
+                    rareMaterialsRequired[indivMat.Key] += indivMat.Value;
                 }
+                else
+                {
+                    rareMaterialsRequired.Add(indivMat.Key, indivMat.Value);
+                }
+                    
+            }
                     
         }
 

@@ -50,7 +50,7 @@ public class ItemInfo
     public ItemCategory category1 { get; private set; }
     public ItemCategory category2 { get; private set; }
     public int time { get; private set; }
-    public Dictionary<RareMaterial, int>? materialsRequired { get; private set; }
+    public Dictionary<Material, int> materialsRequired { get; private set; }
     public int materialValue { get; private set; }
 
     //Weekly info
@@ -61,7 +61,7 @@ public class ItemInfo
     private Dictionary<int,ObservedSupply> observedSupplies;
     public int rankUnlocked { get; private set; }
 
-    public ItemInfo(Item i, ItemCategory cat1, ItemCategory cat2, int value, int hours, int rank, Dictionary<RareMaterial, int>? mats)
+    public ItemInfo(Item i, ItemCategory cat1, ItemCategory cat2, int value, int hours, int rank, Dictionary<Material, int> mats)
     {
         item = i;
         baseValue = value;
@@ -78,7 +78,8 @@ public class ItemInfo
         {
             foreach (var mat in mats)
             {
-                materialValue += RareMaterialHelper.materialValues[mat.Key] * mat.Value;
+                if(RareMaterialHelper.GetMaterialValue(mat.Key, out int sellValue))
+                    materialValue += sellValue * mat.Value;
             }
         }        
     }

@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
 
 namespace IslandWorkshopSolver.Solver;
 using static Item;
 using static ItemCategory;
-using static RareMaterial;
+using static Material;
 using static PeakCycle;
 public class Solver
 {
@@ -28,7 +29,7 @@ public class Solver
     public static int Week = -1;
     private static int InitStep = 0;
     public static int CurrentDay = -1;
-    private static Configuration Config = new Configuration();
+    public static Configuration Config = new Configuration();
     private static Window? Window;
     public static Dictionary<int, (CycleSchedule schedule, int value)> SchedulesPerDay = new Dictionary<int, (CycleSchedule schedule, int value)>();
    
@@ -50,11 +51,7 @@ public class Solver
 
         if (InitStep!=0)
             return;
-        /*SupplyHelper.DefaultInit();
-        PopularityHelper.DefaultInit();
-        RareMaterialHelper.DefaultInit();
-        ItemHelper.DefaultInit();
-        DefaultInitItems();*/
+
         Week = GetCurrentWeek();
         CurrentDay = GetCurrentDay();
         Config.day = CurrentDay;
@@ -144,14 +141,6 @@ public class Solver
 
         int dayToSolve = CurrentDay + 1;
 
-        if (CurrentDay == 0 && Config.unknownD2Items != null)
-        {
-            //Set each peak according to config
-            foreach (var item in Config.unknownD2Items)
-            {
-                Items[(int)(item.Key)].peak = item.Value ? Cycle2Strong : Cycle2Weak;
-            }
-        }
 
         List<(int, SuggestedSchedules?)> toReturn = new List<(int, SuggestedSchedules?)>();
         if (dayToSolve == 1)
@@ -211,6 +200,16 @@ public class Solver
 
     public static string GetD2PeakDesc()
     {
+        if (CurrentDay == 0 && Config.unknownD2Items != null)
+        {
+            //Set each peak according to config
+            foreach (var item in Config.unknownD2Items)
+            {
+                Items[(int)(item.Key)].peak = item.Value ? Cycle2Strong : Cycle2Weak;
+            }
+        }
+
+
         int weak = 0;
         int strong = 0;
         foreach(var item in Items)
@@ -220,7 +219,44 @@ public class Solver
             else if (item.peak == Cycle2Weak)
                 weak++;
         }
-        return weak+"/4 weak peaks and " + strong + "/4 strong peaks";
+        return "D2: "+weak+"/4 weak peaks and " + strong + "/4 strong peaks";
+    }
+
+    public static string? GetMatsNeeded(int day)
+    {
+        if (!SchedulesPerDay.ContainsKey(day))
+            return null;
+
+        Dictionary<Material, int> mats = new Dictionary<Material, int>();
+        foreach(var item in SchedulesPerDay[day].schedule.workshops[0].GetItems())
+        {
+            foreach(var mat in Items[(int)item].materialsRequired)
+            {
+                if (mats.ContainsKey(mat.Key))
+                    mats[mat.Key] += mat.Value * 3;
+                else
+                    mats.Add(mat.Key, mat.Value * 3);
+            }
+        }
+
+        if (mats.Count == 0)
+            return null;
+
+        var orderedDict = mats.OrderByDescending(mat => { RareMaterialHelper.GetMaterialValue(mat.Key, out int value); return value; });
+
+        StringBuilder matsStr = new StringBuilder("Materials Needed: ");
+        var matsEnum = orderedDict.GetEnumerator();
+        matsEnum.MoveNext();
+        matsStr.Append(matsEnum.Current.Value).Append("x ").Append(RareMaterialHelper.GetDisplayName(matsEnum.Current.Key));
+        if (RareMaterialHelper.GetMaterialValue(matsEnum.Current.Key, out _))
+            matsStr.Append("*");
+        while(matsEnum.MoveNext())
+        {
+            matsStr.Append(", ").Append(matsEnum.Current.Value).Append("x ").Append(RareMaterialHelper.GetDisplayName(matsEnum.Current.Key));
+            if (RareMaterialHelper.GetMaterialValue(matsEnum.Current.Key, out _))
+                matsStr.Append("*");
+        }
+        return matsStr.ToString();
     }
 
     private static KeyValuePair<WorkshopSchedule, int> GetBestSchedule(Dictionary<WorkshopSchedule, int> schedulesAvailable)
@@ -790,7 +826,7 @@ public class Solver
     {
         Items = items;
     }
-    public static void DefaultInitItems()
+    /*public static void DefaultInitItems()
     {
         Items = new List<ItemInfo>();
         Items.Add(new ItemInfo(Potion, Concoctions, Invalid, 28, 4, 1, null));
@@ -801,49 +837,49 @@ public class Solver
         Items.Add(new ItemInfo(CoralRing, Accessories, MarineMerchandise, 42, 6, 1, null));
         Items.Add(new ItemInfo(Barbut, Attire, Metalworks, 42, 6, 1, null));
         Items.Add(new ItemInfo(Macuahuitl, Arms, Woodworks, 42, 6, 1, null));
-        Items.Add(new ItemInfo(Sauerkraut, PreservedFood, Invalid, 40, 4, 1, new Dictionary<RareMaterial, int>() { { Cabbage, 1 } }));
-        Items.Add(new ItemInfo(BakedPumpkin, Foodstuffs, Invalid, 40, 4, 1, new Dictionary<RareMaterial, int>() { { Pumpkin, 1 } }));
-        Items.Add(new ItemInfo(Tunic, Attire, Textiles, 72, 6, 1, new Dictionary<RareMaterial, int>() { { Fleece, 2 } }));
-        Items.Add(new ItemInfo(CulinaryKnife, Sundries, CreatureCreations, 44, 4, 1, new Dictionary<RareMaterial, int>() { { Claw, 1 } }));
-        Items.Add(new ItemInfo(Brush, Sundries, Woodworks, 44, 4, 1, new Dictionary<RareMaterial, int>() { { Fur, 1 } }));
-        Items.Add(new ItemInfo(BoiledEgg, Foodstuffs, CreatureCreations, 44, 4, 1, new Dictionary<RareMaterial, int>() { { Egg, 1 } }));
-        Items.Add(new ItemInfo(Hora, Arms, CreatureCreations, 72, 6, 1, new Dictionary<RareMaterial, int>() { { Carapace, 2 } }));
-        Items.Add(new ItemInfo(Earrings, Accessories, CreatureCreations, 44, 4, 1, new Dictionary<RareMaterial, int>() { { Fang, 1 } }));
-        Items.Add(new ItemInfo(Butter, Ingredients, CreatureCreations, 44, 4, 1, new Dictionary<RareMaterial, int>() { { Milk, 1 } }));
+        Items.Add(new ItemInfo(Sauerkraut, PreservedFood, Invalid, 40, 4, 1, new Dictionary<Material, int>() { { Cabbage, 1 } }));
+        Items.Add(new ItemInfo(BakedPumpkin, Foodstuffs, Invalid, 40, 4, 1, new Dictionary<Material, int>() { { Pumpkin, 1 } }));
+        Items.Add(new ItemInfo(Tunic, Attire, Textiles, 72, 6, 1, new Dictionary<Material, int>() { { Fleece, 2 } }));
+        Items.Add(new ItemInfo(CulinaryKnife, Sundries, CreatureCreations, 44, 4, 1, new Dictionary<Material, int>() { { Claw, 1 } }));
+        Items.Add(new ItemInfo(Brush, Sundries, Woodworks, 44, 4, 1, new Dictionary<Material, int>() { { Fur, 1 } }));
+        Items.Add(new ItemInfo(BoiledEgg, Foodstuffs, CreatureCreations, 44, 4, 1, new Dictionary<Material, int>() { { Egg, 1 } }));
+        Items.Add(new ItemInfo(Hora, Arms, CreatureCreations, 72, 6, 1, new Dictionary<Material, int>() { { Carapace, 2 } }));
+        Items.Add(new ItemInfo(Earrings, Accessories, CreatureCreations, 44, 4, 1, new Dictionary<Material, int>() { { Fang, 1 } }));
+        Items.Add(new ItemInfo(Butter, Ingredients, CreatureCreations, 44, 4, 1, new Dictionary<Material, int>() { { Milk, 1 } }));
         Items.Add(new ItemInfo(BrickCounter, Furnishings, UnburiedTreasures, 48, 6, 5, null));
         Items.Add(new ItemInfo(BronzeSheep, Furnishings, Metalworks, 64, 8, 5, null));
-        Items.Add(new ItemInfo(GrowthFormula, Concoctions, Invalid, 136, 8, 5, new Dictionary<RareMaterial, int>() { { Alyssum, 2 } }));
-        Items.Add(new ItemInfo(GarnetRapier, Arms, UnburiedTreasures, 136, 8, 5, new Dictionary<RareMaterial, int>() { { Garnet, 2 } }));
-        Items.Add(new ItemInfo(SpruceRoundShield, Attire, Woodworks, 136, 8, 5, new Dictionary<RareMaterial, int>() { { Spruce, 2 } }));
-        Items.Add(new ItemInfo(SharkOil, Sundries, MarineMerchandise, 136, 8, 5, new Dictionary<RareMaterial, int>() { { Shark, 2 } }));
-        Items.Add(new ItemInfo(SilverEarCuffs, Accessories, Metalworks, 136, 8, 5, new Dictionary<RareMaterial, int>() { { Silver, 2 } }));
-        Items.Add(new ItemInfo(SweetPopoto, Confections, Invalid, 72, 6, 5, new Dictionary<RareMaterial, int>() { { Popoto, 2 }, { Milk, 1 } }));
-        Items.Add(new ItemInfo(ParsnipSalad, Foodstuffs, Invalid, 48, 4, 5, new Dictionary<RareMaterial, int>() { { Parsnip, 2 } }));
-        Items.Add(new ItemInfo(Caramels, Confections, Invalid, 81, 6, 6, new Dictionary<RareMaterial, int>() { { Milk, 2 } }));
+        Items.Add(new ItemInfo(GrowthFormula, Concoctions, Invalid, 136, 8, 5, new Dictionary<Material, int>() { { Alyssum, 2 } }));
+        Items.Add(new ItemInfo(GarnetRapier, Arms, UnburiedTreasures, 136, 8, 5, new Dictionary<Material, int>() { { Garnet, 2 } }));
+        Items.Add(new ItemInfo(SpruceRoundShield, Attire, Woodworks, 136, 8, 5, new Dictionary<Material, int>() { { Spruce, 2 } }));
+        Items.Add(new ItemInfo(SharkOil, Sundries, MarineMerchandise, 136, 8, 5, new Dictionary<Material, int>() { { Shark, 2 } }));
+        Items.Add(new ItemInfo(SilverEarCuffs, Accessories, Metalworks, 136, 8, 5, new Dictionary<Material, int>() { { Silver, 2 } }));
+        Items.Add(new ItemInfo(SweetPopoto, Confections, Invalid, 72, 6, 5, new Dictionary<Material, int>() { { Popoto, 2 }, { Milk, 1 } }));
+        Items.Add(new ItemInfo(ParsnipSalad, Foodstuffs, Invalid, 48, 4, 5, new Dictionary<Material, int>() { { Parsnip, 2 } }));
+        Items.Add(new ItemInfo(Caramels, Confections, Invalid, 81, 6, 6, new Dictionary<Material, int>() { { Milk, 2 } }));
         Items.Add(new ItemInfo(Ribbon, Accessories, Textiles, 54, 6, 6, null));
         Items.Add(new ItemInfo(Rope, Sundries, Textiles, 36, 4, 6, null));
-        Items.Add(new ItemInfo(CavaliersHat, Attire, Textiles, 81, 6, 6, new Dictionary<RareMaterial, int>() { { Feather, 2 } }));
-        Items.Add(new ItemInfo(Item.Horn, Sundries, CreatureCreations, 81, 6, 6, new Dictionary<RareMaterial, int>() { { RareMaterial.Horn, 2 } }));
+        Items.Add(new ItemInfo(CavaliersHat, Attire, Textiles, 81, 6, 6, new Dictionary<Material, int>() { { Feather, 2 } }));
+        Items.Add(new ItemInfo(Item.Horn, Sundries, CreatureCreations, 81, 6, 6, new Dictionary<Material, int>() { { Material.Horn, 2 } }));
         Items.Add(new ItemInfo(SaltCod, PreservedFood, MarineMerchandise, 54, 6, 7, null));
         Items.Add(new ItemInfo(SquidInk, Ingredients, MarineMerchandise, 36, 4, 7, null));
         Items.Add(new ItemInfo(EssentialDraught, Concoctions, MarineMerchandise, 54, 6, 7, null));
-        Items.Add(new ItemInfo(Jam, Ingredients, Invalid, 78, 6, 7, new Dictionary<RareMaterial, int>() { { Isleberry, 3 } }));
-        Items.Add(new ItemInfo(TomatoRelish, Ingredients, Invalid, 52, 4, 7, new Dictionary<RareMaterial, int>() { { Tomato, 2 } }));
-        Items.Add(new ItemInfo(OnionSoup, Foodstuffs, Invalid, 78, 6, 7, new Dictionary<RareMaterial, int>() { { Onion, 3 } }));
-        Items.Add(new ItemInfo(Pie, Confections, MarineMerchandise, 78, 6, 7, new Dictionary<RareMaterial, int>() { { Wheat, 3 } }));
-        Items.Add(new ItemInfo(CornFlakes, PreservedFood, Invalid, 52, 4, 7, new Dictionary<RareMaterial, int>() { { Corn, 2 } }));
-        Items.Add(new ItemInfo(PickledRadish, PreservedFood, Invalid, 104, 8, 7, new Dictionary<RareMaterial, int>() { { Radish, 4 } }));
+        Items.Add(new ItemInfo(Jam, Ingredients, Invalid, 78, 6, 7, new Dictionary<Material, int>() { { Isleberry, 3 } }));
+        Items.Add(new ItemInfo(TomatoRelish, Ingredients, Invalid, 52, 4, 7, new Dictionary<Material, int>() { { Tomato, 2 } }));
+        Items.Add(new ItemInfo(OnionSoup, Foodstuffs, Invalid, 78, 6, 7, new Dictionary<Material, int>() { { Onion, 3 } }));
+        Items.Add(new ItemInfo(Pie, Confections, MarineMerchandise, 78, 6, 7, new Dictionary<Material, int>() { { Wheat, 3 } }));
+        Items.Add(new ItemInfo(CornFlakes, PreservedFood, Invalid, 52, 4, 7, new Dictionary<Material, int>() { { Corn, 2 } }));
+        Items.Add(new ItemInfo(PickledRadish, PreservedFood, Invalid, 104, 8, 7, new Dictionary<Material, int>() { { Radish, 4 } }));
         Items.Add(new ItemInfo(IronAxe, Arms, Metalworks, 72, 8, 8, null));
         Items.Add(new ItemInfo(QuartzRing, Accessories, UnburiedTreasures, 72, 8, 8, null));
         Items.Add(new ItemInfo(PorcelainVase, Sundries, UnburiedTreasures, 72, 8, 8, null));
-        Items.Add(new ItemInfo(VegetableJuice, Concoctions, Invalid, 78, 6, 8, new Dictionary<RareMaterial, int>() { { Cabbage, 3 } }));
-        Items.Add(new ItemInfo(PumpkinPudding, Confections, Invalid, 78, 6, 8, new Dictionary<RareMaterial, int>() { { Pumpkin, 3 }, { Egg, 1 }, { Milk, 1 } }));
-        Items.Add(new ItemInfo(SheepfluffRug, Furnishings, CreatureCreations, 90, 6, 8, new Dictionary<RareMaterial, int>() { { Fleece, 3 } }));
-        Items.Add(new ItemInfo(GardenScythe, Sundries, Metalworks, 90, 6, 9, new Dictionary<RareMaterial, int>() { { Claw, 3 } }));
-        Items.Add(new ItemInfo(Bed, Furnishings, Textiles, 120, 8, 9, new Dictionary<RareMaterial, int>() { { Fur, 4 } }));
-        Items.Add(new ItemInfo(ScaleFingers, Attire, CreatureCreations, 120, 8, 9, new Dictionary<RareMaterial, int>() { { Carapace, 4 } }));
-        Items.Add(new ItemInfo(Crook, Arms, Woodworks, 120, 8, 9, new Dictionary<RareMaterial, int>() { { Fang, 4 } }));
-    }
+        Items.Add(new ItemInfo(VegetableJuice, Concoctions, Invalid, 78, 6, 8, new Dictionary<Material, int>() { { Cabbage, 3 } }));
+        Items.Add(new ItemInfo(PumpkinPudding, Confections, Invalid, 78, 6, 8, new Dictionary<Material, int>() { { Pumpkin, 3 }, { Egg, 1 }, { Milk, 1 } }));
+        Items.Add(new ItemInfo(SheepfluffRug, Furnishings, CreatureCreations, 90, 6, 8, new Dictionary<Material, int>() { { Fleece, 3 } }));
+        Items.Add(new ItemInfo(GardenScythe, Sundries, Metalworks, 90, 6, 9, new Dictionary<Material, int>() { { Claw, 3 } }));
+        Items.Add(new ItemInfo(Bed, Furnishings, Textiles, 120, 8, 9, new Dictionary<Material, int>() { { Fur, 4 } }));
+        Items.Add(new ItemInfo(ScaleFingers, Attire, CreatureCreations, 120, 8, 9, new Dictionary<Material, int>() { { Carapace, 4 } }));
+        Items.Add(new ItemInfo(Crook, Arms, Woodworks, 120, 8, 9, new Dictionary<Material, int>() { { Fang, 4 } }));
+    }*/
 
     public static int GetCurrentWeek()
     {

@@ -31,26 +31,20 @@ namespace IslandWorkshopSolver
             SignatureHelper.Initialise(this);
             items = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Select(o => o.Item.Value?.Name.ToString() ?? string.Empty)
                .Where(s => s.Length > 0).Prepend(string.Empty).ToArray();
-
+            var itemSheet = DalamudPlugins.GameData.GetExcelSheet<Lumina.Excel.GeneratedSheets.Item>()!;
+            string[] itemNames = Enumerable.Range(37551, 61).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()).ToArray();
             var addon = DalamudPlugins.GameData.GetExcelSheet<Addon>()!;
             shifts = Enumerable.Range(15186, 5).Select(i => addon.GetRow((uint)i)!.Text.ToString()).ToArray();
             supplies = Enumerable.Range(15181, 5).Reverse().Select(i => addon.GetRow((uint)i)!.Text.ToString()).ToArray();
             popularities = Enumerable.Range(15177, 4).Select(i => addon.GetRow((uint)i)!.Text.ToString()).Prepend(string.Empty).ToArray();
             
-
-
-            
-
-
-            var validItems = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Select(o => o.Item.Value?.Name.ToString() ?? string.Empty)
+            var validCrafts = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Select(o => o.Item.Value?.Name.ToString() ?? string.Empty)
                .Where(s => s.Length > 0).ToArray();
 
-            ItemHelper.InitFromGameData(validItems);
+            ItemHelper.InitFromGameData(validCrafts);
             //Maps material ID to value
             var rareMats = DalamudPlugins.GameData.GetExcelSheet<MJIDisposalShopItem>()!.Where(i => i.Unknown1 == 0).ToDictionary(i => i.Unknown0, i=> i.Unknown2);
-            RareMaterialHelper.InitFromGameData(rareMats);
-
-            
+            RareMaterialHelper.InitFromGameData(rareMats, itemNames);
 
             var supplyMods = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksSupplyDefine>()!.ToDictionary(i => i.RowId, i => i.Unknown1);
             SupplyHelper.InitFromGameData(supplyMods);
@@ -70,18 +64,18 @@ namespace IslandWorkshopSolver
             int itemIndex = 0;
             foreach (var item in validItemRows)
             {
-                Dictionary<RareMaterial, int> mats = new Dictionary<RareMaterial, int>();
-                if (rareMats.ContainsKey((byte)item.Unknown4))
-                    mats.Add((RareMaterial)item.Unknown4, item.Unknown5);
-                if (rareMats.ContainsKey((byte)item.Unknown6))
-                    mats.Add((RareMaterial)item.Unknown6, item.Unknown7);
-                if (rareMats.ContainsKey((byte)item.Unknown8))
-                    mats.Add((RareMaterial)item.Unknown8, item.Unknown9);
+                Dictionary<Material, int> mats = new Dictionary<Material, int>();
+                if(item.Unknown5 > 0)
+                    mats.Add((Material)item.Unknown4, item.Unknown5);
+                if (item.Unknown7 > 0)
+                    mats.Add((Material)item.Unknown6, item.Unknown7);
+                if (item.Unknown9 > 0)
+                    mats.Add((Material)item.Unknown8, item.Unknown9);
 
                 if(Enum.IsDefined((Solver.Item)itemIndex))
                 {
                     itemInfos.Add(new ItemInfo((Solver.Item)itemIndex, (ItemCategory)item.Unknown1, (ItemCategory)item.Unknown2, item.Unknown14, item.Unknown13, item.Unknown12, mats));
-                    PluginLog.Verbose("Adding item {0} with rare material count {1}", (Solver.Item)itemIndex, mats.Count);
+                    PluginLog.Verbose("Adding item {0} with material count {1}", (Solver.Item)itemIndex, mats.Count);
 
                     itemIndex++;
                 }

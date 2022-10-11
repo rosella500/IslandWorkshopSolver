@@ -65,7 +65,7 @@ public static class ItemHelper
 {
     private static Dictionary<Item, string> displayNames = new Dictionary<Item, string>();
 
-    public static void DefaultInit()
+    /*public static void DefaultInit()
     {
         displayNames.Clear();
         displayNames.Add(Potion, "Potion");
@@ -118,11 +118,11 @@ public static class ItemHelper
         displayNames.Add(Bed, "Bed");
         displayNames.Add(ScaleFingers, "Scale Fingers");
         displayNames.Add(Crook, "Crook");
-    }
+    }*/
     public static string GetDisplayName(Item item)
     {
         if (displayNames.ContainsKey(item))
-            return displayNames[item];
+            return Solver.Config.RemoveFilteredWords(displayNames[item]);
         else
             return "???";
     }

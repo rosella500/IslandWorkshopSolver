@@ -19,7 +19,7 @@ public class MainWindow : Window, IDisposable
     private int[] selectedSchedules = new int[7];
 
     public MainWindow(Plugin plugin, Reader reader) : base(
-        "Island Sanctuary Workshop Solver")
+        "Island Sanctuary Workshop Solver", ImGuiWindowFlags.NoScrollbar)
     {
         SizeConstraints = new WindowSizeConstraints
         {
@@ -216,7 +216,20 @@ public class MainWindow : Window, IDisposable
                         {
                             if (schedule != null)
                             {
-                                if (ImGui.BeginTable("Options", 4))
+                                if(selectedSchedules[day] >= 0)
+                                {
+                                    string? matsDesc = Solver.Solver.GetMatsNeeded(day);
+                                    if (matsDesc != null)
+                                    {
+                                        ImGui.TextWrapped(matsDesc);
+                                        if(ImGui.IsItemHovered())
+                                        {
+                                            ImGui.SetTooltip("Starred items are rare and come from the Granary, the Pasture, or Cropland");
+                                        }
+                                        ImGui.Spacing();
+                                    }
+                                }
+                                if (ImGui.BeginTable("Options", 4, ImGuiTableFlags.ScrollY | ImGuiTableFlags.Resizable))
                                 {
                                     /*ImGui.TableSetupColumn("Confirmed", ImGuiTableColumnFlags.WidthStretch);*/
                                     ImGui.TableSetupColumn("Use?", ImGuiTableColumnFlags.WidthFixed, 50);
@@ -252,6 +265,7 @@ public class MainWindow : Window, IDisposable
                                     }
                                     ImGui.EndTable();
                                 }
+                                ImGui.Spacing();
                             }
                             else
                             {
@@ -263,7 +277,6 @@ public class MainWindow : Window, IDisposable
                 }
 
                 ImGui.EndTabBar();
-                ImGui.Separator();
             }
         }
         catch (Exception e)

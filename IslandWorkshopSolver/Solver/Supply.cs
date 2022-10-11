@@ -31,7 +31,7 @@ public static class SupplyHelper
         return supplyModifiers[supply];
     }
 
-    public static void DefaultInit()
+/*    public static void DefaultInit()
     {
         supplyModifiers.Clear();
         supplyModifiers.Add(Overflowing, 60);
@@ -39,7 +39,7 @@ public static class SupplyHelper
         supplyModifiers.Add(Sufficient, 100);
         supplyModifiers.Add(Insufficient, 130);
         supplyModifiers.Add(Nonexistent, 160);
-    }
+    }*/
 
     public static void InitFromGameData(Dictionary<uint, ushort> supplyData)
     {

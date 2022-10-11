@@ -29,14 +29,14 @@ public static class PopularityHelper
     }
 
 
-    public static void DefaultInit()
+/*    public static void DefaultInit()
     {
         popModifiers.Clear();
         popModifiers.Add(Low, 80);
         popModifiers.Add(Average, 100);
         popModifiers.Add(High, 120);
         popModifiers.Add(VeryHigh, 140);
-    }
+    }*/
 
     public static void InitFromGameData(Dictionary<uint, ushort> popData)
     {
