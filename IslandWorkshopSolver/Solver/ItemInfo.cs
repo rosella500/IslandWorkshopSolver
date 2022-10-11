@@ -14,9 +14,9 @@ namespace IslandWorkshopSolver.Solver;
 public class ItemInfo
 {
     //Contains exact supply values for concrete paths and worst-case supply values for tentative ones
-    static int[][] SUPPLY_PATH = new int[16][]
+    static int[][] SUPPLY_PATH = new int[17][]
     { 
-        new int[]{0, 0, -6, 0, 0, 0, 0}, //Unknown
+        new int[]{0, 0, 0, 0, 0, 0, 0}, //Unknown
             new int[]{-4, -4, 10, 0, 0, 0, 0}, //Cycle2Weak 
             new int[]{-8, -7, 15, 0, 0, 0, 0}, //Cycle2Strong
             new int[]{0, -4, -4, 10, 0, 0, 0}, //Cycle3Weak
@@ -31,7 +31,8 @@ public class ItemInfo
             new int[]{0, -1, 8, 0, -7, -8, -7}, //7Strong
             new int[]{0, 0, 0, -6, 0, 10, 0}, //4/5
             new int[]{0, 0, 0, -4, -4, 10, 0}, //5
-            new int[]{0, -1, 8, 0, -7, -6, 0} //6/7
+            new int[]{0, -1, 8, 0, -7, -6, 0}, //6/7
+            new int[]{0, 0, -6, 0, 0, 0, 0} //UnknownD1
             };
 
     static PeakCycle[][] PEAKS_TO_CHECK = new PeakCycle[5][]
@@ -136,6 +137,11 @@ public class ItemInfo
 
         CycleSchedule? currentDaySchedule = null;
 
+        if(Solver.CurrentDay == 0)
+        {
+            peak = UnknownD1;
+        }
+        
         if (observedSupplies.ContainsKey(0) && observedSupplies[0].supply == Insufficient)
         {
             DemandShift observedDemand = observedSupplies[0].demandShift;

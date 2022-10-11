@@ -357,11 +357,15 @@ public class CSVImporter
     }
     public bool NeedCurrentPeaks()
     {
-        foreach (var peak in currentPeaks)
-            if (peak != PeakCycle.Unknown)
-                return false;
+        for (int i=0; i<currentPeaks.Length; i++)
+        {
+            var peak = currentPeaks[i];
+            if (!peak.IsTerminal() && Solver.Items[i].peak.IsTerminal())
+                return true;
+        }
+            
 
-        return true;
+        return false;
 
     }
     public void WriteCurrentPeaks(int week)
@@ -400,7 +404,7 @@ public class CSVImporter
                 {
                     split[20] = Solver.Items[c].peak.ToString();
                     updated.Add(String.Join(",", split));
-                    PluginLog.LogWarning("Trying to write new peaks but we already have them? " + orig);
+                    //PluginLog.LogWarning("Trying to write new peaks but we already have them? " + orig);
                 }
             }
             for(int c=currentPeaks.Length; c< original.Length;c++)
