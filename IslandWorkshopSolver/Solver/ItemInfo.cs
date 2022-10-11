@@ -291,7 +291,7 @@ public class ItemInfo
             return true;
         if (peak == Cycle2Weak || peak == Cycle2Strong)
             return day > 0;
-        if (peak == Cycle3Weak || peak == Cycle3Strong || peak == Unknown)
+        if (peak == Cycle3Weak || peak == Cycle3Strong || peak == UnknownD1)
             return day > 1;
         if (peak == Cycle4Weak || peak == Cycle4Strong || peak == Cycle45)
             return day > 2;
@@ -299,7 +299,7 @@ public class ItemInfo
             return day > 3;
         if (peak == Cycle6Weak || peak == Cycle6Strong || peak == Cycle67)
             return day > 4;
-        if (peak == Cycle7Weak || peak == Cycle7Strong)
+        if (peak == Cycle7Weak || peak == Cycle7Strong || peak == Unknown)
             return day > 5;
 
         return false; //Peak is Unknown, so definitely hasn't passed
