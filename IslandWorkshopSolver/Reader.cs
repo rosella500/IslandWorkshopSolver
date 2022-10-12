@@ -100,25 +100,25 @@ namespace IslandWorkshopSolver
             return currentRank;
         }
 
-        public unsafe Dictionary<int, int>? GetInventory()
+        public unsafe bool GetInventory(out Dictionary<int, int> inventory)
         {
+            inventory = new Dictionary<int, int>();
             var uiModulePtr = DalamudPlugins.GameGui.GetUIModule();
             if (uiModulePtr == IntPtr.Zero)
-                return null;
+                return false;
 
             var agentModule = ((UIModule*)uiModulePtr)->GetAgentModule();
             if (agentModule == null)
-                return null;
+                return false;
 
             var mjiPouch = agentModule->GetAgentMJIPouch();
             if (mjiPouch == null)
-                return null;
-            
+                return false;
+
             if (mjiPouch->InventoryData == null)
-                return null;
+                return false;
 
             int totalItems = 0;
-            var inventory = new Dictionary<int, int>();
             for (ulong i = 0; i < mjiPouch->InventoryData->Inventory.Size(); i++)
             {
                 var invItem = mjiPouch->InventoryData->Inventory.Get(i);
@@ -127,10 +127,8 @@ namespace IslandWorkshopSolver
                 if(i <= (int)Material.Milk)
                     inventory.Add(invItem.SlotIndex, invItem.StackSize);
             }
-            if(totalItems == 0)
-                DalamudPlugins.Chat.Print("Open your Isleventory and view all the tabs to populate inventory data!");
 
-            return inventory;
+            return totalItems > 0;
         }
 
         public unsafe (int,string) ExportIsleData()

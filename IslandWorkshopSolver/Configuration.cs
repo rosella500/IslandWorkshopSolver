@@ -20,6 +20,7 @@ namespace IslandWorkshopSolver
         public string rootPath { get; set; } = "";
 
         public string[] flavorText { get; set; } = new string[3] { "Isleworks", "Island", "Sanctuary" };
+        public bool onlySuggestMaterialsOwned { get; set; } = false;
 
 
         public Dictionary<Item, bool>? unknownD2Items { get; set; } = null;

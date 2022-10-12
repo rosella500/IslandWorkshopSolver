@@ -87,7 +87,18 @@ public class ConfigWindow : Window, IDisposable
             {
                 ImGui.SetTooltip("Net cowries is workshop revenue minus the value you would've gotten from exporting rare materials directly");
             }
-
+            ImGui.Spacing();
+            bool checkMats = Configuration.onlySuggestMaterialsOwned;
+            if (ImGui.Checkbox("Only suggest crafts I have materials for", ref checkMats))
+            {
+                Configuration.onlySuggestMaterialsOwned = checkMats;
+                Configuration.Save();
+            }
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Removes all suggested schedules that require more of a material than you have in your isleventory");
+            }
+            ImGui.Spacing();
             bool enforceRest = Configuration.enforceRestDays;
             if (ImGui.Checkbox("Enforce rest days", ref enforceRest))
             {

@@ -28,7 +28,7 @@ public class Solver
     public static Configuration Config = new Configuration();
     private static Window? Window;
     public static Dictionary<int, (CycleSchedule schedule, int value)> SchedulesPerDay = new Dictionary<int, (CycleSchedule schedule, int value)>();
-   
+
     public static void Init(Configuration newConfig, Window window)
     {
         Config = newConfig;
@@ -45,7 +45,7 @@ public class Solver
             window.IsOpen = false;
         }
 
-        if (InitStep!=0)
+        if (InitStep != 0)
             return;
 
         Week = GetCurrentWeek();
@@ -57,7 +57,7 @@ public class Solver
             Importer = new CSVImporter(Config.rootPath, Week);
             InitStep = 1;
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             PluginLog.LogError(e, "Error importing file :" + e.Message + "\n" + e.StackTrace);
         }
@@ -78,28 +78,28 @@ public class Solver
         for (int i = 0; i < CurrentDay; i++)
             SetObservedFromCSV(i);
 
-        if(!SetObservedFromCSV(CurrentDay))
+        if (!SetObservedFromCSV(CurrentDay))
         {
             DalamudPlugins.Chat.PrintError("Don't have supply info from current day. Make sure you've viewed the Supply/Demand chart and reopen the window.");
             InitStep = 0;
             Window!.IsOpen = false;
-            Init(Config,Window!);
+            Init(Config, Window!);
             return;
         }
 
-        for(int summary = 1; summary < Importer.endDays.Count && summary <= CurrentDay; summary++)
+        for (int summary = 1; summary < Importer.endDays.Count && summary <= CurrentDay; summary++)
         {
             var prevDaySummary = Importer.endDays[summary];
             PluginLog.LogDebug("previous day summary: " + prevDaySummary);
             if (prevDaySummary.crafts != null)
             {
-                var twoDaysAgo = Importer.endDays[summary-1];
+                var twoDaysAgo = Importer.endDays[summary - 1];
                 CycleSchedule yesterdaySchedule = new CycleSchedule(summary, twoDaysAgo.endingGroove);
                 yesterdaySchedule.SetForAllWorkshops(prevDaySummary.crafts);
                 int gross = yesterdaySchedule.GetValue();
 
                 int net = gross - yesterdaySchedule.GetMaterialCost();
-                if(gross != prevDaySummary.endingGross)
+                if (gross != prevDaySummary.endingGross)
                 {
                     PluginLog.LogDebug("Writing summary to file. New gross: " + gross);
 
@@ -124,7 +124,7 @@ public class Solver
         InitStep = 2;
 
     }
-    static public List<(int, SuggestedSchedules?)>? RunSolver()
+    static public List<(int, SuggestedSchedules?)>? RunSolver(Dictionary<int, int> inventory)
     {
         if (InitStep != 2)
         {
@@ -157,7 +157,7 @@ public class Solver
                 AddRestDayValue(safeSchedules, GetWorstFutureDay(bestSched, dayToSolve));
 
 
-            toReturn.Add((dayToSolve, new SuggestedSchedules(safeSchedules)));
+            toReturn.Add((dayToSolve, new SuggestedSchedules(safeSchedules, Config.onlySuggestMaterialsOwned, inventory)));
         }
         else if (dayToSolve < 7)
         {
@@ -165,21 +165,23 @@ public class Solver
                 Importer.WriteCurrentPeaks(Week);
 
             if (dayToSolve == 4)
-                toReturn.AddRange(GetLastThreeDays());
+                toReturn.AddRange(GetLastThreeDays(Config.onlySuggestMaterialsOwned, inventory));
             else if (dayToSolve == 5)
-                toReturn.AddRange(GetLastTwoDays());
+                toReturn.AddRange(GetLastTwoDays(Config.onlySuggestMaterialsOwned, inventory));
             else if (Rested || !Config.enforceRestDays)
-                toReturn.Add((dayToSolve, new SuggestedSchedules(GetSuggestedSchedules(dayToSolve, -1, null))));
+                toReturn.Add((dayToSolve, new SuggestedSchedules(GetSuggestedSchedules(dayToSolve, -1, null), Config.onlySuggestMaterialsOwned, inventory)));
             else
                 toReturn.Add((dayToSolve, null));
         }
         //Technically speaking we can log in on D7 but there's nothing we can really do
 
-        PluginLog.LogInformation("Took {0} ms to calculate suggestions for day {1}. Suggestions length: {2}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time, dayToSolve+1, toReturn.Count);
+        PluginLog.LogInformation("Took {0} ms to calculate suggestions for day {1}. Suggestions length: {2}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time, dayToSolve + 1, toReturn.Count);
 
         return toReturn;
 
     }
+
+    
 
     public static void AddRestDayValue(Dictionary<WorkshopSchedule, int> safeSchedules, int restValue)
     {
@@ -205,36 +207,25 @@ public class Solver
             }
         }
 
-
         int weak = 0;
         int strong = 0;
-        foreach(var item in Items)
+        foreach (var item in Items)
         {
             if (item.peak == Cycle2Strong)
                 strong++;
             else if (item.peak == Cycle2Weak)
                 weak++;
         }
-        return "D2: "+weak+"/4 weak peaks and " + strong + "/4 strong peaks";
+        return "D2: " + weak + "/4 weak peaks and " + strong + "/4 strong peaks";
     }
 
-    public static IOrderedEnumerable<KeyValuePair<Material,int>>? GetScheduledMatsNeeded()
+    public static IOrderedEnumerable<KeyValuePair<Material, int>>? GetScheduledMatsNeeded()
     {
         Dictionary<Material, int> mats = new Dictionary<Material, int>();
-        foreach(var schedule in SchedulesPerDay)
+        foreach (var schedule in SchedulesPerDay)
         {
-            foreach (var item in schedule.Value.schedule.workshops[0].GetItems())
-            {
-                foreach (var mat in Items[(int)item].materialsRequired)
-                {
-                    if (mats.ContainsKey(mat.Key))
-                        mats[mat.Key] += mat.Value * 3;
-                    else
-                        mats.Add(mat.Key, mat.Value * 3);
-                }
-            }
+            GetAllMatsForSchedule(schedule.Value.schedule.workshops[0], mats);
         }
-        
 
         if (mats.Count == 0)
             return null;
@@ -243,16 +234,22 @@ public class Solver
         return orderedDict;
     }
 
-    private static KeyValuePair<WorkshopSchedule, int> GetBestSchedule(Dictionary<WorkshopSchedule, int> schedulesAvailable)
+    public static void GetAllMatsForSchedule(WorkshopSchedule schedule, in Dictionary<Material, int> mats)
     {
-        KeyValuePair<WorkshopSchedule, int> bestSched = schedulesAvailable.First();
-        foreach (var sched in schedulesAvailable)
+        foreach (var item in schedule.GetItems())
         {
-            if (sched.Value > bestSched.Value) bestSched = sched;
+            foreach (var mat in Items[(int)item].materialsRequired)
+            {
+                if (mats.ContainsKey(mat.Key))
+                    mats[mat.Key] += mat.Value * 3;
+                else
+                    mats.Add(mat.Key, mat.Value * 3);
+            }
         }
-        return bestSched;
     }
-    public static List<(int, SuggestedSchedules?)> GetLastTwoDays()
+
+    
+    public static List<(int, SuggestedSchedules?)> GetLastTwoDays(bool removeCantMake, Dictionary<int, int> inventory)
     {
         HashSet<Item>? reservedFor6 = null;
         int startingGroove = GetEndingGrooveForDay(CurrentDay);
@@ -313,11 +310,11 @@ public class Solver
         }
 
         List<(int, SuggestedSchedules?)> suggested = new List<(int, SuggestedSchedules?)>();
-        suggested.Add((5, new SuggestedSchedules(initialSchedules[0])));
-        suggested.Add((6, new SuggestedSchedules(initialSchedules[1])));
+        suggested.Add((5, new SuggestedSchedules(initialSchedules[0], removeCantMake, inventory)));
+        suggested.Add((6, new SuggestedSchedules(initialSchedules[1], removeCantMake, inventory)));
         return suggested;
     }
-    public static List<(int, SuggestedSchedules?)> GetLastThreeDays()
+    public static List<(int, SuggestedSchedules?)> GetLastThreeDays(bool removeCantMake, Dictionary<int, int> inventory)
     {
         HashSet<Item> reservedFor6 = new HashSet<Item>();
         HashSet<Item> reservedFor5 = new HashSet<Item>();
@@ -402,9 +399,9 @@ public class Solver
         }
 
         List<(int, SuggestedSchedules?)> suggested = new List<(int, SuggestedSchedules?)>();
-        suggested.Add((4, new SuggestedSchedules(initialSchedules[0])));
-        suggested.Add((5, new SuggestedSchedules(initialSchedules[1])));
-        suggested.Add((6, new SuggestedSchedules(initialSchedules[2])));
+        suggested.Add((4, new SuggestedSchedules(initialSchedules[0], removeCantMake, inventory)));
+        suggested.Add((5, new SuggestedSchedules(initialSchedules[1], removeCantMake, inventory)));
+        suggested.Add((6, new SuggestedSchedules(initialSchedules[2], removeCantMake, inventory)));
         return suggested;
     }
 
@@ -727,12 +724,19 @@ public class Solver
 
     private static KeyValuePair<WorkshopSchedule, int> GetBestSchedule(int day, HashSet<Item>? reservedForLater, bool allowAllOthers = true)
     {
-        var suggested = new SuggestedSchedules(GetSuggestedSchedules(day, -1, reservedForLater, allowAllOthers));
-        var scheduleEnum = suggested.orderedSuggestions.GetEnumerator();
-        scheduleEnum.MoveNext();
-        var bestSchedule = scheduleEnum.Current;
+        var suggested = GetSuggestedSchedules(day, -1, reservedForLater, allowAllOthers);
+        
+        return GetBestSchedule(suggested);
+    }
 
-        return bestSchedule;//new KeyValuePair<WorkshopSchedule, int>(new WorkshopSchedule(bestSchedule.Key), bestSchedule.Value);
+    private static KeyValuePair<WorkshopSchedule, int> GetBestSchedule(Dictionary<WorkshopSchedule, int> schedulesAvailable)
+    {
+        KeyValuePair<WorkshopSchedule, int> bestSched = schedulesAvailable.First();
+        foreach (var sched in schedulesAvailable)
+        {
+            if (sched.Value > bestSched.Value) bestSched = sched;
+        }
+        return bestSched;
     }
 
     public static bool AddScheduleIfEfficient(ItemInfo newItem, ItemInfo origItem, List<Item> scheduledItems, int day, Dictionary<WorkshopSchedule, int> safeSchedules, int startingGroove)
@@ -950,9 +954,7 @@ public class Solver
                 Importer.WriteNewSupply(products, CurrentDay);
             }
             return true;
-        }
-        else
-            DalamudPlugins.Chat.PrintError("Can't import supply. Please talk to the Tactful Taskmaster on your Island Sanctuary, open the Supply/Demand window, then reopen /workshop!");
+        }            
         return false;
         
     }

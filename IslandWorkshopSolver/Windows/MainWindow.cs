@@ -22,6 +22,8 @@ public class MainWindow : Window, IDisposable
     private Vector4 yellow = new Vector4(1f, 1f, .3f, 1f);
     private Vector4 green = new Vector4(.3f, 1f, .3f, 1f);
     private Vector4 red = new Vector4(1f, .3f, .3f, 1f);
+    private bool showInventoryError = false;
+    private bool showSupplyError = false;
 
     public MainWindow(Plugin plugin, Reader reader) : base(
         "Island Sanctuary Workshop Solver", ImGuiWindowFlags.NoScrollbar)
@@ -49,9 +51,9 @@ public class MainWindow : Window, IDisposable
         if(maybeRank > 0)
             config.islandRank = maybeRank;
         string[] products = islandData.data.Split('\n', StringSplitOptions.None);
-        var maybeInv = reader.GetInventory();
-        if (maybeInv != null)
+        if(reader.GetInventory(out var maybeInv))
             inventory = maybeInv;
+        showSupplyError = false;
         try
         {
             if(Solver.Solver.WriteTodaySupply(islandData.day, products))
@@ -64,8 +66,7 @@ public class MainWindow : Window, IDisposable
             }
             else
             {
-                PluginLog.LogError("Failed to init today's supply. Init step wrong? No product info??");
-                IsOpen = false;
+                showSupplyError = true;
             }
         }
         catch (Exception e)
@@ -102,9 +103,9 @@ public class MainWindow : Window, IDisposable
 
         if (schedules != null)
         {
+            scheduleSuggestions.Clear();
             foreach (var schedule in schedules)
             {
-                scheduleSuggestions.Remove(schedule.day);
                 scheduleSuggestions.Add(schedule.day, schedule.sch);
             }
         }
@@ -130,6 +131,16 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
+        if(showSupplyError)
+        {
+            ImGui.TextColored(red, "Can't import supply!! \nPlease talk to the Tactful Taskmaster on your Island Sanctuary, \nopen the Supply/Demand window, then hit this button.");
+            ImGui.Spacing();
+            if (ImGui.Button("Reimport Supply"))
+            {
+                OnOpen();
+            }
+            return;
+        }
         try
         {
             if (ImGui.Button("Run Solver"))
@@ -137,11 +148,20 @@ public class MainWindow : Window, IDisposable
                 try
                 {
                     Solver.Solver.Init(config, this);
-                    List<(int day, SuggestedSchedules? sch)>? schedules = Solver.Solver.RunSolver();
-                    AddNewSuggestions(schedules);
-                    var maybeInv = reader.GetInventory();
-                    if (maybeInv != null)
+                    showInventoryError = false;
+                    if (reader.GetInventory(out var maybeInv))
                         inventory = maybeInv;
+                    if (config.onlySuggestMaterialsOwned && inventory.Count == 0)
+                    {
+                        scheduleSuggestions.Clear();
+                        showInventoryError = true;
+                    }
+                    else
+                    {
+                        List<(int day, SuggestedSchedules? sch)>? schedules = Solver.Solver.RunSolver(inventory);
+                        AddNewSuggestions(schedules);
+                    }
+                    
                 }
                 catch (Exception e)
                 {
@@ -162,7 +182,14 @@ public class MainWindow : Window, IDisposable
             }
             ImGui.Spacing();
 
-            if((config.day == 4 || config.day == 3) && scheduleSuggestions.Count > 0)
+            if(showInventoryError)
+            {
+                ImGui.TextColored(red, "Inventory uninitialized. Open your Isleventory and view all tabs");
+                ImGui.TextColored(red, "or turn off \"Only suggest crafts I have materials for\" in configs.");
+                ImGui.Spacing();
+            }
+
+            if ((config.day == 4 || config.day == 3) && scheduleSuggestions.Count > 0)
             {
                 ImGui.TextColored(yellow, "There are suggestions for multiple days available!");
                 ImGui.Spacing();
@@ -237,6 +264,8 @@ public class MainWindow : Window, IDisposable
                                         ImGui.Spacing();
                                         if(inventory.Count == 0)
                                         {
+                                            ImGui.TextColored(yellow, "Open Isleventory and view all tabs to check materials required against materials you have.");
+                                            ImGui.Spacing();
                                             ImGui.TextWrapped(ConvertMatsToString(matsRequired));
                                             if (ImGui.IsItemHovered())
                                             {
@@ -301,15 +330,14 @@ public class MainWindow : Window, IDisposable
                                         ImGui.TableSetColumnIndex(column++);
                                         if (ImGui.RadioButton("##" + (i + 1), ref selectedSchedules[day], i))
                                         {
+                                            if (reader.GetInventory(out var maybeInv))
+                                                inventory = maybeInv;
+
                                             Solver.Solver.SetDay(suggestion.Key.GetItems(), day);
                                             if (Solver.Solver.CurrentDay == 3) //If we're on day 4, we're calculating for 5, 6 and 7
-                                                AddNewSuggestions(Solver.Solver.GetLastThreeDays());
+                                                AddNewSuggestions(Solver.Solver.GetLastThreeDays(config.onlySuggestMaterialsOwned, inventory));
                                             else if(Solver.Solver.CurrentDay == 4) //If we're on day 5, we're calculating for 6 and 7
-                                                AddNewSuggestions(Solver.Solver.GetLastTwoDays());
-
-                                            var maybeInv = reader.GetInventory();
-                                            if (maybeInv != null)
-                                                inventory = maybeInv;
+                                                AddNewSuggestions(Solver.Solver.GetLastTwoDays(config.onlySuggestMaterialsOwned, inventory));
                                         }
                                         ImGui.TableSetColumnIndex(column++);
                                         ImGui.Text(suggestion.Value.ToString());
