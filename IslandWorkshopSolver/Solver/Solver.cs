@@ -574,15 +574,18 @@ public class Solver
         while (eightEnum.MoveNext())
         {
             var topItem = eightEnum.Current;
-                //PluginLog.LogVerbose("Building schedule around : " + topItem.item + ", peak: " + topItem.peak);
+            //PluginLog.LogVerbose("Building schedule around : " + topItem.item + ", peak: " + topItem.peak);
 
 
+            List<ItemInfo> eightMatches = new List<ItemInfo>();
             //8-8-8
             var eightMatchEnum = eightHour.GetEnumerator();
             while (eightMatchEnum.MoveNext())
             {
-                AddScheduleIfEfficient(eightMatchEnum.Current, topItem,
-                    new List<Item> { topItem.item, eightMatchEnum.Current.item, topItem.item }, day, safeSchedules, startingGroove);
+                if (!eightMatchEnum.Current.GetsEfficiencyBonus(topItem))
+                    continue;
+                eightMatches.Add(eightMatchEnum.Current);
+                AddToScheduleMap(new List<Item> { topItem.item, eightMatchEnum.Current.item, topItem.item }, day, safeSchedules, startingGroove);
             }
 
             //4-8-4-8 and 4-4-4-4-8
@@ -597,7 +600,7 @@ public class Solver
                 var secondFourMatchEnum = fourHour.GetEnumerator();
                 while (secondFourMatchEnum.MoveNext())
                 {
-                        //PluginLog.LogVerbose("Checking potential 4hr match: " + secondFourMatchEnum.Current.item);
+                    //PluginLog.LogVerbose("Checking potential 4hr match: " + secondFourMatchEnum.Current.item);
                     AddScheduleIfEfficient(secondFourMatchEnum.Current, topItem,
                         new List<Item> { firstFourMatchEnum.Current.item, topItem.item, secondFourMatchEnum.Current.item, topItem.item },
                         day, safeSchedules, startingGroove);
@@ -605,6 +608,11 @@ public class Solver
 
                     if (!secondFourMatchEnum.Current.GetsEfficiencyBonus(firstFourMatchEnum.Current))
                         continue;
+
+                    //4-4-8-8
+                    foreach(var eightMatch in eightMatches)
+                        AddToScheduleMap(new List<Item> { secondFourMatchEnum.Current.item, firstFourMatchEnum.Current.item, topItem.item, eightMatch.item },
+                            day, safeSchedules, startingGroove);
 
                     var thirdFourMatchEnum = fourHour.GetEnumerator();
                     while (thirdFourMatchEnum.MoveNext())

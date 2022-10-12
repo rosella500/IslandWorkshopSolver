@@ -240,7 +240,7 @@ public class MainWindow : Window, IDisposable
                                             ImGui.TextWrapped(ConvertMatsToString(matsRequired));
                                             if (ImGui.IsItemHovered())
                                             {
-                                                ImGui.SetTooltip("Starred items are rare and come from the Granary, the Pasture, or Cropland");
+                                                ImGui.SetTooltip("Starred items are rare and come from the Granary, Pasture, or Cropland");
                                             }
                                         }
                                         else
@@ -274,7 +274,7 @@ public class MainWindow : Window, IDisposable
                                                 ImGui.TextColored(color, matStr);
                                                 if (isRare && ImGui.IsItemHovered())
                                                 {
-                                                    ImGui.SetTooltip("Starred items are rare and come from the Granary, the Pasture, or Cropland");
+                                                    ImGui.SetTooltip("Starred items are rare and come from the Granary, Pasture, or Cropland");
                                                 }
                                             }
                                         }                                        
