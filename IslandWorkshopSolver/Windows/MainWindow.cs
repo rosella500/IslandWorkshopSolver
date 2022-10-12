@@ -6,6 +6,7 @@ using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using Dalamud.Logging;
 using IslandWorkshopSolver.Solver;
+using System.Linq;
 
 namespace IslandWorkshopSolver.Windows;
 
@@ -17,6 +18,10 @@ public class MainWindow : Window, IDisposable
     private Dictionary<int,SuggestedSchedules?> scheduleSuggestions;
     private List<EndDaySummary> endDaySummaries;
     private int[] selectedSchedules = new int[7];
+    private Dictionary<int, int> inventory = new Dictionary<int, int>();
+    private Vector4 yellow = new Vector4(1f, 1f, .3f, 1f);
+    private Vector4 green = new Vector4(.3f, 1f, .3f, 1f);
+    private Vector4 red = new Vector4(1f, .3f, .3f, 1f);
 
     public MainWindow(Plugin plugin, Reader reader) : base(
         "Island Sanctuary Workshop Solver", ImGuiWindowFlags.NoScrollbar)
@@ -40,7 +45,11 @@ public class MainWindow : Window, IDisposable
     public override void OnOpen()
     {
         (int day, string data) islandData = reader.ExportIsleData();
+        config.islandRank = reader.GetIslandRank();
         string[] products = islandData.data.Split('\n', StringSplitOptions.None);
+        var maybeInv = reader.GetInventory();
+        if (maybeInv != null)
+            inventory = maybeInv;
         try
         {
             if(Solver.Solver.WriteTodaySupply(islandData.day, products))
@@ -151,7 +160,7 @@ public class MainWindow : Window, IDisposable
 
             if((config.day == 4 || config.day == 3) && scheduleSuggestions.Count > 0)
             {
-                ImGui.TextColored(new Vector4(1f, 1f, .1f, 1f), "There are suggestions for multiple days available!");
+                ImGui.TextColored(yellow, "There are suggestions for multiple days available!");
                 ImGui.Spacing();
                 ImGui.TextWrapped("These schedules affect each other! Select the highest-value schedules first to get better recommendations for the worse day(s).");
                 ImGui.Spacing();
@@ -218,14 +227,54 @@ public class MainWindow : Window, IDisposable
                             {
                                 if(selectedSchedules[day] >= 0)
                                 {
-                                    string? matsDesc = Solver.Solver.GetMatsNeeded(day);
-                                    if (matsDesc != null)
+                                    var matsRequired = Solver.Solver.GetScheduledMatsNeeded();
+                                    if (matsRequired != null)
                                     {
-                                        ImGui.TextWrapped(matsDesc);
-                                        if(ImGui.IsItemHovered())
+                                        string matsNeeded = "Materials needed: ";
+                                        float currentX = ImGui.CalcTextSize(matsNeeded).X;
+                                        float availableX = ImGui.GetContentRegionAvail().X;
+                                        ImGui.Text(matsNeeded);
+
+                                        if(inventory.Count == 0)
                                         {
-                                            ImGui.SetTooltip("Starred items are rare and come from the Granary, the Pasture, or Cropland");
+                                            ImGui.SameLine(0f, 0f);
+                                            ImGui.TextWrapped(ConvertMatsToString(matsRequired));
+                                            if (ImGui.IsItemHovered())
+                                            {
+                                                ImGui.SetTooltip("Starred items are rare and come from the Granary, the Pasture, or Cropland");
+                                            }
                                         }
+                                        else
+                                        {
+                                            foreach(var mat in matsRequired)
+                                            {
+
+                                                bool isRare = RareMaterialHelper.GetMaterialValue(mat.Key, out _);
+                                                string matStr = mat.Value + "x " + RareMaterialHelper.GetDisplayName(mat.Key) + (isRare ? "*" : ""); 
+                                                if (!mat.Equals(matsRequired.Last()))
+                                                    matStr += ", ";
+                                                Vector4 color = red;
+                                                if(inventory.ContainsKey((int)mat.Key))
+                                                {
+                                                    int itemsHeld = inventory[(int)mat.Key];
+                                                    if (itemsHeld > mat.Value)
+                                                        color = green;
+                                                    else if (itemsHeld > mat.Value/2)
+                                                        color = yellow;
+                                                }
+                                                currentX += ImGui.CalcTextSize(matStr).X;
+                                                if (currentX < availableX)
+                                                    ImGui.SameLine(0f, 0f);
+                                                else
+                                                    currentX = ImGui.CalcTextSize(matStr).X;
+
+                                                ImGui.TextColored(color, matStr);
+                                                if (isRare && ImGui.IsItemHovered())
+                                                {
+                                                    ImGui.SetTooltip("Starred items are rare and come from the Granary, the Pasture, or Cropland");
+                                                }
+                                            }
+                                        }                                        
                                         ImGui.Spacing();
                                     }
                                 }
@@ -283,5 +332,20 @@ public class MainWindow : Window, IDisposable
         {
             PluginLog.LogError(e, "Error displaying schedule data.");
         }
+    }
+
+    private string ConvertMatsToString(IOrderedEnumerable<KeyValuePair<Material, int>> orderedDict)
+    {
+        var matsEnum = orderedDict.GetEnumerator();
+        StringBuilder matsStr = new StringBuilder(" ");
+        while (matsEnum.MoveNext())
+        {
+            if (!matsEnum.Current.Equals(orderedDict.First()))
+                matsStr.Append(", ");
+            matsStr.Append(matsEnum.Current.Value).Append("x ").Append(RareMaterialHelper.GetDisplayName(matsEnum.Current.Key));
+            if (RareMaterialHelper.GetMaterialValue(matsEnum.Current.Key, out _))
+                matsStr.Append('*');
+        }
+        return matsStr.ToString();
     }
 }

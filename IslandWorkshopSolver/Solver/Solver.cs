@@ -1,14 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
 
 namespace IslandWorkshopSolver.Solver;
-using static Item;
-using static ItemCategory;
-using static Material;
 using static PeakCycle;
 public class Solver
 {
@@ -222,41 +218,29 @@ public class Solver
         return "D2: "+weak+"/4 weak peaks and " + strong + "/4 strong peaks";
     }
 
-    public static string? GetMatsNeeded(int day)
+    public static IOrderedEnumerable<KeyValuePair<Material,int>>? GetScheduledMatsNeeded()
     {
-        if (!SchedulesPerDay.ContainsKey(day))
-            return null;
-
         Dictionary<Material, int> mats = new Dictionary<Material, int>();
-        foreach(var item in SchedulesPerDay[day].schedule.workshops[0].GetItems())
+        foreach(var schedule in SchedulesPerDay)
         {
-            foreach(var mat in Items[(int)item].materialsRequired)
+            foreach (var item in schedule.Value.schedule.workshops[0].GetItems())
             {
-                if (mats.ContainsKey(mat.Key))
-                    mats[mat.Key] += mat.Value * 3;
-                else
-                    mats.Add(mat.Key, mat.Value * 3);
+                foreach (var mat in Items[(int)item].materialsRequired)
+                {
+                    if (mats.ContainsKey(mat.Key))
+                        mats[mat.Key] += mat.Value * 3;
+                    else
+                        mats.Add(mat.Key, mat.Value * 3);
+                }
             }
         }
+        
 
         if (mats.Count == 0)
             return null;
 
         var orderedDict = mats.OrderByDescending(mat => { RareMaterialHelper.GetMaterialValue(mat.Key, out int value); return value; });
-
-        StringBuilder matsStr = new StringBuilder("Materials Needed: ");
-        var matsEnum = orderedDict.GetEnumerator();
-        matsEnum.MoveNext();
-        matsStr.Append(matsEnum.Current.Value).Append("x ").Append(RareMaterialHelper.GetDisplayName(matsEnum.Current.Key));
-        if (RareMaterialHelper.GetMaterialValue(matsEnum.Current.Key, out _))
-            matsStr.Append("*");
-        while(matsEnum.MoveNext())
-        {
-            matsStr.Append(", ").Append(matsEnum.Current.Value).Append("x ").Append(RareMaterialHelper.GetDisplayName(matsEnum.Current.Key));
-            if (RareMaterialHelper.GetMaterialValue(matsEnum.Current.Key, out _))
-                matsStr.Append("*");
-        }
-        return matsStr.ToString();
+        return orderedDict;
     }
 
     private static KeyValuePair<WorkshopSchedule, int> GetBestSchedule(Dictionary<WorkshopSchedule, int> schedulesAvailable)

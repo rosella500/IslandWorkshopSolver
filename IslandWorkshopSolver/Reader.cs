@@ -9,15 +9,17 @@ using Lumina.Excel.GeneratedSheets;
 using Lumina.Excel;
 using Dalamud.Logging;
 using IslandWorkshopSolver.Solver;
+using Lumina;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using Dalamud.Game;
+using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
 namespace IslandWorkshopSolver
 {
     // Lifted entirely from Rietty's AutoMammet, who apparently took it from Otter. Bless you both. <3
     public class Reader
     {
-        [Signature("E8 ?? ?? ?? ?? 8B 50 10")]
-        private readonly unsafe delegate* unmanaged<IntPtr> readerInstance = null!;
-
         private readonly IReadOnlyList<string> items;
         private readonly IReadOnlyList<string> popularities;
         private readonly IReadOnlyList<string> supplies;
@@ -87,14 +89,55 @@ namespace IslandWorkshopSolver
             sheet = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksPopularity>()!;
         }
 
+        public unsafe int GetIslandRank()
+        {
+            if (MJIManager.Instance() == null)
+                return -1;
+
+            var currentRank = MJIManager.Instance()->CurrentRank;
+
+            PluginLog.Verbose("Current rank? {0}", currentRank);
+            return currentRank;
+        }
+
+        public unsafe Dictionary<int, int>? GetInventory()
+        {
+            var uiModulePtr = DalamudPlugins.GameGui.GetUIModule();
+            if (uiModulePtr == IntPtr.Zero)
+                return null;
+
+            var agentModule = ((UIModule*)uiModulePtr)->GetAgentModule();
+            if (agentModule == null)
+                return null;
+
+            var mjiPouch = agentModule->GetAgentMJIPouch();
+            if (mjiPouch == null)
+                return null;
+
+
+            var inventory = new Dictionary<int, int>();
+            if (mjiPouch->InventoryData == null)
+                return inventory;
+
+            for (ulong i = 0; i < mjiPouch->InventoryData->Inventory.Size() && i <= (int)Material.Milk; i++)
+            {
+                var invItem = mjiPouch->InventoryData->Inventory.Get(i);
+                PluginLog.Verbose("MJI Pouch inventory item: name {2}, slotIndex {0}, stack {1}", invItem.SlotIndex, invItem.StackSize, invItem.Name);
+                inventory.Add(invItem.SlotIndex, invItem.StackSize);
+            }
+
+            return inventory;
+        }
+
         public unsafe (int,string) ExportIsleData()
         {
-            var instance = readerInstance();
-            if (instance == IntPtr.Zero)
-                return (-1,string.Empty);
+            if (MJIManager.Instance() == null)
+                return (-1, ""); 
 
-            var currentPopularity = sheet.GetRow(*(byte*)(instance + 0x2E8))!;
-            var nextPopularity = sheet.GetRow(*(byte*)(instance + 0x2E9))!;
+
+            var currentPopularity = sheet.GetRow(MJIManager.Instance()->CurrentPopularity)!; 
+            var nextPopularity = sheet.GetRow(MJIManager.Instance()->NextPopularity)!; 
+            PluginLog.Information("Current pop index {0}, next pop index {1}", currentPopularity.RowId, nextPopularity.RowId);
 
             var sb = new StringBuilder(64 * 128);
             int numNE = 0;
@@ -104,13 +147,10 @@ namespace IslandWorkshopSolver
                 sb.Append('\t');
                 sb.Append(GetPopularity(currentPopularity, i));
                 sb.Append('\t');
-                var supply = *(byte*)(instance + 0x2EA + i);
-
+                var supply = (int)MJIManager.Instance()->GetSupplyForCraftwork((uint)i);
+                var shift = (int)MJIManager.Instance()->GetDemandShiftForCraftwork((uint)i);
                 if (supply == (int)Supply.Nonexistent)
                     numNE++;
-
-                var shift = supply & 0x7;
-                supply = (byte)(supply >> 4);
                 sb.Append(supply);
                 sb.Append('\t');
                 sb.Append(shift);
