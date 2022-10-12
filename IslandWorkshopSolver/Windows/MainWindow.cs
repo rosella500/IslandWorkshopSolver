@@ -45,7 +45,9 @@ public class MainWindow : Window, IDisposable
     public override void OnOpen()
     {
         (int day, string data) islandData = reader.ExportIsleData();
-        config.islandRank = reader.GetIslandRank();
+        int maybeRank = reader.GetIslandRank();
+        if(maybeRank > 0)
+            config.islandRank = maybeRank;
         string[] products = islandData.data.Split('\n', StringSplitOptions.None);
         var maybeInv = reader.GetInventory();
         if (maybeInv != null)
@@ -137,7 +139,9 @@ public class MainWindow : Window, IDisposable
                     Solver.Solver.Init(config, this);
                     List<(int day, SuggestedSchedules? sch)>? schedules = Solver.Solver.RunSolver();
                     AddNewSuggestions(schedules);
-
+                    var maybeInv = reader.GetInventory();
+                    if (maybeInv != null)
+                        inventory = maybeInv;
                 }
                 catch (Exception e)
                 {
@@ -230,14 +234,9 @@ public class MainWindow : Window, IDisposable
                                     var matsRequired = Solver.Solver.GetScheduledMatsNeeded();
                                     if (matsRequired != null)
                                     {
-                                        string matsNeeded = "Materials needed: ";
-                                        float currentX = ImGui.CalcTextSize(matsNeeded).X;
-                                        float availableX = ImGui.GetContentRegionAvail().X;
-                                        ImGui.Text(matsNeeded);
-
+                                        ImGui.Spacing();
                                         if(inventory.Count == 0)
                                         {
-                                            ImGui.SameLine(0f, 0f);
                                             ImGui.TextWrapped(ConvertMatsToString(matsRequired));
                                             if (ImGui.IsItemHovered())
                                             {
@@ -246,7 +245,11 @@ public class MainWindow : Window, IDisposable
                                         }
                                         else
                                         {
-                                            foreach(var mat in matsRequired)
+                                            string matsNeeded = "Materials needed: ";
+                                            float currentX = ImGui.CalcTextSize(matsNeeded).X;
+                                            float availableX = ImGui.GetContentRegionAvail().X;
+                                            ImGui.Text(matsNeeded);
+                                            foreach (var mat in matsRequired)
                                             {
 
                                                 bool isRare = RareMaterialHelper.GetMaterialValue(mat.Key, out _);
@@ -303,6 +306,10 @@ public class MainWindow : Window, IDisposable
                                                 AddNewSuggestions(Solver.Solver.GetLastThreeDays());
                                             else if(Solver.Solver.CurrentDay == 4) //If we're on day 5, we're calculating for 6 and 7
                                                 AddNewSuggestions(Solver.Solver.GetLastTwoDays());
+
+                                            var maybeInv = reader.GetInventory();
+                                            if (maybeInv != null)
+                                                inventory = maybeInv;
                                         }
                                         ImGui.TableSetColumnIndex(column++);
                                         ImGui.Text(suggestion.Value.ToString());
@@ -337,14 +344,14 @@ public class MainWindow : Window, IDisposable
     private string ConvertMatsToString(IOrderedEnumerable<KeyValuePair<Material, int>> orderedDict)
     {
         var matsEnum = orderedDict.GetEnumerator();
-        StringBuilder matsStr = new StringBuilder(" ");
+        StringBuilder matsStr = new StringBuilder("Materials needed: ");
         while (matsEnum.MoveNext())
         {
-            if (!matsEnum.Current.Equals(orderedDict.First()))
-                matsStr.Append(", ");
             matsStr.Append(matsEnum.Current.Value).Append("x ").Append(RareMaterialHelper.GetDisplayName(matsEnum.Current.Key));
             if (RareMaterialHelper.GetMaterialValue(matsEnum.Current.Key, out _))
                 matsStr.Append('*');
+            if (!matsEnum.Current.Equals(orderedDict.Last()))
+                matsStr.Append(", ");
         }
         return matsStr.ToString();
     }

@@ -906,8 +906,6 @@ public class Solver
             Init(Config, Window!);
         }
 
-        PluginLog.LogInformation("Trying to write supply info starting with " + products[0] + ", last updated day "+(updatedDay+1));
-
         bool needOverwrite = CurrentDay < 6 && IsProductsValid(products) && Importer.NeedToOverwriteTodayData(CurrentDay, products);
         if (needOverwrite)
             PluginLog.Warning("Found new supply info that seems to be from a later day than what we currently have. Overwriting");
@@ -922,12 +920,15 @@ public class Solver
 
         InitStep = 1;
 
+
         bool needNewWeek = Importer.NeedNewWeekData(Week);
         bool needNewData = CurrentDay < 6 && Importer.NeedNewTodayData(CurrentDay);
 
         if (!(needNewData || needNewWeek || needOverwrite))
             return true;
 
+
+        PluginLog.LogInformation("Trying to write supply info starting with " + products[0] + ", last updated day " + (updatedDay + 1));
 
         if (updatedDay == CurrentDay && IsProductsValid(products))
         {

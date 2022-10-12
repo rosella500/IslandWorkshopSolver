@@ -113,18 +113,22 @@ namespace IslandWorkshopSolver
             var mjiPouch = agentModule->GetAgentMJIPouch();
             if (mjiPouch == null)
                 return null;
-
-
-            var inventory = new Dictionary<int, int>();
+            
             if (mjiPouch->InventoryData == null)
-                return inventory;
+                return null;
 
-            for (ulong i = 0; i < mjiPouch->InventoryData->Inventory.Size() && i <= (int)Material.Milk; i++)
+            int totalItems = 0;
+            var inventory = new Dictionary<int, int>();
+            for (ulong i = 0; i < mjiPouch->InventoryData->Inventory.Size(); i++)
             {
                 var invItem = mjiPouch->InventoryData->Inventory.Get(i);
                 PluginLog.Verbose("MJI Pouch inventory item: name {2}, slotIndex {0}, stack {1}", invItem.SlotIndex, invItem.StackSize, invItem.Name);
-                inventory.Add(invItem.SlotIndex, invItem.StackSize);
+                totalItems += invItem.StackSize;
+                if(i <= (int)Material.Milk)
+                    inventory.Add(invItem.SlotIndex, invItem.StackSize);
             }
+            if(totalItems == 0)
+                DalamudPlugins.Chat.Print("Open your Isleventory and view all the tabs to populate inventory data!");
 
             return inventory;
         }
