@@ -224,7 +224,8 @@ public class Solver
         Dictionary<Material, int> mats = new Dictionary<Material, int>();
         foreach (var schedule in SchedulesPerDay)
         {
-            GetAllMatsForSchedule(schedule.Value.schedule.workshops[0], mats);
+            if(schedule.Key>CurrentDay)
+                GetAllMatsForSchedule(schedule.Value.schedule.workshops[0], mats);
         }
 
         if (mats.Count == 0)
