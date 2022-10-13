@@ -75,8 +75,6 @@ public class MainWindow : Window, IDisposable
             DalamudPlugins.Chat.PrintError("Error opening window. See /xllog for more info.");
             IsOpen = false;
         }
-
-
     }
 
     public void Dispose()
@@ -185,7 +183,7 @@ public class MainWindow : Window, IDisposable
             if(showInventoryError)
             {
                 ImGui.TextColored(red, "Inventory uninitialized. Open your Isleventory and view all tabs");
-                ImGui.TextColored(red, "or turn off \"Only suggest crafts I have materials for\" in configs.");
+                ImGui.TextColored(red, "or turn off \"Must have rare materials\" in configs.");
                 ImGui.Spacing();
             }
 
@@ -286,6 +284,7 @@ public class MainWindow : Window, IDisposable
                                                 if (!mat.Equals(matsRequired.Last()))
                                                     matStr += ", ";
                                                 Vector4 color = red;
+                                                string tooltip = "";
                                                 if(inventory.ContainsKey((int)mat.Key))
                                                 {
                                                     int itemsHeld = inventory[(int)mat.Key];
@@ -293,6 +292,7 @@ public class MainWindow : Window, IDisposable
                                                         color = green;
                                                     else if (itemsHeld > mat.Value/2)
                                                         color = yellow;
+                                                    tooltip = "Owned: " + itemsHeld + ". ";
                                                 }
                                                 currentX += ImGui.CalcTextSize(matStr).X;
                                                 if (currentX < availableX)
@@ -301,9 +301,11 @@ public class MainWindow : Window, IDisposable
                                                     currentX = ImGui.CalcTextSize(matStr).X;
 
                                                 ImGui.TextColored(color, matStr);
-                                                if (isRare && ImGui.IsItemHovered())
+                                                if (isRare)
+                                                    tooltip += "Starred items are rare and come from the Granary, Pasture, or Cropland";
+                                                if (ImGui.IsItemHovered())
                                                 {
-                                                    ImGui.SetTooltip("Starred items are rare and come from the Granary, Pasture, or Cropland");
+                                                    ImGui.SetTooltip(tooltip);
                                                 }
                                             }
                                         }                                        

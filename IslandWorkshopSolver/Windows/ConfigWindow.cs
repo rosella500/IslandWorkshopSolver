@@ -89,14 +89,14 @@ public class ConfigWindow : Window, IDisposable
             }
             ImGui.Spacing();
             bool checkMats = Configuration.onlySuggestMaterialsOwned;
-            if (ImGui.Checkbox("Only suggest crafts I have materials for", ref checkMats))
+            if (ImGui.Checkbox("Must have rare materials", ref checkMats))
             {
                 Configuration.onlySuggestMaterialsOwned = checkMats;
                 Configuration.Save();
             }
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip("Removes all suggested schedules that require more of a material than you have in your isleventory");
+                ImGui.SetTooltip("Removes all suggested schedules that require more of a rare material than you have in your isleventory");
             }
             ImGui.Spacing();
             bool enforceRest = Configuration.enforceRestDays;

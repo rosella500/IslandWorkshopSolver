@@ -23,7 +23,7 @@ public class SuggestedSchedules
             Solver.GetAllMatsForSchedule(schedule, mats);
             foreach (var mat in mats)
             {
-                if (!inventory.ContainsKey((int)mat.Key) || inventory[(int)mat.Key] < mat.Value)
+                if (RareMaterialHelper.GetMaterialValue(mat.Key, out _) && (!inventory.ContainsKey((int)mat.Key) || inventory[(int)mat.Key] < mat.Value))
                 {
                     schedulesToRemove.Add(schedule);
                     break;
