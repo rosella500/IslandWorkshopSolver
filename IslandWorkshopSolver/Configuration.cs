@@ -47,7 +47,8 @@ namespace IslandWorkshopSolver
                 if(word.Length > 0)
                     s = s.Replace(word, "");
 
-            s = s.Trim();
+            s = s.Replace("  ", " ").Trim(); //Removing a word from the middle of a string will cause double spaces, which we don't want
+
             return s;
         }
 
