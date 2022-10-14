@@ -505,6 +505,8 @@ public class Solver
             TotalGross -= previousSchedule.value;
             TotalNet -= (previousSchedule.value - previousSchedule.schedule.GetMaterialCost());
             SchedulesPerDay.Remove(day);
+            foreach (var item in Items)
+                item.SetCrafted(0, day);
         }
 
         int zeroGrooveValue = schedule.GetValue();
