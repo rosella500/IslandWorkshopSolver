@@ -14,7 +14,7 @@ namespace IslandWorkshopSolver.Solver;
 public class ItemInfo
 {
     //Contains exact supply values for concrete paths and worst-case supply values for tentative ones
-    static int[][] SUPPLY_PATH = new int[17][]
+    static int[][] SUPPLY_PATH = new int[18][]
     { 
         new int[]{0, 0, 0, 0, 0, 0, 0}, //Unknown
             new int[]{-4, -4, 10, 0, 0, 0, 0}, //Cycle2Weak 
@@ -32,6 +32,7 @@ public class ItemInfo
             new int[]{0, 0, 0, -6, 0, 10, 0}, //4/5
             new int[]{0, 0, 0, -4, -4, 10, 0}, //5
             new int[]{0, -1, 8, 0, -7, -6, 0}, //6/7
+            new int[]{-4, -4, 10, 0, 0, 0, 0}, //Cycle2Unknown
             new int[]{0, 0, -6, 0, 0, 0, 0} //UnknownD1
             };
 
@@ -217,7 +218,7 @@ public class ItemInfo
             }
             else
             {
-                peak = Cycle2Weak;
+                peak = Cycle2;
                 PluginLog.LogDebug("{0} peaks D2 but strength is unknown", item);
                 Solver.AddUnknownD2(item);
             }
@@ -290,7 +291,7 @@ public class ItemInfo
     {
         if (time == 4 && borrow4Hours)
             return true;
-        if (peak == Cycle2Weak || peak == Cycle2Strong)
+        if (peak == Cycle2Weak || peak == Cycle2Strong || peak == Cycle2)
             return day > 0;
         if (peak == Cycle3Weak || peak == Cycle3Strong || peak == UnknownD1)
             return day > 1;
