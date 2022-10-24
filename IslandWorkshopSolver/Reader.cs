@@ -127,21 +127,37 @@ namespace IslandWorkshopSolver
 
             int minLevel = 999;
             bool showError = false;
-            for (int i = 0; i < /*MJIWorkshops.MaxWorkshops*/3; i++)
+
+
+            int startedWorkshops = 0;
+            for (int i = 0; i < MJIBuildingPlacements.Slots; i++)
             {
-                PluginLog.Debug("Building {0} level {1}, under construction {2}, hours to complete {3}", i, 
-                    MJIManager.Instance()->Workshops.BuildingLevel[i], MJIManager.Instance()->Workshops.UnderConstruction[i], MJIManager.Instance()->Workshops.HoursToCompletion[i]);
-                if (MJIManager.Instance()->Workshops.BuildingLevel[i] != 0)
-                {
-                    if (MJIManager.Instance()->Workshops.UnderConstruction[i] == 0)
-                        minLevel = Math.Min(minLevel, MJIManager.Instance()->Workshops.BuildingLevel[i]);
-                    else if (MJIManager.Instance()->Workshops.HoursToCompletion[i] == 0)
-                        showError = true;  
-                }
+                PluginLog.Debug("Building {0} placeID {1}, typeID {2}", i,
+                     MJIManager.Instance()->BuildingPlacements[i]->PlaceId, MJIManager.Instance()->BuildingPlacements[i]->BuildingTypeId);
+                if (MJIManager.Instance()->BuildingPlacements[i]->BuildingTypeId == 30186) //Item code for workshop, I hope
+                    startedWorkshops++;
             }
-            minLevel++; //Level appears to be 0-indexed but data is 1-indexed, so
-            var workshopBonusSheet = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksRankRatio>()!;
-            var bonus = workshopBonusSheet.GetRow((uint)minLevel)!.Unknown0;
+            PluginLog.Debug("Found {0} workshops that were at least started.", startedWorkshops);
+
+            for (int i = 0; i < startedWorkshops; i++)
+            {
+                PluginLog.Debug("Workshop {0} level {1}, under construction {2}, hours to complete {3}", i, 
+                MJIManager.Instance()->Workshops.BuildingLevel[i], MJIManager.Instance()->Workshops.UnderConstruction[i], MJIManager.Instance()->Workshops.HoursToCompletion[i]);
+
+                if (MJIManager.Instance()->Workshops.UnderConstruction[i] == 0)
+                    minLevel = Math.Min(minLevel, MJIManager.Instance()->Workshops.BuildingLevel[i]);
+                else if (MJIManager.Instance()->Workshops.HoursToCompletion[i] == 0)
+                    showError = true;  
+            }
+            
+            int bonus = -1;
+
+            if(minLevel < 999)
+            {
+                minLevel++; //Level appears to be 0-indexed but data is 1-indexed, so
+                var workshopBonusSheet = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksRankRatio>()!;
+                bonus = workshopBonusSheet.GetRow((uint)minLevel)!.Unknown0;
+            }
 
             PluginLog.Debug("Found min workshop rank of {0}, setting bonus to {1}", minLevel, bonus);
 
