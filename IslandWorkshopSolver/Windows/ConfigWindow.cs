@@ -56,6 +56,17 @@ public class ConfigWindow : Window, IDisposable
         ImGui.Spacing();
         if (ImGui.CollapsingHeader("Solver Configuration", ImGuiTreeNodeFlags.DefaultOpen))
         {
+            bool sendData = Configuration.sendDataToDB;
+            if (ImGui.Checkbox("Send supply data to Poking Paradise", ref sendData))
+            {
+                Configuration.sendDataToDB = sendData;
+                Configuration.Save();
+            }
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Help the Poking Paradise discord by sending your supply data to our backing database.");
+            }
+            ImGui.Spacing();
             int sugg = Configuration.suggestionsToShow;
             if (ImGui.InputInt("Suggestions to show", ref sugg))
             {
