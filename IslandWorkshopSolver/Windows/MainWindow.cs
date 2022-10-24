@@ -60,7 +60,7 @@ public class MainWindow : Window, IDisposable
         if (maybeWorkshopBonus > -1)
         {
             showWorkshopError = workshopError;
-            //config.workshopBonus = maybeWorkshopBonus; //Hold off on this until we get more info
+            config.workshopBonus = maybeWorkshopBonus; 
         }
             
         showSupplyError = false;

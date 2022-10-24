@@ -116,7 +116,7 @@ namespace IslandWorkshopSolver
 
             PluginLog.Debug("Found {0} completed landmarks, setting max groove to {1}", completedLandmarks, maxGroove);
 
-            PluginLog.Verbose("Current rank? {0}", currentRank);
+            PluginLog.Debug("Island rank {0}", currentRank);
             return (currentRank, maxGroove);
         }
 
@@ -127,27 +127,24 @@ namespace IslandWorkshopSolver
 
             int minLevel = 999;
             bool showError = false;
-
-
-            int startedWorkshops = 0;
-            for (int i = 0; i < MJIBuildingPlacements.Slots; i++)
+            int numWorkshops = 0;
+            for (int i = 0; i < /*MJIWorkshops.MaxWorkshops*/ 3; i++)
             {
-                PluginLog.Debug("Building {0} placeID {1}, typeID {2}", i,
-                     MJIManager.Instance()->BuildingPlacements[i]->PlaceId, MJIManager.Instance()->BuildingPlacements[i]->BuildingTypeId);
-                if (MJIManager.Instance()->BuildingPlacements[i]->BuildingTypeId == 30186) //Item code for workshop, I hope
-                    startedWorkshops++;
-            }
-            PluginLog.Debug("Found {0} workshops that were at least started.", startedWorkshops);
-
-            for (int i = 0; i < startedWorkshops; i++)
-            {
-                PluginLog.Debug("Workshop {0} level {1}, under construction {2}, hours to complete {3}", i, 
-                MJIManager.Instance()->Workshops.BuildingLevel[i], MJIManager.Instance()->Workshops.UnderConstruction[i], MJIManager.Instance()->Workshops.HoursToCompletion[i]);
-
-                if (MJIManager.Instance()->Workshops.UnderConstruction[i] == 0)
-                    minLevel = Math.Min(minLevel, MJIManager.Instance()->Workshops.BuildingLevel[i]);
-                else if (MJIManager.Instance()->Workshops.HoursToCompletion[i] == 0)
-                    showError = true;  
+                if (MJIManager.Instance()->Workshops.PlaceId[i] != 0)
+                {
+                    PluginLog.Debug("Workshop {0} level {1}, under construction {2}, hours to complete {3}, placeID {4}", i,
+                    MJIManager.Instance()->Workshops.BuildingLevel[i] + 1, MJIManager.Instance()->Workshops.UnderConstruction[i],
+                    MJIManager.Instance()->Workshops.HoursToCompletion[i], MJIManager.Instance()->Workshops.PlaceId[i]);
+                    numWorkshops++;
+                    if (MJIManager.Instance()->Workshops.UnderConstruction[i] == 0)
+                        minLevel = Math.Min(minLevel, MJIManager.Instance()->Workshops.BuildingLevel[i]);
+                    else if (MJIManager.Instance()->Workshops.HoursToCompletion[i] == 0)
+                        showError = true;  
+                }
+                else
+                {
+                    PluginLog.Debug("Workshop {0} not built", i);
+                }
             }
             
             int bonus = -1;
@@ -159,7 +156,7 @@ namespace IslandWorkshopSolver
                 bonus = workshopBonusSheet.GetRow((uint)minLevel)!.Unknown0;
             }
 
-            PluginLog.Debug("Found min workshop rank of {0}, setting bonus to {1}", minLevel, bonus);
+            PluginLog.Debug("Found min workshop rank of {0} with {2} workshops, setting bonus to {1}", minLevel, bonus, numWorkshops);
 
             return (bonus, showError);
         }
