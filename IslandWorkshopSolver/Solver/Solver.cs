@@ -936,7 +936,7 @@ public class Solver
         InitStep = 1;
 
 
-        bool needNewWeek = Importer.NeedNewWeekData(Week);
+        bool needNewWeek = CurrentDay < 6 && Importer.NeedNewWeekData(Week);
         bool needNewData = CurrentDay < 6 && Importer.NeedNewTodayData(CurrentDay);
 
         if (!(needNewData || needNewWeek || needOverwrite))
@@ -947,13 +947,16 @@ public class Solver
 
         if (updatedDay == CurrentDay && IsProductsValid(products))
         {
+            PluginLog.LogDebug("Products are valid and updated today");
             if (needNewWeek || (CurrentDay == 0 && needOverwrite))
             {
+                PluginLog.LogDebug("Writing week start info (names and popularity)");
                 Importer.WriteWeekStart(products);
             }
             
             if(needNewData || needOverwrite)
             {
+                PluginLog.LogDebug("Writing day supply info");
                 Importer.WriteNewSupply(products, CurrentDay);
             }
             return true;

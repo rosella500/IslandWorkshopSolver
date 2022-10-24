@@ -197,7 +197,7 @@ public class MainWindow : Window, IDisposable
             }
 
             // Create a new table to show relevant data.
-            if ((scheduleSuggestions.Count > 0 || endDaySummaries.Count > 0) && ImGui.BeginTabBar("Workshop Schedules"))
+            if ((scheduleSuggestions.Count > 0 || endDaySummaries.Count > 0 || config.day == 6) && ImGui.BeginTabBar("Workshop Schedules"))
             {
                 for (int day = 0; day < 7; day++)
                 {
@@ -359,6 +359,14 @@ public class MainWindow : Window, IDisposable
                             }
                             ImGui.EndTabItem();
                         }
+                    }
+                }
+
+                if(config.day == 6)
+                {
+                    if (ImGui.BeginTabItem("Day 1 Next Week"))
+                    {
+                        ImGui.Text("Always rest Day 1!");
                     }
                 }
 
