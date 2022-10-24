@@ -10,7 +10,7 @@ public class ConfigWindow : Window, IDisposable
     private Configuration Configuration;
 
     public ConfigWindow(Plugin plugin, string rootPath) : base(
-        "Island Sanctuary Solver Configuration")
+        "Beachcomber Configuration")
     {
         SizeConstraints = new WindowSizeConstraints
         {

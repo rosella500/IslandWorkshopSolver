@@ -89,15 +89,63 @@ namespace IslandWorkshopSolver
             sheet = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksPopularity>()!;
         }
 
-        public unsafe int GetIslandRank()
+        //I don't know why I made this into one method
+        public unsafe (int rank, int maxGroove) GetIslandRankAndMaxGroove()
         {
             if (MJIManager.Instance() == null)
-                return -1;
+                return (-1,-1);
 
             var currentRank = MJIManager.Instance()->CurrentRank;
 
+            int completedLandmarks = 0;
+            for (int i=0;  i< MJILandmarkPlacements.Slots; i++)
+            {
+                PluginLog.Debug("Landmark {0} ID {1}, placement {4}, under construction {2}, hours to complete {3}", i,
+                     MJIManager.Instance()->LandmarkIds[i], MJIManager.Instance()->LandmarkUnderConstruction[i], MJIManager.Instance()->LandmarkHoursToCompletion[i], MJIManager.Instance()->LandmarkPlacements[i]->LandmarkId);
+                if (MJIManager.Instance()->LandmarkIds[i] != 0)
+                {
+                    if (MJIManager.Instance()->LandmarkUnderConstruction[i] == 0)
+                        completedLandmarks++;
+                    else
+                        PluginLog.LogWarning("Landmark {0} under construction {1} in slot {2}", MJIManager.Instance()->LandmarkIds[i], MJIManager.Instance()->LandmarkUnderConstruction[i], i);
+                }
+                    
+            }
+            var tension = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksTension>()!;
+            var maxGroove = tension.GetRow((uint)completedLandmarks)!.Unknown0;
+
+            PluginLog.Debug("Found {0} completed landmarks, setting max groove to {1}", completedLandmarks, maxGroove);
+
             PluginLog.Verbose("Current rank? {0}", currentRank);
-            return currentRank;
+            return (currentRank, maxGroove);
+        }
+
+        public unsafe (int bonus, bool error) GetWorkshopBonus()
+        {
+            if (MJIManager.Instance() == null)
+                return (-1, false);
+
+            int minLevel = 999;
+            bool showError = false;
+            for (int i = 0; i < /*MJIWorkshops.MaxWorkshops*/3; i++)
+            {
+                PluginLog.Debug("Building {0} level {1}, under construction {2}, hours to complete {3}", i, 
+                    MJIManager.Instance()->Workshops.BuildingLevel[i], MJIManager.Instance()->Workshops.UnderConstruction[i], MJIManager.Instance()->Workshops.HoursToCompletion[i]);
+                if (MJIManager.Instance()->Workshops.BuildingLevel[i] != 0)
+                {
+                    if (MJIManager.Instance()->Workshops.UnderConstruction[i] == 0)
+                        minLevel = Math.Min(minLevel, MJIManager.Instance()->Workshops.BuildingLevel[i]);
+                    else if (MJIManager.Instance()->Workshops.HoursToCompletion[i] == 0)
+                        showError = true;  
+                }
+            }
+            minLevel++; //Level appears to be 0-indexed but data is 1-indexed, so
+            var workshopBonusSheet = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksRankRatio>()!;
+            var bonus = workshopBonusSheet.GetRow((uint)minLevel)!.Unknown0;
+
+            PluginLog.Debug("Found min workshop rank of {0}, setting bonus to {1}", minLevel, bonus);
+
+            return (bonus, showError);
         }
 
         public unsafe bool GetInventory(out Dictionary<int, int> inventory)
