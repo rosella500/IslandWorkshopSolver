@@ -34,6 +34,9 @@ public class Solver
     private static bool sendToDB = false;
     private static readonly HttpClient client = new HttpClient();
 
+    private static int ItemsToReserve = 15;
+    private static bool ValuePerHour = true;
+    public static HashSet<Item> ReservedItems = new HashSet<Item>();
     public static void Init(Configuration newConfig, Window window)
     {
         Config = newConfig;
@@ -200,6 +203,26 @@ public class Solver
             Init(Config, Window!);
             return;
         }
+        //Set reserved items
+        Dictionary<Item, int> itemValues = new Dictionary<Item, int>();
+        foreach (ItemInfo item in Items)
+        {
+            if (item.time == 4)
+                continue;
+            int value = item.GetValueWithSupply(Supply.Sufficient);
+            if (ValuePerHour)
+                value = value * 8 / item.time;
+            itemValues.Add(item.item, value);
+        }
+
+        var orderedItems = itemValues.OrderByDescending(kvp => kvp.Value);
+        var enumerator = orderedItems.GetEnumerator();
+
+        for (int i = 0; i < ItemsToReserve && enumerator.MoveNext(); i++)
+        {
+            ReservedItems.Add(enumerator.Current.Key);
+        }
+        PluginLog.Debug("Reserving items {0} today.", String.Join(", ", ReservedItems));
 
         if(sendToDB && Config.sendDataToDB)
         {
@@ -371,7 +394,7 @@ public class Solver
     
     public static List<(int, SuggestedSchedules?)> GetLastTwoDays(bool removeCantMake, Dictionary<int, int> inventory)
     {
-        HashSet<Item>? reservedFor6 = null;
+        Dictionary<Item, int>? reservedFor6 = null;
         int startingGroove = GetEndingGrooveForDay(CurrentDay);
         bool sixSet = false;
         bool sevenSet = false;
@@ -394,13 +417,13 @@ public class Solver
             }
             if (schedule7.schedule.workshops[0].GetItems().Count == 0)
                 dayRested = 7;
-            reservedFor6 = new HashSet<Item>(schedule7.schedule.workshops[0].GetItems());
+            reservedFor6 = schedule7.schedule.workshops[0].GetLimitedUses();
         }
 
         List<Dictionary<WorkshopSchedule, int>> initialSchedules = new List<Dictionary<WorkshopSchedule, int>>
         {
-            GetSuggestedSchedules(5, startingGroove, reservedFor6),
-            GetSuggestedSchedules(6, startingGroove, null)
+            GetSuggestedSchedules(5, startingGroove, reservedFor6, sevenSet?6:5),
+            GetSuggestedSchedules(6, startingGroove)
         };
         List<KeyValuePair<WorkshopSchedule, int>> initialBests = new List<KeyValuePair<WorkshopSchedule, int>>
         {
@@ -436,10 +459,11 @@ public class Solver
     }
     public static List<(int, SuggestedSchedules?)> GetLastThreeDays(bool removeCantMake, Dictionary<int, int> inventory)
     {
-        HashSet<Item> reservedFor6 = new HashSet<Item>();
-        HashSet<Item> reservedFor5 = new HashSet<Item>();
+        Dictionary<Item, int>? reservedFor6 = null;
+        Dictionary<Item, int>? reservedFor5 = null;
         int startingGroove = GetEndingGrooveForDay(CurrentDay);
         bool fiveSet = false;
+        bool sixSelected = false;
         bool sixSet = false;
         bool sevenSet = false;
         int dayRested = -1;
@@ -453,6 +477,7 @@ public class Solver
 
         if (SchedulesPerDay.TryGetValue(5, out var schedule6))
         {
+            sixSelected = true;
             List<Item> items6 = schedule6.schedule.workshops[0].GetItems();
             if (fiveSet)
             {
@@ -462,7 +487,7 @@ public class Solver
             if (schedule6.schedule.workshops[0].GetItems().Count == 0)
                 dayRested = 5;
 
-            reservedFor5.UnionWith(schedule6.schedule.workshops[0].GetItems());
+            reservedFor5 = schedule6.schedule.workshops[0].GetLimitedUses();
         }
 
         if (SchedulesPerDay.TryGetValue(6, out var schedule7))
@@ -475,15 +500,15 @@ public class Solver
             }
             if (schedule7.schedule.workshops[0].GetItems().Count == 0)
                 dayRested = 7;
-            reservedFor5.UnionWith(schedule7.schedule.workshops[0].GetItems());
-            reservedFor6.UnionWith(schedule7.schedule.workshops[0].GetItems());
+            reservedFor5 = schedule7.schedule.workshops[0].GetLimitedUses(reservedFor5);
+            reservedFor6 = schedule7.schedule.workshops[0].GetLimitedUses(reservedFor6);
         }
 
         List<Dictionary<WorkshopSchedule, int>> initialSchedules = new List<Dictionary<WorkshopSchedule, int>>
         {
-            GetSuggestedSchedules(4, startingGroove, reservedFor5),
-            GetSuggestedSchedules(5, startingGroove, reservedFor6),
-            GetSuggestedSchedules(6, startingGroove, null)
+            GetSuggestedSchedules(4, startingGroove, reservedFor5, sevenSet?6:sixSelected?5:4),
+            GetSuggestedSchedules(5, startingGroove, reservedFor6, sevenSet?6:5),
+            GetSuggestedSchedules(6, startingGroove)
         };
         List<KeyValuePair<WorkshopSchedule, int>> initialBests = new List<KeyValuePair<WorkshopSchedule, int>>
         {
@@ -529,21 +554,31 @@ public class Solver
     {
         int worstInFuture = 99999;
         PluginLog.LogDebug("Comparing d" + (day + 1) + " (" + rec.Value + ") to worst-case future days");
-        HashSet<Item> reservedSet = new HashSet<Item>(rec.Key.GetItems());
+        Dictionary<Item, int> reservedSet = new Dictionary<Item, int>();
+        foreach (Item item in rec.Key.GetItems())
+        {
+            if (!reservedSet.ContainsKey(item))
+                reservedSet.Add(item, 0);
+        }
         for (int d = day + 1; d < 7; d++)
         {
             KeyValuePair<WorkshopSchedule, int> solution;
             if (day == 3 && d == 4) //We have a lot of info about this specific pair so we might as well use it
                 solution = GetD5EV();
             else
-                solution = GetBestSchedule(d, reservedSet, false);
+                solution = GetBestSchedule(d, reservedSet, d);
 
             if(solution.Key!=null)
             {
 
                 PluginLog.LogDebug("Day " + (d + 1) + ", crafts: " + String.Join(", ", solution.Key.GetItems()) + " value: " + solution.Value);
                 worstInFuture = Math.Min(worstInFuture, solution.Value);
-                reservedSet.UnionWith(solution.Key.GetItems());
+                foreach (Item item in solution.Key.GetItems())
+                {
+                    if (!reservedSet.ContainsKey(item))
+                        reservedSet.Add(item, 0);
+                }
+                    
             }
 
         }
@@ -655,30 +690,26 @@ public class Solver
         //Don't think we should do this
         //updateRestedStatus();
     }
-    private static Dictionary<WorkshopSchedule, int> GetSuggestedSchedules(int day, int startingGroove, HashSet<Item>? reservedForLater, bool allowAllOthers = true)
+    private static Dictionary<WorkshopSchedule, int> GetSuggestedSchedules(int day, int startingGroove = -1, Dictionary<Item, int>? limitedUse = null, int allowUpToDay = -1)
     {
         if (startingGroove == -1)
             startingGroove = GetEndingGrooveForDay(CurrentDay - 1);
+        if (allowUpToDay == -1)
+            allowUpToDay = day;
 
         var fourHour = new List<ItemInfo>();
         var eightHour = new List<ItemInfo>();
         var sixHour = new List<ItemInfo>();
 
-        if (reservedForLater == null || reservedForLater.Count == 0)
-            allowAllOthers = false;
-
         foreach (ItemInfo item in Items)
         {
             List<ItemInfo>? bucket = null;
 
-            if (reservedForLater != null && reservedForLater.Contains(item.item))
-                continue;
-
-            if (item.time == 4 && item.rankUnlocked <= IslandRank && (allowAllOthers || item.PeaksOnOrBeforeDay(day, true)))
+            if (item.time == 4 && item.rankUnlocked <= IslandRank && item.PeaksOnOrBeforeDay(allowUpToDay))
                 bucket = fourHour;
-            else if (item.time == 6 && item.rankUnlocked <= IslandRank && (allowAllOthers || item.PeaksOnOrBeforeDay(day, false)))
+            else if (item.time == 6 && item.rankUnlocked <= IslandRank && item.PeaksOnOrBeforeDay(allowUpToDay))
                 bucket = sixHour;
-            else if (item.time == 8 && item.rankUnlocked <= IslandRank && (allowAllOthers || item.PeaksOnOrBeforeDay(day, false)))
+            else if (item.time == 8 && item.rankUnlocked <= IslandRank && item.PeaksOnOrBeforeDay(allowUpToDay))
                 bucket = eightHour;
 
             if (bucket != null)
@@ -704,7 +735,7 @@ public class Solver
                 if (!eightMatchEnum.Current.GetsEfficiencyBonus(topItem))
                     continue;
                 eightMatches.Add(eightMatchEnum.Current);
-                AddToScheduleMap(new List<Item> { topItem.item, eightMatchEnum.Current.item, topItem.item }, day, safeSchedules, startingGroove);
+                AddToScheduleMap(new List<Item> { topItem.item, eightMatchEnum.Current.item, topItem.item }, day, safeSchedules, limitedUse, startingGroove);
             }
 
             //4-8-4-8 and 4-4-4-4-8
@@ -722,7 +753,7 @@ public class Solver
                     //PluginLog.LogVerbose("Checking potential 4hr match: " + secondFourMatchEnum.Current.item);
                     AddScheduleIfEfficient(secondFourMatchEnum.Current, topItem,
                         new List<Item> { firstFourMatchEnum.Current.item, topItem.item, secondFourMatchEnum.Current.item, topItem.item },
-                        day, safeSchedules, startingGroove);
+                        day, safeSchedules, limitedUse, startingGroove);
 
 
                     if (!secondFourMatchEnum.Current.GetsEfficiencyBonus(firstFourMatchEnum.Current))
@@ -731,7 +762,7 @@ public class Solver
                     //4-4-8-8
                     foreach(var eightMatch in eightMatches)
                         AddToScheduleMap(new List<Item> { secondFourMatchEnum.Current.item, firstFourMatchEnum.Current.item, topItem.item, eightMatch.item },
-                            day, safeSchedules, startingGroove);
+                            day, safeSchedules, limitedUse, startingGroove);
 
                     var thirdFourMatchEnum = fourHour.GetEnumerator();
                     while (thirdFourMatchEnum.MoveNext())
@@ -745,7 +776,7 @@ public class Solver
                         {
                             AddScheduleIfEfficient(fourthFourMatchEnum.Current, thirdFourMatchEnum.Current,
                                 new List<Item> { fourthFourMatchEnum.Current.item, thirdFourMatchEnum.Current.item, secondFourMatchEnum.Current.item, firstFourMatchEnum.Current.item, topItem.item },
-                                day, safeSchedules, startingGroove);
+                                day, safeSchedules, limitedUse, startingGroove);
                         }
                     }
                 }
@@ -763,7 +794,7 @@ public class Solver
                 {
                     AddScheduleIfEfficient(fourMatchEnum.Current, sixHourMatch,
                         new List<Item> { fourMatchEnum.Current.item, sixHourMatch.item, topItem.item, sixHourMatch.item },
-                        day, safeSchedules, startingGroove);
+                        day, safeSchedules, limitedUse, startingGroove);
                 }
             }
         }
@@ -792,7 +823,7 @@ public class Solver
                 {
                         //PluginLog.LogVerbose("Adding 6-6-6-6 schedule made out of helpers " + firstSix.item + ", " + secondSix.item + ", and top item: " + topItem.item);
                     AddToScheduleMap(new List<Item> { secondSix.item, topItem.item, firstSix.item, topItem.item },
-                    day, safeSchedules, startingGroove);
+                    day, safeSchedules, limitedUse, startingGroove);
                 }
             }
 
@@ -809,7 +840,7 @@ public class Solver
                 while (sixFourMatchEnum.MoveNext())
                 {
                     AddToScheduleMap(new List<Item> { firstFourMatchEnum.Current.item, topItem.item, sixFourMatchEnum.Current.item, topItem.item },
-                        day, safeSchedules, startingGroove);
+                        day, safeSchedules, limitedUse, startingGroove);
                 }
 
                 var secondFourMatchEnum = fourHour.GetEnumerator();
@@ -820,9 +851,9 @@ public class Solver
 
                     AddScheduleIfEfficient(secondFourMatchEnum.Current, topItem,
                         new List<Item> { firstFourMatchEnum.Current.item, secondFourMatchEnum.Current.item, topItem.item, firstFourMatchEnum.Current.item, topItem.item },
-                        day, safeSchedules, startingGroove);
+                        day, safeSchedules, limitedUse, startingGroove);
                     AddToScheduleMap(new List<Item> { secondFourMatchEnum.Current.item, firstFourMatchEnum.Current.item, topItem.item, firstFourMatchEnum.Current.item, topItem.item },
-                        day, safeSchedules, startingGroove);
+                        day, safeSchedules, limitedUse, startingGroove);
 
                     var thirdFourMatchEnum = fourHour.GetEnumerator();
                     while (thirdFourMatchEnum.MoveNext())
@@ -834,7 +865,7 @@ public class Solver
                         {
                             AddScheduleIfEfficient(fourthFourMatchEnum.Current, thirdFourMatchEnum.Current,
                                 new List<Item> { fourthFourMatchEnum.Current.item, thirdFourMatchEnum.Current.item, secondFourMatchEnum.Current.item, firstFourMatchEnum.Current.item, topItem.item },
-                                day, safeSchedules, startingGroove);
+                                day, safeSchedules, limitedUse, startingGroove);
                         }
                     }
                 }
@@ -845,9 +876,9 @@ public class Solver
         return safeSchedules;
     }
 
-    private static KeyValuePair<WorkshopSchedule, int> GetBestSchedule(int day, HashSet<Item>? reservedForLater, bool allowAllOthers = true)
+    private static KeyValuePair<WorkshopSchedule, int> GetBestSchedule(int day, Dictionary<Item, int>? limitedUse = null, int allowUpToDay = -1)
     {
-        var suggested = GetSuggestedSchedules(day, -1, reservedForLater, allowAllOthers);
+        var suggested = GetSuggestedSchedules(day, -1, limitedUse, allowUpToDay);
         
         return GetBestSchedule(suggested);
     }
@@ -862,19 +893,21 @@ public class Solver
         return bestSched;
     }
 
-    public static bool AddScheduleIfEfficient(ItemInfo newItem, ItemInfo origItem, List<Item> scheduledItems, int day, Dictionary<WorkshopSchedule, int> safeSchedules, int startingGroove)
+    public static bool AddScheduleIfEfficient(ItemInfo newItem, ItemInfo origItem, List<Item> scheduledItems, int day, Dictionary<WorkshopSchedule, int> safeSchedules, Dictionary<Item, int>? limitedUse, int startingGroove)
     {
         if (!newItem.GetsEfficiencyBonus(origItem))
             return false;
 
 
-        AddToScheduleMap(scheduledItems, day, safeSchedules, startingGroove);
+        AddToScheduleMap(scheduledItems, day, safeSchedules, limitedUse, startingGroove);
         return true;
     }
 
-    private static int AddToScheduleMap(List<Item> list, int day, Dictionary<WorkshopSchedule, int> safeSchedules, int startingGroove)
+    private static int AddToScheduleMap(List<Item> list, int day, Dictionary<WorkshopSchedule, int> safeSchedules, Dictionary<Item, int>? limitedUse, int startingGroove)
     {
         WorkshopSchedule workshop = new WorkshopSchedule(list);
+        if (workshop.UsesTooMany(limitedUse))
+            return 0;
 
         int value = workshop.GetValueWithGrooveEstimate(day, startingGroove);
         //Only add if we don't already have one with this schedule or ours is better

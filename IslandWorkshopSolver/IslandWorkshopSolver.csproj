@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Authors>Mienna</Authors>
+      <Authors></Authors>
     <Company></Company>
-    <Version>1.0.0.1</Version>
-    <Description>Determines the best thing to craft tomorrow on your island workshop</Description>
+    <Version>1.0.1.0</Version>
+    <Description></Description>
     <Copyright></Copyright>
   </PropertyGroup>
 

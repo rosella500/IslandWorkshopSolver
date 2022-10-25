@@ -8,8 +8,8 @@ namespace IslandWorkshopSolver
 {
     public sealed class Plugin : IDalamudPlugin
     {
-        public string Name => "Island Sanctuary Workshop Solver";
-        private const string CommandName = "/workshop";
+        public string Name => "Beachcomber";
+        private const string CommandName = "/cowries";
 
         private DalamudPluginInterface PluginInterface { get; init; }
         private CommandManager CommandManager { get; init; }
@@ -34,7 +34,7 @@ namespace IslandWorkshopSolver
 
             CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
             {
-                HelpMessage = "Open up the Island Sanctuary Solver menu."
+                HelpMessage = "Open up the Beachcomber Solver menu."
             });
 
             PluginInterface.UiBuilder.Draw += DrawUI;
@@ -52,7 +52,7 @@ namespace IslandWorkshopSolver
             // in response to the slash command, just display our main ui
             if (WindowSystem != null)
             {
-                var window = WindowSystem.GetWindow("Island Sanctuary Workshop Solver");
+                var window = WindowSystem.GetWindow("Beachcomber");
                 if (window != null)
                 {
                     window.IsOpen = true;
@@ -69,7 +69,7 @@ namespace IslandWorkshopSolver
         {
             if (WindowSystem != null)
             {
-                var window = WindowSystem.GetWindow("Island Sanctuary Solver Configuration");
+                var window = WindowSystem.GetWindow("Beachcomber Configuration");
                 if (window != null)
                 {
                     window.IsOpen = true;

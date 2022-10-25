@@ -89,15 +89,76 @@ namespace IslandWorkshopSolver
             sheet = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksPopularity>()!;
         }
 
-        public unsafe int GetIslandRank()
+        //I don't know why I made this into one method
+        public unsafe (int rank, int maxGroove) GetIslandRankAndMaxGroove()
         {
             if (MJIManager.Instance() == null)
-                return -1;
+                return (-1,-1);
 
             var currentRank = MJIManager.Instance()->CurrentRank;
 
-            PluginLog.Verbose("Current rank? {0}", currentRank);
-            return currentRank;
+            int completedLandmarks = 0;
+            for (int i=0;  i< MJILandmarkPlacements.Slots; i++)
+            {
+                PluginLog.Verbose("Landmark {0} ID {1}, placement {4}, under construction {2}, hours to complete {3}", i,
+                     MJIManager.Instance()->LandmarkIds[i], MJIManager.Instance()->LandmarkUnderConstruction[i], MJIManager.Instance()->LandmarkHoursToCompletion[i], MJIManager.Instance()->LandmarkPlacements[i]->LandmarkId);
+                if (MJIManager.Instance()->LandmarkIds[i] != 0)
+                {
+                    if (MJIManager.Instance()->LandmarkUnderConstruction[i] == 0)
+                        completedLandmarks++;
+                    else
+                        PluginLog.LogWarning("Landmark {0} under construction {1} in slot {2}", MJIManager.Instance()->LandmarkIds[i], MJIManager.Instance()->LandmarkUnderConstruction[i], i);
+                }
+                    
+            }
+            var tension = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksTension>()!;
+            var maxGroove = tension.GetRow((uint)completedLandmarks)!.Unknown0;
+
+            PluginLog.Debug("Found {0} completed landmarks, setting max groove to {1}", completedLandmarks, maxGroove);
+
+            PluginLog.Debug("Island rank {0}", currentRank);
+            return (currentRank, maxGroove);
+        }
+
+        public unsafe (int bonus, bool error) GetWorkshopBonus()
+        {
+            if (MJIManager.Instance() == null)
+                return (-1, false);
+
+            int minLevel = 999;
+            bool showError = false;
+            int numWorkshops = 0;
+            for (int i = 0; i < /*MJIWorkshops.MaxWorkshops*/ 3; i++)
+            {
+                if (MJIManager.Instance()->Workshops.PlaceId[i] != 0)
+                {
+                    PluginLog.Verbose("Workshop {0} level {1}, under construction {2}, hours to complete {3}, placeID {4}", i,
+                    MJIManager.Instance()->Workshops.BuildingLevel[i] + 1, MJIManager.Instance()->Workshops.UnderConstruction[i],
+                    MJIManager.Instance()->Workshops.HoursToCompletion[i], MJIManager.Instance()->Workshops.PlaceId[i]);
+                    numWorkshops++;
+                    if (MJIManager.Instance()->Workshops.UnderConstruction[i] == 0)
+                        minLevel = Math.Min(minLevel, MJIManager.Instance()->Workshops.BuildingLevel[i]);
+                    else if (MJIManager.Instance()->Workshops.HoursToCompletion[i] == 0)
+                        showError = true;  
+                }
+                else
+                {
+                    PluginLog.Verbose("Workshop {0} not built", i);
+                }
+            }
+            
+            int bonus = -1;
+
+            if(minLevel < 999)
+            {
+                minLevel++; //Level appears to be 0-indexed but data is 1-indexed, so
+                var workshopBonusSheet = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksRankRatio>()!;
+                bonus = workshopBonusSheet.GetRow((uint)minLevel)!.Unknown0;
+            }
+
+            PluginLog.Debug("Found min workshop rank of {0} with {2} workshops, setting bonus to {1}", minLevel, bonus, numWorkshops);
+
+            return (bonus, showError);
         }
 
         public unsafe bool GetInventory(out Dictionary<int, int> inventory)
@@ -170,7 +231,8 @@ namespace IslandWorkshopSolver
             else if (lastHash == -1 || lastHash != newHash)
             {
                 int currentDay = Solver.Solver.GetCurrentDay();
-                PluginLog.Information("New valid supply data detected! Previous hash: {0}, day {1}, Current hash: {2}, day {3}\n{4}", lastHash, lastValidDay, newHash, currentDay, returnStr);
+                PluginLog.Debug("New valid supply data detected! Previous hash: {0}, day {1}, Current hash: {2}, day {3})", lastHash, lastValidDay, newHash, currentDay) ; 
+                PluginLog.Verbose("{0}", returnStr);
 
                 lastHash = newHash;
                 lastValidDay = currentDay;

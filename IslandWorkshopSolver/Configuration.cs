@@ -12,9 +12,9 @@ namespace IslandWorkshopSolver
         public int Version { get; set; } = 0;
         public int suggestionsToShow { get; set; } = 10;
         public float materialValue { get; set; } = 0.5f;
-        public int islandRank { get; set; } = 10;
-        public int workshopBonus { get; set; } = 120;
-        public int maxGroove { get; set; } = 35;
+        public int islandRank { get; set; } = 1;
+        public int workshopBonus { get; set; } = 100;
+        public int maxGroove { get; set; } = 10;
         public bool showNetCowries { get; set; } = false;
         public bool enforceRestDays { get; set; } = true;
         public string rootPath { get; set; } = "";

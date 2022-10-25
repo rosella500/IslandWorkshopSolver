@@ -1,4 +1,5 @@
 using Dalamud.Logging;
+using System;
 using System.Collections.Generic;
 namespace IslandWorkshopSolver.Solver;
 
@@ -183,7 +184,7 @@ public class WorkshopSchedule
     {
         foreach(var item in crafts)
         {
-            if (!item.PeaksOnOrBeforeDay(day, false))
+            if (!item.PeaksOnOrBeforeDay(day))
                 return false;
         }
         return true;
@@ -197,6 +198,55 @@ public class WorkshopSchedule
                 return true;
         }
         return false;
+    }
+
+    public bool UsesTooMany(Dictionary<Item, int>? limitedUse)
+    {
+        if (limitedUse == null)
+            return false;
+
+        Dictionary<Item, int> used = new Dictionary<Item, int>();
+
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            if (!used.ContainsKey(items[i]))
+                used.Add(items[i], 3 + (i > 0 ? 3 : 0));
+            else
+                used[items[i]] = used[items[i]] + 3 + (i > 0 ? 3 : 0);
+        }
+        foreach (var kvp in used)
+        {
+            if (limitedUse.ContainsKey(kvp.Key) && limitedUse[kvp.Key] < used[kvp.Key])
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public Dictionary<Item, int> GetLimitedUses()
+    {
+        return GetLimitedUses(null);
+    }
+
+    public Dictionary<Item, int> GetLimitedUses(Dictionary<Item, int>? previousLimitedUses)
+    {
+        Dictionary<Item, int> limitedUses;
+        if (previousLimitedUses == null)
+            limitedUses = new Dictionary<Item, int>();
+        else
+            limitedUses = new Dictionary<Item, int>(previousLimitedUses);
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            if (!limitedUses.ContainsKey(items[i]))
+                limitedUses.Add(items[i], 12);
+
+            limitedUses[items[i]]= limitedUses[items[i]] - 3 - (i > 0 ? 3 : 0);
+        }
+
+        return limitedUses;
     }
 
     public override bool Equals(object? obj)

@@ -24,9 +24,10 @@ public class MainWindow : Window, IDisposable
     private Vector4 red = new Vector4(1f, .3f, .3f, 1f);
     private bool showInventoryError = false;
     private bool showSupplyError = false;
+    private bool showWorkshopError = false;
 
     public MainWindow(Plugin plugin, Reader reader) : base(
-        "Island Sanctuary Workshop Solver", ImGuiWindowFlags.NoScrollbar)
+        "Beachcomber", ImGuiWindowFlags.NoScrollbar)
     {
         SizeConstraints = new WindowSizeConstraints
         {
@@ -47,12 +48,21 @@ public class MainWindow : Window, IDisposable
     public override void OnOpen()
     {
         (int day, string data) islandData = reader.ExportIsleData();
-        int maybeRank = reader.GetIslandRank();
+        (int maybeRank, int maybeGroove) = reader.GetIslandRankAndMaxGroove();
         if(maybeRank > 0)
             config.islandRank = maybeRank;
+        if (maybeGroove > 0)
+            config.maxGroove = maybeGroove;
         string[] products = islandData.data.Split('\n', StringSplitOptions.None);
         if(reader.GetInventory(out var maybeInv))
             inventory = maybeInv;
+        (int maybeWorkshopBonus, bool workshopError) = reader.GetWorkshopBonus();
+        if (maybeWorkshopBonus > -1)
+        {
+            showWorkshopError = workshopError;
+            config.workshopBonus = maybeWorkshopBonus; 
+        }
+            
         showSupplyError = false;
         try
         {
@@ -138,6 +148,11 @@ public class MainWindow : Window, IDisposable
                 OnOpen();
             }
             return;
+        }
+        if(showWorkshopError)
+        {
+            ImGui.TextColored(yellow, "Warning: You have a workshop ready to upgrade that has not been confirmed. Please examine all your workshop placards and keep an eye out for excited mammets.");
+            ImGui.Spacing();
         }
         try
         {

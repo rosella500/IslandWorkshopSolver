@@ -1,8 +1,8 @@
 {
     "Author": "Mienna",
-    "Name": "Island Sanctuary Workshop Solver",
-    "Punchline": "Determines the best thing to craft tomorrow on your island workshop",
-    "Description": "This is a solver that takes in your supply data, island rank, and personal preferences to determine the best workshop loadout to make the most Seafarer's Cowries possible!'",
+    "Name": "Beachcomber",
+    "Punchline": "Determines the most profitable agenda for your Island Sanctuary workshop each cycle",
+    "Description": "This solver examines your Island Sanctuary data (including your Isleventory!) to provide recommendations to maximize your Seafarer's Cowrie earnings.\n\nDeveloped in conjunction with the Poking Paradise Workshop Team",
     "InternalName": "islandWorkshop",
     "ApplicableVersion": "any",
     "Tags": [
@@ -10,6 +10,8 @@
         "workshop",
         "plugin",
         "helper",
-        "solver"
+        "solver",
+        "utility",
+        "cowrie"
     ]
 }
