@@ -88,6 +88,38 @@ public class Solver
             Init(Config, Window!);
             return;
         }
+        //Double check D2 peaks
+        if(CurrentDay == 0 && Config.unknownD2Items != null && Config.unknownD2Items.Count > 0)
+        {
+            int weak = 0;
+            int strong = 0;
+            foreach (var item in Items)
+            {
+                if (item.peak == Cycle2Strong)
+                    strong++;
+                else if (item.peak == Cycle2Weak)
+                    weak++;
+            }
+            if(strong==4)
+            {
+                PluginLog.Debug("We have all the strong peaks we need! All unknowns are weak");
+                Config.unknownD2Items.Clear();
+            }
+            else if(weak - Config.unknownD2Items.Count == 4)
+            { 
+                PluginLog.Debug("We have all the weak we need! All unknowns are strong");
+                foreach(var item in Config.unknownD2Items.Keys)
+                {
+                    Items[(int)item].peak = Cycle2Strong;
+                }
+                Config.unknownD2Items.Clear();
+            }
+
+
+            Config.Save();
+
+        }
+
         //Set reserved items
         Dictionary<Item, int> itemValues = new Dictionary<Item, int>();
         foreach (ItemInfo item in Items)
