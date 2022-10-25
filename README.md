@@ -1,4 +1,4 @@
-# IslandWorkshopSolver
+# Beachcomber
 This is a Dalamud plugin that functions as a solver for the Island Sanctuary Workshop. It takes the supply/demand chart, your island rank, and the contents of your isleventory to recommend the best workshop schedule to make the most cowries.
 
 To use it, use /workshop to open up the menu. If you haven't viewed the Supply/Demand screen from the Tactful Taskmaster, the plugin should prompt you to do so. Once that's imported, you can hit "Run Solver" and it'll generate at least the next day's worth of schedules. Then, you select the radio button next to the schedule you want to make and it'll add its value to the total cowries at the top and generate a list of materials you need.
