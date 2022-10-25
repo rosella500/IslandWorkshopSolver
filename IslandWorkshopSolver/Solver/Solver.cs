@@ -78,13 +78,8 @@ public class Solver
         postData.Add("day", CurrentDay.ToString());
 
         StringBuilder peaks = new StringBuilder();
-        StringBuilder pops = new StringBuilder();
         foreach(ItemInfo item in Items)
         {
-            if (item.popularity == Popularity.VeryHigh)
-                pops.Append("Very High");
-            else
-                pops.Append(item.popularity.ToString());
             switch (item.peak)
             {
                 case Unknown:
@@ -144,9 +139,7 @@ public class Solver
             }
             if(item != Items[Items.Count-1])
             {
-
                 peaks.Append(',');
-                pops.Append(',');
             }
         }
 
