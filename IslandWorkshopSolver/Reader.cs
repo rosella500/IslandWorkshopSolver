@@ -100,7 +100,7 @@ namespace IslandWorkshopSolver
             int completedLandmarks = 0;
             for (int i=0;  i< MJILandmarkPlacements.Slots; i++)
             {
-                PluginLog.Debug("Landmark {0} ID {1}, placement {4}, under construction {2}, hours to complete {3}", i,
+                PluginLog.Verbose("Landmark {0} ID {1}, placement {4}, under construction {2}, hours to complete {3}", i,
                      MJIManager.Instance()->LandmarkIds[i], MJIManager.Instance()->LandmarkUnderConstruction[i], MJIManager.Instance()->LandmarkHoursToCompletion[i], MJIManager.Instance()->LandmarkPlacements[i]->LandmarkId);
                 if (MJIManager.Instance()->LandmarkIds[i] != 0)
                 {
@@ -132,7 +132,7 @@ namespace IslandWorkshopSolver
             {
                 if (MJIManager.Instance()->Workshops.PlaceId[i] != 0)
                 {
-                    PluginLog.Debug("Workshop {0} level {1}, under construction {2}, hours to complete {3}, placeID {4}", i,
+                    PluginLog.Verbose("Workshop {0} level {1}, under construction {2}, hours to complete {3}, placeID {4}", i,
                     MJIManager.Instance()->Workshops.BuildingLevel[i] + 1, MJIManager.Instance()->Workshops.UnderConstruction[i],
                     MJIManager.Instance()->Workshops.HoursToCompletion[i], MJIManager.Instance()->Workshops.PlaceId[i]);
                     numWorkshops++;
@@ -143,7 +143,7 @@ namespace IslandWorkshopSolver
                 }
                 else
                 {
-                    PluginLog.Debug("Workshop {0} not built", i);
+                    PluginLog.Verbose("Workshop {0} not built", i);
                 }
             }
             
@@ -231,7 +231,8 @@ namespace IslandWorkshopSolver
             else if (lastHash == -1 || lastHash != newHash)
             {
                 int currentDay = Solver.Solver.GetCurrentDay();
-                PluginLog.Information("New valid supply data detected! Previous hash: {0}, day {1}, Current hash: {2}, day {3}\n{4}", lastHash, lastValidDay, newHash, currentDay, returnStr);
+                PluginLog.Debug("New valid supply data detected! Previous hash: {0}, day {1}, Current hash: {2}, day {3})", lastHash, lastValidDay, newHash, currentDay) ; 
+                PluginLog.Verbose("{0}", returnStr);
 
                 lastHash = newHash;
                 lastValidDay = currentDay;
