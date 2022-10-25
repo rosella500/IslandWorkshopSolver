@@ -26,34 +26,8 @@ public class ConfigWindow : Window, IDisposable
 
     public override void Draw()
     {
-        ImGui.PushItemWidth(140);
-        if (ImGui.CollapsingHeader("Island Configuration", ImGuiTreeNodeFlags.DefaultOpen))
-        {
-            int rank = Configuration.islandRank;
-            if (ImGui.InputInt("Island rank", ref rank))
-            {
-                Configuration.islandRank = rank;
-                Configuration.Save();
-            }
-            ImGui.Spacing();
-            int currentLevel = (Configuration.workshopBonus - 100) / 10;
-
-            if (ImGui.Combo("Workshop level", ref currentLevel, new string[3] { "Workshop I", "Workshop II", "Workshop III" }, 3))
-            {
-                Configuration.workshopBonus = currentLevel * 10 + 100;
-                Configuration.Save();
-            }
-            ImGui.Spacing();
-            int groove = Configuration.maxGroove;
-            if (ImGui.InputInt("Max groove", ref groove))
-            {
-                Configuration.maxGroove = groove;
-                Configuration.Save();
-            }
-        }
-        ImGui.Spacing();
-        ImGui.Separator();
-        ImGui.Spacing();
+        ImGui.PushItemWidth(140); 
+        
         if (ImGui.CollapsingHeader("Solver Configuration", ImGuiTreeNodeFlags.DefaultOpen))
         {
             int sugg = Configuration.suggestionsToShow;
@@ -108,6 +82,37 @@ public class ConfigWindow : Window, IDisposable
             if (ImGui.IsItemHovered())
             {
                 ImGui.SetTooltip("Force you to rest one and only one day (other than day 1).");
+            }
+        }
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+        if (ImGui.CollapsingHeader("Island Configuration", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            ImGui.PopItemWidth();
+            ImGui.TextWrapped("These should automatically populate from your island sanctuary, but if you want to play around with them, here you go");
+            ImGui.Spacing();
+            ImGui.PushItemWidth(140);
+            int rank = Configuration.islandRank;
+            if (ImGui.InputInt("Island rank", ref rank))
+            {
+                Configuration.islandRank = rank;
+                Configuration.Save();
+            }
+            ImGui.Spacing();
+            int currentLevel = (Configuration.workshopBonus - 100) / 10;
+
+            if (ImGui.Combo("Workshop level", ref currentLevel, new string[3] { "Workshop I", "Workshop II", "Workshop III" }, 3))
+            {
+                Configuration.workshopBonus = currentLevel * 10 + 100;
+                Configuration.Save();
+            }
+            ImGui.Spacing();
+            int groove = Configuration.maxGroove;
+            if (ImGui.InputInt("Max groove", ref groove))
+            {
+                Configuration.maxGroove = groove;
+                Configuration.Save();
             }
         }
         ImGui.Spacing();

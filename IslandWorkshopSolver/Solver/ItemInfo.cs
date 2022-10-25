@@ -281,15 +281,24 @@ public class ItemInfo
         return supply;
     }
 
+    public int GetValueWithSupply(Supply supply)
+    {
+        int value = baseValue * Solver.WORKSHOP_BONUS / 100;
+        return value * SupplyHelper.GetMultiplier(supply) * PopularityHelper.GetMultiplier(popularity) / 10000;
+    }
+
     public bool Equals(ItemInfo other)
     {
         return item == other.item;
     }
 
-    public bool PeaksOnOrBeforeDay(int day, bool borrow4Hours)
+    public bool PeaksOnOrBeforeDay(int day)
     {
-        if (time == 4 && borrow4Hours)
+        if (time == 4)
             return true;
+        if (Solver.ReservedItems.Count > 0 && !Solver.ReservedItems.Contains(item))
+            return true;
+
         if (peak == Cycle2Weak || peak == Cycle2Strong)
             return day > 0;
         if (peak == Cycle3Weak || peak == Cycle3Strong || peak == UnknownD1)
