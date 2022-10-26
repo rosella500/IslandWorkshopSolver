@@ -155,7 +155,7 @@ public class Solver
         var content = new FormUrlEncodedContent(values);
         var response = await client.PostAsync("http://45.79.226.148:1483", content);
         var responseString = await response.Content.ReadAsStringAsync();
-        PluginLog.Information("Response from post data: " + responseString);
+        PluginLog.Warning("Response from post data: " + responseString);
     }
 
     private static async Task ReadGetData()
