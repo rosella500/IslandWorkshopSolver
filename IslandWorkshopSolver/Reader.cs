@@ -89,7 +89,7 @@ namespace IslandWorkshopSolver
             sheet = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksPopularity>()!;
         }
 
-        //I don't know why I made this into one method
+        //This is in one method because island rank has a default invalid value whereas landmarks might just not be built
         public unsafe (int rank, int maxGroove) GetIslandRankAndMaxGroove()
         {
             if (MJIManager.Instance() == null)
@@ -106,8 +106,6 @@ namespace IslandWorkshopSolver
                 {
                     if (MJIManager.Instance()->LandmarkUnderConstruction[i] == 0)
                         completedLandmarks++;
-                    else
-                        PluginLog.LogWarning("Landmark {0} under construction {1} in slot {2}", MJIManager.Instance()->LandmarkIds[i], MJIManager.Instance()->LandmarkUnderConstruction[i], i);
                 }
                     
             }

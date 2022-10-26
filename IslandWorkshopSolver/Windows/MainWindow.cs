@@ -49,20 +49,25 @@ public class MainWindow : Window, IDisposable
     {
         (int day, string data) islandData = reader.ExportIsleData();
         (int maybeRank, int maybeGroove) = reader.GetIslandRankAndMaxGroove();
+        bool changedConfig = false;
         if(maybeRank > 0)
+        {
             config.islandRank = maybeRank;
-        if (maybeGroove > 0)
             config.maxGroove = maybeGroove;
+            changedConfig = true;
+        }
         string[] products = islandData.data.Split('\n', StringSplitOptions.None);
         if(reader.GetInventory(out var maybeInv))
             inventory = maybeInv;
         (int maybeWorkshopBonus, bool workshopError) = reader.GetWorkshopBonus();
         if (maybeWorkshopBonus > -1)
         {
+            changedConfig = true;
             showWorkshopError = workshopError;
             config.workshopBonus = maybeWorkshopBonus; 
         }
-            
+        if(changedConfig)
+            config.Save();
         showSupplyError = false;
         try
         {
