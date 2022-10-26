@@ -57,7 +57,8 @@ public enum Material
     Carapace = 57,
     Fang = 58,
     Horn = 59,
-    Milk = 60
+    Milk = 60,
+    NumMats = 61
 }
 public static class RareMaterialHelper
 {

@@ -58,7 +58,8 @@ public enum Item
     GardenScythe,
     Bed,
     ScaleFingers,
-    Crook //Update InitFromGameData to be the last item if we add more
+    Crook,
+    NumCrafts
 }
 
 public static class ItemHelper
@@ -127,9 +128,9 @@ public static class ItemHelper
             return "???";
     }
 
-    public static void InitFromGameData(IReadOnlyList<string> itemData)
+    public static void InitFromGameData(IList<string> itemData)
     {
-        for (int i= 0; i<=(int)Crook; i++) //Update this to be the last item
+        for (int i= 0; i<(int)NumCrafts; i++) 
         {
             if (Enum.IsDefined((Item)i))
                 displayNames.Add((Item)i, itemData[i]);

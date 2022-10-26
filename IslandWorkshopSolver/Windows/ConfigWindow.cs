@@ -121,7 +121,7 @@ public class ConfigWindow : Window, IDisposable
         if (ImGui.CollapsingHeader("Advanced Configuration"))
         {
             string flavorText = String.Join(", ", Configuration.flavorText);
-            if (ImGui.InputText("Words to not display", ref flavorText, 100))
+            if (ImGui.InputText("Words to not display", ref flavorText, 1000))
             {
                 Configuration.flavorText = flavorText.Split(",");
                 for (int i = 0; i < Configuration.flavorText.Length; i++)
