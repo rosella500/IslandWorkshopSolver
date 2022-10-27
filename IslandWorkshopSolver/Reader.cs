@@ -34,19 +34,26 @@ namespace IslandWorkshopSolver
             items = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Select(o => o.Item.Value?.Name.ToString() ?? string.Empty)
                .Where(s => s.Length > 0).Prepend(string.Empty).ToArray();
             var itemSheet = DalamudPlugins.GameData.GetExcelSheet<Lumina.Excel.GeneratedSheets.Item>()!;
-            string[] itemNames = Enumerable.Range(37551, 61).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()).ToArray();
+            //This will probably need to be changed if we get new mats/crafts
+            string[] materialNames = Enumerable.Range(37551, 61).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()).ToArray();
             var addon = DalamudPlugins.GameData.GetExcelSheet<Addon>()!;
             shifts = Enumerable.Range(15186, 5).Select(i => addon.GetRow((uint)i)!.Text.ToString()).ToArray();
             supplies = Enumerable.Range(15181, 5).Reverse().Select(i => addon.GetRow((uint)i)!.Text.ToString()).ToArray();
             popularities = Enumerable.Range(15177, 4).Select(i => addon.GetRow((uint)i)!.Text.ToString()).Prepend(string.Empty).ToArray();
             
-            var validCrafts = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Select(o => o.Item.Value?.Name.ToString() ?? string.Empty)
-               .Where(s => s.Length > 0).ToArray();
+            var craftIDs = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Select(o => o.Item.Value?.RowId ?? 0)
+               .Where(r => r > 0).ToArray();
+            List<string> craftNames = new List<string>();
+            foreach (var craft in craftIDs)
+            {
+                string name = itemSheet.GetRow((uint)craft)!.Name.ToString();
+                craftNames.Add(name);
+            }
 
-            ItemHelper.InitFromGameData(validCrafts);
+            ItemHelper.InitFromGameData(craftNames);
             //Maps material ID to value
             var rareMats = DalamudPlugins.GameData.GetExcelSheet<MJIDisposalShopItem>()!.Where(i => i.Unknown1 == 0).ToDictionary(i => i.Unknown0, i=> i.Unknown2);
-            RareMaterialHelper.InitFromGameData(rareMats, itemNames);
+            RareMaterialHelper.InitFromGameData(rareMats, materialNames);
 
             var supplyMods = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksSupplyDefine>()!.ToDictionary(i => i.RowId, i => i.Unknown1);
             SupplyHelper.InitFromGameData(supplyMods);
@@ -183,7 +190,7 @@ namespace IslandWorkshopSolver
                 var invItem = mjiPouch->InventoryData->Inventory.Get(i);
                 PluginLog.Verbose("MJI Pouch inventory item: name {2}, slotIndex {0}, stack {1}", invItem.SlotIndex, invItem.StackSize, invItem.Name);
                 totalItems += invItem.StackSize;
-                if(i <= (int)Material.Milk)
+                if(i < (int)Material.NumMats)
                     inventory.Add(invItem.SlotIndex, invItem.StackSize);
             }
 

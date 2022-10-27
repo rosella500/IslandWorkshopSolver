@@ -308,9 +308,9 @@ public class MainWindow : Window, IDisposable
                                                 if(inventory.ContainsKey((int)mat.Key))
                                                 {
                                                     int itemsHeld = inventory[(int)mat.Key];
-                                                    if (itemsHeld > mat.Value)
+                                                    if (itemsHeld >= mat.Value)
                                                         color = green;
-                                                    else if (itemsHeld > mat.Value/2)
+                                                    else if (itemsHeld*2 >= mat.Value)
                                                         color = yellow;
                                                     tooltip = "Owned: " + itemsHeld + ". ";
                                                 }

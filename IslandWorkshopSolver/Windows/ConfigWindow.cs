@@ -131,8 +131,9 @@ public class ConfigWindow : Window, IDisposable
         ImGui.Spacing();
         if (ImGui.CollapsingHeader("Advanced Configuration"))
         {
+            ImGui.PopItemWidth();
             string flavorText = String.Join(", ", Configuration.flavorText);
-            if (ImGui.InputText("Words to not display", ref flavorText, 100))
+            if (ImGui.InputText("Filtered words", ref flavorText, 1000))
             {
                 Configuration.flavorText = flavorText.Split(",");
                 for (int i = 0; i < Configuration.flavorText.Length; i++)

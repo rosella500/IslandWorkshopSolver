@@ -5,6 +5,6 @@ To use it, use /cowries to open up the menu. If you haven't viewed the Supply/De
 
 If you haven't opened your Isleventory, the plugin should prompt you to do so in order to compare the materials required against the materials you have. Green means you have the requisite amount of materials, yellow means you have most of them, and red means you have less than half of what you need.
 
-You can also hit the config button to customize how the solver works like increasing the number of suggestions it makes or asking it to only show you schedules you have the rare materials for. I did my best to make helpful tooltips and instructions so that, fingers crossed, using it is fairly self-explanatory.
+You can also hit the config button to customize how the solver works like increasing the number of suggestions it makes or asking it to only show you schedules you have the rare materials for. I did my best to make helpful tooltips and instructions so that, fingers crossed, using it is fairly self-explanatory. If you're using a language other than English to play FFXIV, be sure to check under Advanced Configuration and change the filtered words to shorten those long item names.
 
 Ideally, you'd use it starting on Tuesday to get Wednesday's schedule, then logging on Wednesday to get Thursday's schedule, etc., but it will do its best to work from partial data later in the week and should still give good suggestions at least for the next day.
