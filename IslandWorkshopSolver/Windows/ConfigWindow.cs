@@ -26,7 +26,8 @@ public class ConfigWindow : Window, IDisposable
 
     public override void Draw()
     {
-        ImGui.PushItemWidth(140); 
+        float itemWidth = ImGui.GetContentRegionAvail().X / 2;
+        ImGui.PushItemWidth(itemWidth); 
         
         if (ImGui.CollapsingHeader("Solver Configuration", ImGuiTreeNodeFlags.DefaultOpen))
         {
@@ -103,7 +104,7 @@ public class ConfigWindow : Window, IDisposable
             ImGui.PopItemWidth();
             ImGui.TextWrapped("These should automatically populate from your island sanctuary, but if you want to play around with them, here you go");
             ImGui.Spacing();
-            ImGui.PushItemWidth(140);
+            ImGui.PushItemWidth(itemWidth);
             int rank = Configuration.islandRank;
             if (ImGui.InputInt("Island rank", ref rank))
             {

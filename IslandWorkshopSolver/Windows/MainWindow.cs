@@ -161,7 +161,8 @@ public class MainWindow : Window, IDisposable
         }
         try
         {
-            if (ImGui.Button("Run Solver"))
+            float buttonWidth = ImGui.GetContentRegionAvail().X / 6;
+            if (ImGui.Button("Run Solver", new Vector2(buttonWidth, 0f)))
             {                
                 try
                 {
@@ -186,15 +187,16 @@ public class MainWindow : Window, IDisposable
                     PluginLog.LogError(e, "Error running solver.");
                 }
             }
-            ImGui.SameLine(100);
+            ImGui.SameLine(buttonWidth+20);
             string totalCowries = "Total cowries this season: " + Solver.Solver.TotalGross;
             if (config.showNetCowries)
                 totalCowries += " (" + Solver.Solver.TotalNet + " net)";
             ImGui.Text(totalCowries);
 
             ImGui.GetContentRegionAvail();
-            ImGui.SameLine(ImGui.GetContentRegionAvail().X - 40);
-            if (ImGui.Button("Config"))
+            
+            ImGui.SameLine(ImGui.GetContentRegionAvail().X - buttonWidth + 10);
+            if (ImGui.Button("Config", new Vector2(buttonWidth,0f)))
             {
                 Plugin.DrawConfigUI();
             }
