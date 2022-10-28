@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Dalamud.Logging;
 
-namespace IslandWorkshopSolver.Solver;
+namespace Beachcomber.Solver;
 
 public class CycleSchedule
 {

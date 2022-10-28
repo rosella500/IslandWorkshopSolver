@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-namespace IslandWorkshopSolver.Solver;
+namespace Beachcomber.Solver;
 
 public class EndDaySummary
 {

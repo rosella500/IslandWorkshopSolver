@@ -8,14 +8,14 @@ using Dalamud.Utility.Signatures;
 using Lumina.Excel.GeneratedSheets;
 using Lumina.Excel;
 using Dalamud.Logging;
-using IslandWorkshopSolver.Solver;
+using Beachcomber.Solver;
 using Lumina;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using Dalamud.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
-namespace IslandWorkshopSolver
+namespace Beachcomber
 {
     // Lifted entirely from Rietty's AutoMammet, who apparently took it from Otter. Bless you both. <3
     public class Reader

@@ -1,4 +1,4 @@
-namespace IslandWorkshopSolver.Solver;
+namespace Beachcomber.Solver;
 
 using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;

@@ -1,7 +1,7 @@
 using System;
 using System.Reflection;
 
-namespace IslandWorkshopSolver.Solver;
+namespace Beachcomber.Solver;
 
 public enum PeakCycle
 {

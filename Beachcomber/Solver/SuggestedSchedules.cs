@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace IslandWorkshopSolver.Solver;
+namespace Beachcomber.Solver;
 
 public class SuggestedSchedules
 {

@@ -3,7 +3,7 @@
     "Name": "Beachcomber",
     "Punchline": "Determines the most profitable agenda for your Island Sanctuary workshop each cycle",
     "Description": "This solver examines your Island Sanctuary data (including your Isleventory!) to provide recommendations to maximize your Seafarer's Cowrie earnings.\n\nMade in collaboration with the Overseas Casuals.",
-    "InternalName": "islandWorkshop",
+    "InternalName": "beachcomber",
     "ApplicableVersion": "any",
     "Tags": [
         "island sanctuary",

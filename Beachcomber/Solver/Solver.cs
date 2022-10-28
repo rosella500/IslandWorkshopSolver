@@ -4,7 +4,7 @@ using System.Linq;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
 
-namespace IslandWorkshopSolver.Solver;
+namespace Beachcomber.Solver;
 using static PeakCycle;
 public class Solver
 {
@@ -73,6 +73,7 @@ public class Solver
         TotalGross = 0;
         TotalNet = 0;
         Rested = false;
+        SchedulesPerDay.Clear();
 
         int dayToSolve = CurrentDay + 1;
 

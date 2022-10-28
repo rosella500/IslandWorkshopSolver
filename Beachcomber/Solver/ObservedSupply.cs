@@ -1,4 +1,4 @@
-namespace IslandWorkshopSolver.Solver;
+namespace Beachcomber.Solver;
 
 public class ObservedSupply
 {
