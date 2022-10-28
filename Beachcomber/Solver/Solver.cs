@@ -7,7 +7,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IslandWorkshopSolver.Solver;
+namespace Beachcomber.Solver;
 using static PeakCycle;
 public class Solver
 {
@@ -181,6 +181,7 @@ public class Solver
         TotalGross = 0;
         TotalNet = 0;
         Rested = false;
+        SchedulesPerDay.Clear();
 
         int dayToSolve = CurrentDay + 1;
 

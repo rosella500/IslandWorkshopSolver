@@ -2,7 +2,7 @@ using Dalamud.Logging;
 using System;
 using System.Collections.Generic;
 
-namespace IslandWorkshopSolver.Solver;
+namespace Beachcomber.Solver;
 using static Supply;
 public enum Supply
 {

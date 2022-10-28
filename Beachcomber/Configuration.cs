@@ -1,10 +1,10 @@
 using Dalamud.Configuration;
 using Dalamud.Plugin;
-using IslandWorkshopSolver.Solver;
+using Beachcomber.Solver;
 using System;
 using System.Collections.Generic;
 
-namespace IslandWorkshopSolver
+namespace Beachcomber
 {
     [Serializable]
     public class Configuration : IPluginConfiguration

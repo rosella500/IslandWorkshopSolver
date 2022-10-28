@@ -5,10 +5,10 @@ using System.Text;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using Dalamud.Logging;
-using IslandWorkshopSolver.Solver;
+using Beachcomber.Solver;
 using System.Linq;
 
-namespace IslandWorkshopSolver.Windows;
+namespace Beachcomber.Windows;
 
 public class MainWindow : Window, IDisposable
 {

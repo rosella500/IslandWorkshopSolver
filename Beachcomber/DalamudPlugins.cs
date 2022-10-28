@@ -5,7 +5,7 @@ using Dalamud.Plugin;
 
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Local
 
-namespace IslandWorkshopSolver;
+namespace Beachcomber;
 
 public class DalamudPlugins
 {

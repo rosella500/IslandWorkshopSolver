@@ -3,13 +3,13 @@ using System;
 using System.Collections.Generic;
 using Dalamud.Logging;
 
-using static IslandWorkshopSolver.Solver.PeakCycle;
-using static IslandWorkshopSolver.Solver.ItemCategory;
-using static IslandWorkshopSolver.Solver.DemandShift;
-using static IslandWorkshopSolver.Solver.Supply;
+using static Beachcomber.Solver.PeakCycle;
+using static Beachcomber.Solver.ItemCategory;
+using static Beachcomber.Solver.DemandShift;
+using static Beachcomber.Solver.Supply;
 
 
-namespace IslandWorkshopSolver.Solver;
+namespace Beachcomber.Solver;
 
 public class ItemInfo
 {

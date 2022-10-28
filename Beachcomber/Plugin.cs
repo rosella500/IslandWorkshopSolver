@@ -2,9 +2,9 @@ using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Interface.Windowing;
-using IslandWorkshopSolver.Windows;
+using Beachcomber.Windows;
 
-namespace IslandWorkshopSolver
+namespace Beachcomber
 {
     public sealed class Plugin : IDalamudPlugin
     {
