@@ -271,15 +271,62 @@ public class ItemInfo
 
     public int GetSupplyOnDay(int day)
     {
+        observedSupplies.TryGetValue(day, out var observedToday);
+        observedSupplies.TryGetValue(day - 1, out var observedEarlier);
 
+        
         int supply = SUPPLY_PATH[(int)peak][0];
-        for (int c = 1; c <= day; c++)
+        for (int c = 1; c < day; c++)
         {
             supply += craftedPerDay[c - 1];
             supply += SUPPLY_PATH[(int)peak][c];
         }
 
-        return supply;
+        //Only return exact supply number if it matches what we observed
+        if (observedEarlier == null || GetSupplyBucket(supply) == observedEarlier.supply)
+        {
+            return supply + SUPPLY_PATH[(int)peak][day];
+        }
+        else
+        {
+            /*PluginLog.Warning("Estimated supply for item {4} day {3}: {0} ({1}) doesn't match observed supply: {2}",
+                supply, GetSupplyBucket(supply), observedEarlier.supply, day, item);*/
+
+            if (observedToday != null)
+            {
+                //Make best guess using last observed day
+                Supply observedSupply = observedToday.supply;
+                return GetEstimatedSupplyNum(observedSupply);
+            }
+            else
+            {
+                Supply yesterdaySupply = observedEarlier.supply;
+                if (peak == Unknown)
+                {
+                    
+                    int estimatedSupply = GetEstimatedSupplyTomorrow(yesterdaySupply);
+                    //PluginLog.Debug("Assuming it peaked in the past, sending supply {0} ({1})", estimatedSupply, GetSupplyBucket(estimatedSupply));
+                    return estimatedSupply;
+                }
+                else
+                {
+                    int estimatedYesterday = GetEstimatedSupplyNum(yesterdaySupply);
+                    
+                    if (peak.IsTerminal())
+                    {
+                        if ((int)peak == day * 2) //Strong peaking on the day we're estimating for
+                            estimatedYesterday -= 4;
+                        else if ((int)peak % 2 == 0) //Strong peaked in the past
+                            estimatedYesterday -= 2;
+                    }
+                    
+                    int finalEstimate = estimatedYesterday + SUPPLY_PATH[(int)peak][day];
+                    /*PluginLog.Debug("We know its peak, so estimating today as {0} and adding {1} for tomorrow, sending supply {2} ({3})",
+                        estimatedYesterday, SUPPLY_PATH[(int)peak][day], finalEstimate, GetSupplyBucket(finalEstimate));*/
+                    return finalEstimate;
+                }
+            }
+        }
     }
 
     public int GetValueWithSupply(Supply supply)
@@ -327,6 +374,39 @@ public class ItemInfo
         if (supply < 16)
             return Surplus;
         return Overflowing;
+    }
+    public static int GetEstimatedSupplyNum(Supply bucket)
+    {
+        switch (bucket)
+        {
+            case Nonexistent: //Strong peaking today
+                return -15;
+            case Insufficient: //Either weak or strong-peaking tomorrow? Assume weak
+                return -4;
+            case Sufficient: //Weak peaked in the past?
+                return 2;
+            case Surplus: //Weak peaked in the past and we made 12?
+                return 14;
+            default: //I don't even know what this means but we made a bunch
+                return 16;
+        }
+    }
+
+    public static int GetEstimatedSupplyTomorrow(Supply today)
+    {
+        switch (today)
+        {
+            case Nonexistent: //Strong peaking today
+                return 0;
+            case Insufficient: //Weak peaking today
+                return 2;
+            case Sufficient: //Weak peaked in the past?
+                return 2;
+            case Surplus: //Weak peaked in the past and we made 12?
+                return 14;
+            default: //I don't even know what this means but we made a bunch
+                return 16;
+        }
     }
 
     public static int GetSupplyOnDayByPeak(PeakCycle peak, int day)
