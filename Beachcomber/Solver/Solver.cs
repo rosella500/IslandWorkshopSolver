@@ -962,8 +962,7 @@ public class Solver
             InitStep = 0;
             Init(Config, Window!);
         }
-        if (Importer.HasAllPeaks())
-            return true;
+        
 
         bool needOverwrite = CurrentDay < 6 && IsProductsValid(products) && Importer.NeedToOverwriteTodayData(CurrentDay, products);
         if (needOverwrite)
@@ -1004,7 +1003,10 @@ public class Solver
                 Importer.WriteNewSupply(products, CurrentDay);
             }
             return true;
-        }            
+        }
+        else if(Importer.HasAllPeaks())
+            return true;
+
         return false;
         
     }
