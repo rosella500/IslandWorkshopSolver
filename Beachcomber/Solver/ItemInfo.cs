@@ -270,15 +270,32 @@ public class ItemInfo
 
     public int GetSupplyOnDay(int day)
     {
-
-        int supply = SUPPLY_PATH[(int)peak][0];
-        for (int c = 1; c <= day; c++)
+        if (peak != Unknown)
         {
-            supply += craftedPerDay[c - 1];
-            supply += SUPPLY_PATH[(int)peak][c];
-        }
+            int supply = SUPPLY_PATH[(int)peak][0];
+            for (int c = 1; c <= day; c++)
+            {
+                supply += craftedPerDay[c - 1];
+                supply += SUPPLY_PATH[(int)peak][c];
+            }
 
-        return supply;
+            return supply;
+        }
+        else if(observedSupplies.TryGetValue(day, out var observed))
+        {
+            //Make best guess using last observed day
+            Supply supply = observed.supply;
+            return GetEstimatedSupplyNum(supply);
+        }
+        else if(observedSupplies.TryGetValue(day-1, out var observedEarlier))
+        {
+            Supply predictedSupply = observedEarlier.supply;
+            if (predictedSupply == Nonexistent || predictedSupply == Insufficient)
+                predictedSupply = Sufficient;
+
+            return GetEstimatedSupplyNum(predictedSupply);
+        }
+        return 2;
     }
 
     public int GetValueWithSupply(Supply supply)
@@ -326,6 +343,22 @@ public class ItemInfo
         if (supply < 16)
             return Surplus;
         return Overflowing;
+    }
+    public static int GetEstimatedSupplyNum(Supply bucket)
+    {
+        switch (bucket)
+        {
+            case Nonexistent: //Strong peaking today
+                return -15;
+            case Insufficient: //Weak peaking today
+                return -8;
+            case Sufficient: //Weak peaked in the past?
+                return 2;
+            case Surplus: //Weak peaked in the past and we made 12?
+                return 14;
+            default: //I don't even know what this means but we made a bunch
+                return 16;
+        }
     }
 
     public static int GetSupplyOnDayByPeak(PeakCycle peak, int day)
