@@ -78,10 +78,29 @@ public class Solver
         int dayToSolve = CurrentDay + 1;
 
         SetInitialFromCSV();
-        for (int i = 0; i < CurrentDay; i++)
-            SetObservedFromCSV(i);
 
-        if (!SetObservedFromCSV(CurrentDay))
+
+        bool hasCurrentDay = false;
+        for (int i = 0; i <= CurrentDay; i++)
+            hasCurrentDay = SetObservedFromCSV(i);
+
+        if (Importer.HasAllPeaks()) //If we have the peaks in CSV already, just set them
+        {
+            for (int i = 0; i < Items.Count; i++)
+            {
+                Items[i].peak = Importer.currentPeaks[i];
+                PluginLog.Debug("Item {0}, final peak: {1}", Items[i].item, Items[i].peak);
+            }
+                
+        }
+        else if(CurrentDay == 6) //We don't get data from today but we should set the peaks anyway
+        {
+            for (int i = 0; i < Items.Count; i++)
+            {
+                Items[i].SetPeakBasedOnObserved(0);
+            }
+        }
+        else if (!hasCurrentDay)
         {
             DalamudPlugins.Chat.PrintError("Don't have supply info from current day. Make sure you've viewed the Supply/Demand chart and reopen the window.");
             InitStep = 0;
@@ -747,13 +766,12 @@ public class Solver
             {
                 foreach (ItemInfo secondSix in sixMatches)
                 {
-                        //PluginLog.LogVerbose("Adding 6-6-6-6 schedule made out of helpers " + firstSix.item + ", " + secondSix.item + ", and top item: " + topItem.item);
                     AddToScheduleMap(new List<Item> { secondSix.item, topItem.item, firstSix.item, topItem.item },
                     day, safeSchedules, limitedUse, startingGroove);
                 }
             }
 
-            //4-4-4-4-6 and 4-4-6-4-6
+            
             var firstFourMatchEnum = fourHour.GetEnumerator();
             while (firstFourMatchEnum.MoveNext())
             {
@@ -775,20 +793,19 @@ public class Solver
                     if (!secondFourMatchEnum.Current.GetsEfficiencyBonus(firstFourMatchEnum.Current))
                         continue;
 
-                    AddScheduleIfEfficient(secondFourMatchEnum.Current, topItem,
-                        new List<Item> { firstFourMatchEnum.Current.item, secondFourMatchEnum.Current.item, topItem.item, firstFourMatchEnum.Current.item, topItem.item },
-                        day, safeSchedules, limitedUse, startingGroove);
-                    AddToScheduleMap(new List<Item> { secondFourMatchEnum.Current.item, firstFourMatchEnum.Current.item, topItem.item, firstFourMatchEnum.Current.item, topItem.item },
-                        day, safeSchedules, limitedUse, startingGroove);
-
                     var thirdFourMatchEnum = fourHour.GetEnumerator();
                     while (thirdFourMatchEnum.MoveNext())
                     {
+                        //4-4-6-4-6
+                        AddScheduleIfEfficient(thirdFourMatchEnum.Current, topItem,
+                        new List<Item> { secondFourMatchEnum.Current.item, firstFourMatchEnum.Current.item, topItem.item, thirdFourMatchEnum.Current.item, topItem.item },
+                        day, safeSchedules, limitedUse, startingGroove);
                         if (!secondFourMatchEnum.Current.GetsEfficiencyBonus(thirdFourMatchEnum.Current))
                             continue;
                         var fourthFourMatchEnum = fourHour.GetEnumerator();
                         while (fourthFourMatchEnum.MoveNext())
                         {
+                            //4-4-4-4-6
                             AddScheduleIfEfficient(fourthFourMatchEnum.Current, thirdFourMatchEnum.Current,
                                 new List<Item> { fourthFourMatchEnum.Current.item, thirdFourMatchEnum.Current.item, secondFourMatchEnum.Current.item, firstFourMatchEnum.Current.item, topItem.item },
                                 day, safeSchedules, limitedUse, startingGroove);
@@ -874,12 +891,14 @@ public class Solver
 
     private static bool SetObservedFromCSV(int day)
     {
-        bool hasDaySummary = day < Importer.endDays.Count;
-        bool hasCurrentDay = day == 6;
+        if (day >= 6) //If we're day 7 (or later, somehow??), stop this foolishness
+            return false;
+
+        bool hasCurrentDay = false;
 
         for (int i = 0; i < Importer.observedSupplies.Count; i++)
         {
-            if (day < 6 && Importer.observedSupplies[i].ContainsKey(day))
+            if (Importer.observedSupplies[i].ContainsKey(day))
             {
                 hasCurrentDay = true;
                 ObservedSupply ob = Importer.observedSupplies[i][day];
@@ -888,10 +907,8 @@ public class Solver
                     observedHour = Importer.observedSupplyHours[day];
                 Items[i].AddObservedDay(ob, day, observedHour);
             }
-            else if (day == 6)
-                Items[i].SetPeakBasedOnObserved(0);
 
-            if (hasDaySummary && Importer.endDays[day].NumCraftedCount() > i)
+            if (day < Importer.endDays.Count && Importer.endDays[day].NumCraftedCount() > i)
                 Items[i].SetCrafted(Importer.endDays[day].GetCrafted(i), day);
             else
                 Items[i].SetCrafted(0, day);
@@ -944,6 +961,8 @@ public class Solver
             InitStep = 0;
             Init(Config, Window!);
         }
+        if (Importer.HasAllPeaks())
+            return true;
 
         bool needOverwrite = CurrentDay < 6 && IsProductsValid(products) && Importer.NeedToOverwriteTodayData(CurrentDay, products);
         if (needOverwrite)

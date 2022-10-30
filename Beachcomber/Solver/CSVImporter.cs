@@ -391,7 +391,15 @@ public class CSVImporter
         }            
 
         return false;
+    }
 
+    public bool HasAllPeaks()
+    {
+        foreach(var peak in currentPeaks)
+            if (!peak.IsTerminal())
+                return false;
+
+        return true;
     }
     public void WriteCurrentPeaks(int week)
     {
