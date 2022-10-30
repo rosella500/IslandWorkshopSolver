@@ -31,7 +31,8 @@ public class Solver
     public static Configuration Config = new Configuration();
     private static Window? Window;
     public static Dictionary<int, (CycleSchedule schedule, int value)> SchedulesPerDay = new Dictionary<int, (CycleSchedule schedule, int value)>();
-    private static bool sendToDB = false;
+    private static bool sendSupplyData = false;
+    private static bool sendPopularityData = false;
     private static readonly HttpClient client = new HttpClient();
 
     private static int ItemsToReserve = 15;
@@ -269,7 +270,7 @@ public class Solver
         }
         PluginLog.Debug("Reserving items {0} today.", String.Join(", ", ReservedItems));
 
-        if(sendToDB && Config.sendDataToDB)
+        if(sendSupplyData && Config.sendDataToDB)
         {
             _ = SendPostData();
         }
@@ -1068,7 +1069,7 @@ public class Solver
 
     public static bool WriteTodaySupply(int updatedDay, string[] products)
     {
-        sendToDB = false;
+        sendSupplyData = false;
 
         if (CurrentDay != GetCurrentDay() || Week != GetCurrentWeek())
         {
@@ -1108,6 +1109,7 @@ public class Solver
             if (needNewWeek || (CurrentDay == 0 && needOverwrite))
             {
                 Importer.WriteWeekStart(products);
+                sendPopularityData = true;
             }
             
             if(needNewData || needOverwrite)
@@ -1115,7 +1117,7 @@ public class Solver
                 Importer.WriteNewSupply(products, CurrentDay);
             }
             if(CurrentDay<4)
-                sendToDB = true;
+                sendSupplyData = true;
             return true;
         }
         else if(Importer.HasAllPeaks())
