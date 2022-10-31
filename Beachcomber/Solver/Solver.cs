@@ -249,25 +249,31 @@ public class Solver
 
         }
 
-        //Set reserved items
-        Dictionary<Item, int> itemValues = new Dictionary<Item, int>();
-        foreach (ItemInfo item in Items)
+        if(CurrentDay < 6)
         {
-            if (item.time == 4)
-                continue;
-            int value = item.GetValueWithSupply(Supply.Sufficient);
-            if (ValuePerHour)
-                value = value * 8 / item.time;
-            itemValues.Add(item.item, value);
-        }
+            //Set reserved items
+            Dictionary<Item, int> itemValues = new Dictionary<Item, int>();
+            foreach (ItemInfo item in Items)
+            {
+                if (item.time == 4)
+                    continue;
+                int value = item.GetValueWithSupply(Supply.Sufficient);
+                if (ValuePerHour)
+                    value = value * 8 / item.time;
+                itemValues.Add(item.item, value);
+            }
 
-        var orderedItems = itemValues.OrderByDescending(kvp => kvp.Value);
-        var enumerator = orderedItems.GetEnumerator();
+            var orderedItems = itemValues.OrderByDescending(kvp => kvp.Value);
+            var enumerator = orderedItems.GetEnumerator();
+            
+            ReservedItems.Clear();
 
-        for (int i = 0; i < ItemsToReserve && enumerator.MoveNext(); i++)
-        {
-            ReservedItems.Add(enumerator.Current.Key);
+            for (int i = 0; i < ItemsToReserve && enumerator.MoveNext(); i++)
+            {
+                ReservedItems.Add(enumerator.Current.Key);
+            }
         }
+        
         PluginLog.Debug("Reserving items {0} today.", String.Join(", ", ReservedItems));
 
         if(sendSupplyData && Config.sendDataToDB)
