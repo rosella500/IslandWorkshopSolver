@@ -254,7 +254,7 @@ public class Solver
 
             toReturn.Add((dayToSolve, new SuggestedSchedules(safeSchedules, Config.onlySuggestMaterialsOwned, inventory)));
         }
-        else //We know the rest of the week
+        else if (dayToSolve < 7) //We know the rest of the week
         {
             if (dayToSolve == 4)
                 toReturn.AddRange(GetLastThreeDays(Config.onlySuggestMaterialsOwned, inventory));
