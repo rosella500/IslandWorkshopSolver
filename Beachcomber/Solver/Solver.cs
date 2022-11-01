@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Beachcomber.Solver;
 using static PeakCycle;
@@ -33,7 +30,6 @@ public class Solver
     public static Dictionary<int, (CycleSchedule schedule, int value)> SchedulesPerDay = new Dictionary<int, (CycleSchedule schedule, int value)>();
     private static bool sendSupplyData = false;
     private static bool sendPopularityData = false;
-    private static readonly HttpClient client = new HttpClient();
 
     private static int ItemsToReserve = 15;
     private static bool ValuePerHour = true;
@@ -72,107 +68,7 @@ public class Solver
         }
     }
 
-    private static Dictionary<string, string> GetPostData()
-    {
-        Dictionary<string, string> postData = new Dictionary<string, string>();
-        postData.Add("week", Week.ToString());
-        postData.Add("day", CurrentDay.ToString());
-
-        StringBuilder peaks = new StringBuilder();
-        foreach(ItemInfo item in Items)
-        {
-            switch (item.peak)
-            {
-                case Unknown:
-                    peaks.Append("U");
-                    break;
-                case Cycle2Weak:
-                    peaks.Append("2W");
-                    break;
-                case Cycle2Strong:
-                    peaks.Append("2S");
-                    break;
-                case Cycle3Weak:
-                    peaks.Append("3W");
-                    break;
-                case Cycle3Strong:
-                    peaks.Append("3S");
-                    break;
-                case Cycle4Weak:
-                    peaks.Append("4W");
-                    break;
-                case Cycle4Strong:
-                    peaks.Append("4S");
-                    break;
-                case Cycle5Weak:
-                    peaks.Append("5W");
-                    break;
-                case Cycle5Strong:
-                    peaks.Append("5S");
-                    break;
-                case Cycle6Weak:
-                    peaks.Append("6W");
-                    break;
-                case Cycle6Strong:
-                    peaks.Append("6S");
-                    break;
-                case Cycle7Weak:
-                    peaks.Append("7W");
-                    break;
-                case Cycle7Strong:
-                    peaks.Append("7S");
-                    break;
-                case Cycle45:
-                    peaks.Append("45");
-                    break;
-                case Cycle5:
-                    peaks.Append("5U");
-                    break;
-                case Cycle67:
-                    peaks.Append("67");
-                    break;
-                case Cycle2:
-                    peaks.Append("2U");
-                    break;
-                case UnknownD1:
-                    peaks.Append("U1");
-                    break;
-            }
-            if(item != Items[Items.Count-1])
-            {
-                peaks.Append(',');
-            }
-        }
-
-        //postData.Add("pop", pops.ToString());
-        postData.Add("peaks", peaks.ToString());
-
-        return postData;
-    }
-
-    private static async Task SendPostData()
-    {
-        var values = GetPostData();
-        var content = new FormUrlEncodedContent(values);
-        var response = await client.PostAsync("http://45.79.226.148:1483", content);
-        var responseString = await response.Content.ReadAsStringAsync();
-        PluginLog.Warning("Response from post data: " + responseString);
-    }
-
-    private static async Task ReadGetData()
-    {
-        var responseString = await client.GetStringAsync("http://45.79.226.148:1483/?week="+Week);
-        PluginLog.LogDebug("Response from get data: " + responseString);
-        if(responseString.Contains("error"))
-            PluginLog.Error(responseString);
-        else
-        {
-            //Do I actually care what day it is? 
-            var peaks = responseString.Split("<br>")[1].Split(',');
-            PluginLog.Debug("Peaks length: " + peaks.Length);
-        }
-
-    }
+    
 
     public static void InitAfterWritingTodaysData()
     {
@@ -278,7 +174,13 @@ public class Solver
 
         if(sendSupplyData && Config.sendDataToDB)
         {
-            _ = SendPostData();
+            _ = RESTController.SendPeakData();
+            sendSupplyData = false;
+        }
+        if(sendPopularityData && Config.sendDataToDB)
+        {
+            _ = RESTController.SendPopularityData();
+            sendPopularityData = false;
         }
 
         for (int summary = 1; summary < Importer.endDays.Count && summary <= CurrentDay; summary++)
@@ -1076,6 +978,7 @@ public class Solver
     public static bool WriteTodaySupply(int updatedDay, string[] products)
     {
         sendSupplyData = false;
+        sendPopularityData = false;
 
         if (CurrentDay != GetCurrentDay() || Week != GetCurrentWeek())
         {

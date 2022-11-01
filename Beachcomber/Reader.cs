@@ -28,6 +28,9 @@ namespace Beachcomber
         private int lastValidDay = -1;
         private int lastHash = -1;
 
+        public static uint currentPopIndex;
+        public static uint nextPopIndex;
+
         public Reader(DalamudPluginInterface pluginInterface)
         {
             SignatureHelper.Initialise(this);
@@ -206,6 +209,8 @@ namespace Beachcomber
             var currentPopularity = sheet.GetRow(MJIManager.Instance()->CurrentPopularity)!; 
             var nextPopularity = sheet.GetRow(MJIManager.Instance()->NextPopularity)!; 
             PluginLog.Information("Current pop index {0}, next pop index {1}", currentPopularity.RowId, nextPopularity.RowId);
+            currentPopIndex = currentPopularity.RowId;
+            nextPopIndex = nextPopularity.RowId;
 
             var sb = new StringBuilder(64 * 128);
             int numNE = 0;
