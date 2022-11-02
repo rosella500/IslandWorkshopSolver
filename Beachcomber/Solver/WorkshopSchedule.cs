@@ -99,7 +99,7 @@ public class WorkshopSchedule
         return false;
     }
 
-    public int GetValueForCurrent(int day, int craftedSoFar, int currentGroove, bool isEfficient)
+    public int GetValueForCurrent(int day, int craftedSoFar, int currentGroove, bool isEfficient, bool verboseLogging = false)
     {
         ItemInfo craft = crafts[currentIndex];
         int baseValue = craft.baseValue * Solver.WORKSHOP_BONUS * (100 + currentGroove) / 10000;
@@ -108,7 +108,8 @@ public class WorkshopSchedule
 
         if (isEfficient)
             adjustedValue *= 2;
-        //PluginLog.LogVerbose(craft.item + " is worth " + adjustedValue + " with " + currentGroove + " groove at " + ItemInfo.GetSupplyBucket(supply) + " supply (" + supply + ") and " + craft.popularity + " popularity with peak "+craft.peak);
+        if(verboseLogging)
+            PluginLog.LogDebug(craft.item + " is worth " + adjustedValue + " with " + currentGroove + " groove at " + ItemInfo.GetSupplyBucket(supply) + " supply (" + supply + ") and " + craft.popularity + " popularity with peak "+craft.peak);
 
         return adjustedValue;
     }
@@ -134,12 +135,17 @@ public class WorkshopSchedule
 
     public int GetValueWithGrooveEstimate(int day, int startingGroove)
     {
-        int craftsAbove4 = 0;
-        craftsAbove4 += GetNumCrafts() - 4;
+        bool verboseLogging = false;
+        /*if (items.Count == 5 && items[0] == Item.BakedPumpkin && items[1] == Item.ParsnipSalad && items[2] == Item.OnionSoup && items[3] == Item.ParsnipSalad && items[4] == Item.OnionSoup)
+            verboseLogging = true;*/
+
+        int craftsAbove4 = GetNumCrafts() - 4;
         int daysToGroove = 5 - day;
         if (!Solver.Rested)
             daysToGroove--;
 
+        if (verboseLogging)
+            PluginLog.Debug("Calculating value for {0}, starting groove {3}, days to groove: {1}, crafts above 4: {2}", String.Join(", ", items), daysToGroove, craftsAbove4, startingGroove);
         int grooveValue = 0;
 
         if (daysToGroove > 0)
@@ -148,6 +154,8 @@ public class WorkshopSchedule
             grooveValue = fullGrooveBonus + Solver.GroovePerPartDay;
             grooveValue *= craftsAbove4;
         }
+        if (verboseLogging)
+            PluginLog.Debug("groove value: {0}", grooveValue);
 
         int workshopValue = 0;
         Dictionary<Item, int> numCrafted = new Dictionary<Item, int>();
@@ -169,15 +177,19 @@ public class WorkshopSchedule
             {
                 numCrafted.Add(completedCraft.item, 0);
             }
+            if (verboseLogging)
+                PluginLog.Debug("Processing craft {0}, made previously: {1}, efficient: {2}", completedCraft.item, previouslyCrafted, efficient);
 
-            workshopValue += GetValueForCurrent(day, previouslyCrafted, startingGroove + i * 3, efficient);
+            workshopValue += GetValueForCurrent(day, previouslyCrafted, startingGroove + i * 3, efficient, verboseLogging);
             currentIndex++;
             int amountCrafted = efficient ? 6 : 3;
             numCrafted[completedCraft.item]= previouslyCrafted + amountCrafted;
         }
-
+        int materialValue = (int)(GetMaterialCost() * Solver.MaterialWeight);
+        if(verboseLogging)
+        PluginLog.Debug("Groove value {2}, workshopValue {3}, material value {0}, weighted {1}", GetMaterialCost(), materialValue, grooveValue, workshopValue);
         //Allow for the accounting for materials if desired
-        return grooveValue + workshopValue - (int)(GetMaterialCost() * Solver.MaterialWeight);
+        return grooveValue + workshopValue - materialValue;
     }
 
     public bool IsSafe(int day)
