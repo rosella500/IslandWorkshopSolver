@@ -401,6 +401,14 @@ public class CSVImporter
 
         return true;
     }
+
+    public bool HasAllPeaksForward(int day)
+    {
+        int[] numStrong = new int[day];
+        int[] numWeak = new int[day];
+
+        return false;
+    }
     public void WriteCurrentPeaks(int week)
     {
         string path = rootPath + "\\Week" + (week) + "Supply.csv";
