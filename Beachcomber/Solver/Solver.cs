@@ -645,7 +645,7 @@ public class Solver
     private static Dictionary<WorkshopSchedule, int> GetSuggestedSchedules(int day, int startingGroove = -1, Dictionary<Item, int>? limitedUse = null, int allowUpToDay = -1)
     {
         if (startingGroove == -1)
-            startingGroove = GetEndingGrooveForDay(CurrentDay - 1);
+            startingGroove = GetEndingGrooveForDay(day - 1);
         if (allowUpToDay == -1)
             allowUpToDay = day;
 
