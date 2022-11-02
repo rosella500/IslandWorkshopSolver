@@ -404,8 +404,44 @@ public class CSVImporter
 
     public bool HasAllPeaksForward(int day)
     {
-        int[] numStrong = new int[day];
-        int[] numWeak = new int[day];
+        int[] numStrong = new int[7-day];
+        int[] numWeak = new int[7-day];
+        for(int i=0; i<7-day; i++)
+        {
+            foreach(var item in Solver.Items)
+            {
+                int peakNum = (int)item.peak;
+                if (peakNum == (i + day) * 2) //Strong peak for this day
+                    numStrong[i]++;
+                else if (peakNum == (i + day) * 2 - 1)
+                    numWeak[i]++;
+            }
+        }
+
+        PluginLog.Debug("# peaks per day, starting at day {0}: strong: {1}, weak {2}", day + 1, String.Join(", ", numStrong), String.Join(", ", numWeak));
+
+        for(int i=0; i<7-day; i++)
+        {
+            if(i == numStrong.Length-1) //last day, must be 7
+            {
+                if (numStrong[i] != 5 || numWeak[i] != 5)
+                {
+                    PluginLog.Debug("Don't have enough d7 peaks ({0} strong and {1} weak)", numStrong[i], numWeak[i]);
+                    return false;
+                }
+                    
+            }
+            else
+            {
+                if (numStrong[i] != 4 || numWeak[i] != 4)
+                {
+                    PluginLog.Debug("Don't have enough d{2} peaks ({0} strong and {1} weak)", numStrong[i], numWeak[i], i+day+1);
+                    return false;
+                }
+            }
+        }
+
+
 
         return false;
     }

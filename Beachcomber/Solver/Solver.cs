@@ -242,7 +242,7 @@ public class Solver
         if(dayToSolve >= 4 && Importer.NeedCurrentPeaks())
             Importer.WriteCurrentPeaks(Week);
         
-        if (!Importer.HasAllPeaksForward(CurrentDay)) //We don't know the whole week, so just solve the day in front of us
+        if (!Importer.HasAllPeaksForward(dayToSolve)) //We don't know the whole week, so just solve the day in front of us
         {
             Dictionary<WorkshopSchedule, int> safeSchedules = GetSuggestedSchedules(dayToSolve, -1, null);
 
