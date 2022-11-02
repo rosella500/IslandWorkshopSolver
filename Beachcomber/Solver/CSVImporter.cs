@@ -405,6 +405,9 @@ public class CSVImporter
 
     public bool HasAllPeaksForward(int day)
     {
+        if (day > 6 || day < 1)
+            return false;
+
         int[] numStrong = new int[7-day];
         int[] numWeak = new int[7-day];
         for(int i=0; i<7-day; i++)
