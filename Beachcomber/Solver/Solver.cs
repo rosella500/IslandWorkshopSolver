@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
 
@@ -91,9 +92,9 @@ public class Solver
                 Items[i].peak = Importer.currentPeaks[i];
                 PluginLog.Debug("Item {0}, final peak: {1}", Items[i].item, Items[i].peak);
             }
-                
+
         }
-        else if(CurrentDay == 6) //We don't get data from today but we should set the peaks anyway
+        else if (CurrentDay == 6) //We don't get data from today but we should set the peaks anyway
         {
             for (int i = 0; i < Items.Count; i++)
             {
@@ -109,7 +110,7 @@ public class Solver
             return;
         }
         //Double check D2 peaks
-        if(CurrentDay == 0 && Config.unknownD2Items != null && Config.unknownD2Items.Count > 0)
+        if (CurrentDay == 0 && Config.unknownD2Items != null && Config.unknownD2Items.Count > 0)
         {
             int weak = 0;
             int strong = 0;
@@ -120,15 +121,15 @@ public class Solver
                 else if (item.peak == Cycle2Weak)
                     weak++;
             }
-            if(strong==4)
+            if (strong == 4)
             {
                 PluginLog.Debug("We have all the strong peaks we need! All unknowns are weak");
                 Config.unknownD2Items.Clear();
             }
-            else if(weak - Config.unknownD2Items.Count == 4)
-            { 
+            else if (weak - Config.unknownD2Items.Count == 4)
+            {
                 PluginLog.Debug("We have all the weak we need! All unknowns are strong");
-                foreach(var item in Config.unknownD2Items.Keys)
+                foreach (var item in Config.unknownD2Items.Keys)
                 {
                     Items[(int)item].peak = Cycle2Strong;
                 }
@@ -140,7 +141,7 @@ public class Solver
 
         }
 
-        if(CurrentDay < 6)
+        if (CurrentDay < 6)
         {
             //Set reserved items
             Dictionary<Item, int> itemValues = new Dictionary<Item, int>();
@@ -156,7 +157,7 @@ public class Solver
 
             var orderedItems = itemValues.OrderByDescending(kvp => kvp.Value);
             var enumerator = orderedItems.GetEnumerator();
-            
+
             ReservedItems.Clear();
 
             for (int i = 0; i < ItemsToReserve && enumerator.MoveNext(); i++)
@@ -164,14 +165,21 @@ public class Solver
                 ReservedItems.Add(enumerator.Current.Key);
             }
         }
-        
-        PluginLog.Debug("Reserving items {0} today.", String.Join(", ", ReservedItems));
 
+        PluginLog.Debug("Reserving items {0} today.", String.Join(", ", ReservedItems));
+        CheckEndDaySummaries();
+
+
+        InitStep = 2;
+
+    }
+    private static void CheckEndDaySummaries()
+    {
         for (int summary = 1; summary < Importer.endDays.Count && summary <= CurrentDay; summary++)
         {
             var prevDaySummary = Importer.endDays[summary];
             PluginLog.LogDebug("previous day summary: " + prevDaySummary);
-            if (prevDaySummary.crafts != null)
+            if (prevDaySummary.crafts != null && prevDaySummary.crafts.Count > 0)
             {
                 var twoDaysAgo = Importer.endDays[summary - 1];
                 CycleSchedule yesterdaySchedule = new CycleSchedule(summary, twoDaysAgo.endingGroove);
@@ -185,11 +193,15 @@ public class Solver
 
                     Importer.WriteEndDay(summary, prevDaySummary.endingGroove, gross, net, prevDaySummary.crafts);
                 }
-                TotalGross += gross;
-                TotalNet += net;
                 prevDaySummary.endingGross = gross;
                 prevDaySummary.endingNet = net;
                 prevDaySummary.valuesPerCraft = yesterdaySchedule.cowriesPerHour;
+            }
+
+            if (prevDaySummary.endingGross > 0)
+            {
+                TotalGross += prevDaySummary.endingGross;
+                TotalNet += prevDaySummary.endingNet;
             }
         }
         Rested = false;
@@ -202,20 +214,30 @@ public class Solver
             }
         }
 
-        if(Importer.endDays.Count > CurrentDay)
+        if (Importer.endDays.Count > CurrentDay)
         {
-            for(int i=CurrentDay+1; i<Importer.endDays.Count; i++)
+            bool endOfWeek = CurrentDay > 2;
+            bool endOfWeekValid = false;
+            for (int i = CurrentDay + 1; i < Importer.endDays.Count; i++)
             {
                 var futureDay = Importer.endDays[i];
-                if(i==dayToSolve || dayToSolve>3)
+                if (i == CurrentDay + 1 || endOfWeek)
                 {
                     PluginLog.Debug("Future day summary: Day: {1}, Items: {0}", String.Join(',', futureDay.crafts), (i + 1));
                     SetDay(futureDay.crafts, i);
+                    if (endOfWeek && futureDay.crafts.Count > 0)
+                        endOfWeekValid = true;
+                }
+            }
+
+            if (endOfWeek && !endOfWeekValid)
+            {
+                for (int i = CurrentDay + 1; i < Importer.endDays.Count; i++)
+                {
+                    RemoveSetDay(i);
                 }
             }
         }
-        InitStep = 2;
-
     }
     static public List<(int, SuggestedSchedules?)>? RunSolver(Dictionary<int, int> inventory)
     {
@@ -272,7 +294,14 @@ public class Solver
 
     }
 
-    
+    public static void AddStubValue(int day, int groove, int value)
+    {
+        int prevGroove = GetEndingGrooveForDay(day - 1);
+        PluginLog.Debug("Writing new end day summary with day {0}, endingGroove {1}, and gross {2}", day + 1, prevGroove + groove, value);
+        Importer.WriteEndDay(day, prevGroove + groove, value, value, new List<Item>());
+        Importer.endDays[day] = new EndDaySummary(new List<int>(), prevGroove + groove, value, value, new List<Item>());
+        CheckEndDaySummaries();
+    }
 
     public static void AddRestDayValue(Dictionary<WorkshopSchedule, int> safeSchedules, int restValue)
     {
@@ -503,6 +532,7 @@ public class Solver
     {
         int worstInFuture = -1;
         PluginLog.LogDebug("Comparing d" + (day + 1) + " (" + rec.Value + ") to worst-case future days");
+        int currentGroove = GetEndingGrooveForDay(CurrentDay);
         Dictionary<Item, int> reservedSet = new Dictionary<Item, int>();
         foreach (Item item in rec.Key.GetItems())
         {
@@ -515,7 +545,7 @@ public class Solver
             if (day == 3 && d == 4) //We have a lot of info about this specific pair so we might as well use it
                 solution = GetD5EV();
             else
-                solution = GetBestSchedule(d, reservedSet, d);
+                solution = GetBestSchedule(d, currentGroove, reservedSet, d);
 
             if(solution.Key!=null)
             {
@@ -542,7 +572,8 @@ public class Solver
     //Specifically for comparing D4 to D5
     public static KeyValuePair<WorkshopSchedule, int> GetD5EV()
     {
-        KeyValuePair<WorkshopSchedule, int> solution = GetBestSchedule(4, null);
+        int currentGroove = GetEndingGrooveForDay(CurrentDay);
+        KeyValuePair<WorkshopSchedule, int> solution = GetBestSchedule(4, currentGroove);
             //PluginLog.LogVerbose("Testing against D5 solution " + solution.Key.getItems());
         List<ItemInfo> c5Peaks = new List<ItemInfo>();
         foreach (Item item in solution.Key.GetItems())
@@ -597,6 +628,21 @@ public class Solver
         return 0;
     }
 
+    private static void RemoveSetDay(int day)
+    {
+        if (SchedulesPerDay.TryGetValue(day, out var previousSchedule))
+        {
+            if(previousSchedule.value > 0)
+            {
+                TotalGross -= previousSchedule.value;
+                TotalNet -= (previousSchedule.value - previousSchedule.schedule.GetMaterialCost());
+            }
+            SchedulesPerDay.Remove(day);
+            foreach (var item in Items)
+                item.SetCrafted(0, day);
+        }
+    }
+
     public static void SetDay(List<Item> crafts, int day)
     {
         if (day != 0)
@@ -606,14 +652,7 @@ public class Solver
         CycleSchedule schedule = new CycleSchedule(day, 0);
         schedule.SetForAllWorkshops(crafts);
 
-        if(SchedulesPerDay.TryGetValue(day, out var previousSchedule))
-        {
-            TotalGross -= previousSchedule.value;
-            TotalNet -= (previousSchedule.value - previousSchedule.schedule.GetMaterialCost());
-            SchedulesPerDay.Remove(day);
-            foreach (var item in Items)
-                item.SetCrafted(0, day);
-        }
+        RemoveSetDay(day);
 
         int zeroGrooveValue = schedule.GetValue();
         int groove = GetEndingGrooveForDay(day - 1);
@@ -825,9 +864,9 @@ public class Solver
         return safeSchedules;
     }
 
-    private static KeyValuePair<WorkshopSchedule, int> GetBestSchedule(int day, Dictionary<Item, int>? limitedUse = null, int allowUpToDay = -1)
+    private static KeyValuePair<WorkshopSchedule, int> GetBestSchedule(int day, int groove, Dictionary<Item, int>? limitedUse = null, int allowUpToDay = -1)
     {
-        var suggested = GetSuggestedSchedules(day, -1, limitedUse, allowUpToDay);
+        var suggested = GetSuggestedSchedules(day, groove, limitedUse, allowUpToDay);
         
         return GetBestSchedule(suggested);
     }

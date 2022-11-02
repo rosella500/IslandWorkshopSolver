@@ -134,6 +134,7 @@ public class ConfigWindow : Window, IDisposable
             {
                 ImGui.SetTooltip("A list of extra words, separated by commas, to ignore when displaying the names of items.");
             }
+            ImGui.PushItemWidth(itemWidth);
             if (Configuration.day == 0 && Configuration.unknownD2Items != null && Configuration.unknownD2Items.Count > 0)
             {
                 ImGui.Spacing();
@@ -150,6 +151,17 @@ public class ConfigWindow : Window, IDisposable
                     }
                     ImGui.Spacing();
                 }
+            }
+            ImGui.Spacing();
+            bool allowOverwrite = Configuration.allowOverwritingDays;
+            if (ImGui.Checkbox("Allow overwriting days", ref allowOverwrite))
+            {
+                Configuration.allowOverwritingDays = allowOverwrite;
+                Configuration.Save();
+            }
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Lets you change rest days to crafted days by inputting their values\nThis is a temporary feature until I get a more user-friendly one");
             }
         }
     }
