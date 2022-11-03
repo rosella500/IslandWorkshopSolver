@@ -26,6 +26,9 @@ public class MainWindow : Window, IDisposable
     private bool showSupplyError = false;
     private bool showWorkshopError = false;
 
+    private int makeupValue = 0;
+    private int makeupGroove = 0;
+
     public MainWindow(Plugin plugin, Reader reader) : base(
         "Beachcomber", ImGuiWindowFlags.NoScrollbar)
     {
@@ -75,7 +78,6 @@ public class MainWindow : Window, IDisposable
             {
                 Solver.Solver.InitAfterWritingTodaysData();
 
-                endDaySummaries = Solver.Solver.Importer.endDays;
 
                 base.OnOpen();
             }
@@ -161,6 +163,8 @@ public class MainWindow : Window, IDisposable
         }
         try
         {
+
+            endDaySummaries = Solver.Solver.Importer.endDays;
             float buttonWidth = ImGui.GetContentRegionAvail().X / 6;
             if (ImGui.Button("Run Solver", new Vector2(buttonWidth, 0f)))
             {                
@@ -258,6 +262,18 @@ public class MainWindow : Window, IDisposable
                                 ImGui.SameLine(200);
                                 ImGui.Text("Used material value: " + (endDaySummaries[day].endingGross - endDaySummaries[day].endingNet));
                             }
+                            else if (endDaySummaries[day].endingGross > 0)
+                            {
+                                int grooveYesterday = 0;
+                                if (day > 0)
+                                {
+                                    grooveYesterday = endDaySummaries[day - 1].endingGroove;
+                                }
+                                int grooveToday = endDaySummaries[day].endingGroove - grooveYesterday;
+
+                                ImGui.Text("Made " + endDaySummaries[day].endingGross + " cowries and " + grooveToday + " groove");
+                                
+                            }
                             else
                             {
                                 if(day==Solver.Solver.CurrentDay)
@@ -265,6 +281,25 @@ public class MainWindow : Window, IDisposable
                                 else
                                     ImGui.Text("Rested");
 
+                                if(day > 0 && config.allowOverwritingDays)
+                                {
+                                    ImGui.Spacing();
+                                    ImGui.Text("Is this wrong? Please enter your value and groove for the day");
+                                    ImGui.PushItemWidth(200);
+                                    ImGui.Spacing();
+                                    ImGui.InputInt("Total cowries", ref makeupValue);
+                                    ImGui.Spacing();
+                                    ImGui.InputInt("Groove generated", ref makeupGroove);
+                                    ImGui.Spacing();
+                                    if (ImGui.Button("Save"))
+                                    {
+                                        PluginLog.Debug("Adding stub value");
+                                        Solver.Solver.AddStubValue(day, makeupGroove, makeupValue);
+                                        makeupGroove = 0;
+                                        makeupValue = 0;
+                                    }
+                                    ImGui.PopItemWidth();
+                                }
                             }
                             ImGui.EndTabItem();
                         }

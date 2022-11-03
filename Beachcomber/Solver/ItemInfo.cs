@@ -38,11 +38,11 @@ public class ItemInfo
 
     static PeakCycle[][] PEAKS_TO_CHECK = new PeakCycle[5][]
     {
-        new PeakCycle[]{Cycle3Weak, Cycle3Strong, Cycle67, Cycle45}, //Day2
-        new PeakCycle[] {Cycle4Weak, Cycle4Strong, Cycle6Weak, Cycle5, Cycle67}, //Day3
-        new PeakCycle[] { Cycle5Weak, Cycle5Strong, Cycle6Strong, Cycle7Weak, Cycle7Strong}, //Day4
-        new PeakCycle[] { Cycle6Weak, Cycle6Strong, Cycle7Weak, Cycle7Strong}, //Day5 (remedial)
-        new PeakCycle[] { Cycle7Weak, Cycle7Strong} //Day6 (remedial)
+        new PeakCycle[] { Cycle3Weak, Cycle3Strong, Cycle67, Cycle45, Cycle2Strong, Cycle2Weak }, //Day2
+        new PeakCycle[] { Cycle4Weak, Cycle4Strong, Cycle6Weak, Cycle3Strong, Cycle3Weak, Cycle5, Cycle67 }, //Day3
+        new PeakCycle[] { Cycle5Weak, Cycle5Strong, Cycle6Strong, Cycle7Weak, Cycle7Strong, Cycle4Weak, Cycle4Strong }, //Day4
+        new PeakCycle[] { Cycle6Weak, Cycle6Strong, Cycle7Weak, Cycle7Strong, Cycle5Weak, Cycle5Strong }, //Day5 (remedial)
+        new PeakCycle[] { Cycle7Weak, Cycle7Strong, Cycle6Weak, Cycle6Strong } //Day6 (remedial)
     };
 
 //Constant info

@@ -17,6 +17,7 @@ namespace Beachcomber
         public int maxGroove { get; set; } = 10;
         public bool showNetCowries { get; set; } = false;
         public bool enforceRestDays { get; set; } = true;
+        public bool allowOverwritingDays { get; set; } = false;
         public string rootPath { get; set; } = "";
 
         public string[] flavorText { get; set; } = new string[3] { "Isleworks", "Island", "Sanctuary" };
