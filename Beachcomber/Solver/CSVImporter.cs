@@ -447,7 +447,7 @@ public class CSVImporter
 
 
 
-        return false;
+        return true;
     }
     public void WriteCurrentPeaks(int week)
     {
