@@ -180,7 +180,8 @@ public class WorkshopSchedule
             if (verboseLogging)
                 PluginLog.Debug("Processing craft {0}, made previously: {1}, efficient: {2}", completedCraft.item, previouslyCrafted, efficient);
 
-            workshopValue += GetValueForCurrent(day, previouslyCrafted, startingGroove + i * 3, efficient, verboseLogging);
+            int nextGroove = Math.Min(startingGroove + i * 3, Solver.GROOVE_MAX);
+            workshopValue += GetValueForCurrent(day, previouslyCrafted, nextGroove, efficient, verboseLogging);
             currentIndex++;
             int amountCrafted = efficient ? 6 : 3;
             numCrafted[completedCraft.item]= previouslyCrafted + amountCrafted;

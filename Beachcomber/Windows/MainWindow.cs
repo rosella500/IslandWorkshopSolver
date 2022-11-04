@@ -213,7 +213,7 @@ public class MainWindow : Window, IDisposable
                 ImGui.Spacing();
             }
 
-            if ((config.day == 4 || config.day == 3) && scheduleSuggestions.Count > 0)
+            if (scheduleSuggestions.Count > 1)
             {
                 ImGui.TextColored(yellow, "There are suggestions for multiple days available!");
                 ImGui.Spacing();
@@ -393,10 +393,7 @@ public class MainWindow : Window, IDisposable
                                                 inventory = maybeInv;
 
                                             Solver.Solver.SetDay(suggestion.Key.GetItems(), day);
-                                            if (Solver.Solver.CurrentDay == 3) //If we're on day 4, we're calculating for 5, 6 and 7
-                                                AddNewSuggestions(Solver.Solver.GetLastThreeDays(config.onlySuggestMaterialsOwned, inventory));
-                                            else if(Solver.Solver.CurrentDay == 4) //If we're on day 5, we're calculating for 6 and 7
-                                                AddNewSuggestions(Solver.Solver.GetLastTwoDays(config.onlySuggestMaterialsOwned, inventory));
+                                            AddNewSuggestions(Solver.Solver.RunSolver(inventory));
                                         }
                                         ImGui.TableSetColumnIndex(column++);
                                         ImGui.Text(suggestion.Value.ToString());
