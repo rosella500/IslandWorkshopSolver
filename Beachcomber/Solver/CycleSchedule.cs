@@ -17,6 +17,8 @@ public class CycleSchedule
     public CycleSchedule(int day, int groove)
     {
         this.day = day;
+        workshops = new WorkshopSchedule[Solver.NumWorkshops];
+        
         startingGroove = groove;
         numCrafted = new Dictionary<Item, int>();
         cowriesPerHour = new List<int>();
@@ -24,9 +26,8 @@ public class CycleSchedule
 
     public void SetForAllWorkshops(List<Item> crafts)
     {
-        workshops[0] = new WorkshopSchedule(crafts);
-        workshops[1] = new WorkshopSchedule(crafts);
-        workshops[2] = new WorkshopSchedule(crafts);
+        for (int i = 0; i < workshops.Length; i++)
+            workshops[i] = new WorkshopSchedule(crafts);
     }
 
     public void SetWorkshop(int index, List<Item> crafts)

@@ -62,12 +62,13 @@ public class MainWindow : Window, IDisposable
         string[] products = islandData.data.Split('\n', StringSplitOptions.None);
         if(reader.GetInventory(out var maybeInv))
             inventory = maybeInv;
-        (int maybeWorkshopBonus, bool workshopError) = reader.GetWorkshopBonus();
-        if (maybeWorkshopBonus > -1)
+        WorkshopInfo? workshopInfo = reader.GetWorkshopInfo();
+        if (workshopInfo !=null)
         {
             changedConfig = true;
-            showWorkshopError = workshopError;
-            config.workshopBonus = maybeWorkshopBonus; 
+            showWorkshopError = workshopInfo.ShowError;
+            config.workshopBonus = workshopInfo.WorkshopBonus;
+            config.numWorkshops = workshopInfo.NumWorkshops;
         }
         if(changedConfig)
             config.Save();
@@ -213,7 +214,7 @@ public class MainWindow : Window, IDisposable
                 ImGui.Spacing();
             }
 
-            if (scheduleSuggestions.Count > 1)
+            if (scheduleSuggestions.Count > 1 && config.day > 0)
             {
                 ImGui.TextColored(yellow, "There are suggestions for multiple days available!");
                 ImGui.Spacing();

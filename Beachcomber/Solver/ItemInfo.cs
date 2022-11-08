@@ -84,6 +84,11 @@ public class ItemInfo
             }
         }        
     }
+    public void ResetForWeek()
+    {
+        craftedPerDay = new int[7];
+        observedSupplies = new Dictionary<int, ObservedSupply>();
+    }
     
     public bool GetsEfficiencyBonus(ItemInfo other)
     {
