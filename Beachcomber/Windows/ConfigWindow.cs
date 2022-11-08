@@ -112,6 +112,13 @@ public class ConfigWindow : Window, IDisposable
                 Configuration.Save();
             }
             ImGui.Spacing();
+            int workshops = Configuration.numWorkshops;
+            if (ImGui.InputInt("Number of workshops", ref workshops))
+            {
+                Configuration.numWorkshops = workshops;
+                Configuration.Save();
+            }
+            ImGui.Spacing();
             int currentLevel = (Configuration.workshopBonus - 100) / 10;
 
             if (ImGui.Combo("Workshop level", ref currentLevel, new string[3] { "Workshop I", "Workshop II", "Workshop III" }, 3))

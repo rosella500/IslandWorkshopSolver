@@ -128,10 +128,10 @@ namespace Beachcomber
             return (currentRank, maxGroove);
         }
 
-        public unsafe (int bonus, bool error) GetWorkshopBonus()
+        public unsafe WorkshopInfo? GetWorkshopInfo()
         {
             if (MJIManager.Instance() == null)
-                return (-1, false);
+                return null;
 
             int minLevel = 999;
             bool showError = false;
@@ -157,16 +157,17 @@ namespace Beachcomber
             
             int bonus = -1;
 
-            if(minLevel < 999)
-            {
-                minLevel++; //Level appears to be 0-indexed but data is 1-indexed, so
-                var workshopBonusSheet = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksRankRatio>()!;
-                bonus = workshopBonusSheet.GetRow((uint)minLevel)!.Unknown0;
-            }
+            if (minLevel == 999)
+                return null;
+
+            minLevel++; //Level appears to be 0-indexed but data is 1-indexed, so
+            var workshopBonusSheet = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksRankRatio>()!;
+            bonus = workshopBonusSheet.GetRow((uint)minLevel)!.Unknown0;
+            
 
             PluginLog.Debug("Found min workshop rank of {0} with {2} workshops, setting bonus to {1}", minLevel, bonus, numWorkshops);
-
-            return (bonus, showError);
+            WorkshopInfo workshopInfo = new WorkshopInfo { NumWorkshops = numWorkshops, ShowError = showError, WorkshopBonus = bonus };
+            return workshopInfo;
         }
 
         public unsafe bool GetInventory(out Dictionary<int, int> inventory)

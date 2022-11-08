@@ -20,7 +20,9 @@ public class Solver
 
     public static int GroovePerFullDay = 40;
     public static int GroovePerPartDay = 20;
-    private static int IslandRank = 10;
+    public static int AverageDailyValue = 3580;
+    public static int IslandRank = 10;
+    public static int NumWorkshops = 3;
     public static double MaterialWeight = 0.5;
     public static CSVImporter Importer = new CSVImporter();
     public static int Week = -1;
@@ -43,6 +45,7 @@ public class Solver
         WORKSHOP_BONUS = Config.workshopBonus;
         GROOVE_MAX = Config.maxGroove;
         IslandRank = Config.islandRank;
+        NumWorkshops = Config.numWorkshops;
 
         if (InitStep != 0 && (CurrentDay != GetCurrentDay() || Week != GetCurrentWeek()))
         {
@@ -80,6 +83,8 @@ public class Solver
         TotalNet = 0;
         Rested = false;
         SchedulesPerDay.Clear();
+        foreach (ItemInfo item in Items)
+            item.ResetForWeek();
 
         int dayToSolve = CurrentDay + 1;
 
@@ -378,9 +383,9 @@ public class Solver
             foreach (var mat in Items[(int)item].materialsRequired)
             {
                 if (mats.ContainsKey(mat.Key))
-                    mats[mat.Key] += mat.Value * 3;
+                    mats[mat.Key] += mat.Value * NumWorkshops;
                 else
-                    mats.Add(mat.Key, mat.Value * 3);
+                    mats.Add(mat.Key, mat.Value * NumWorkshops);
             }
         }
     }

@@ -428,7 +428,7 @@ public class CSVImporter
         {
             if(i == numStrong.Length-1) //last day, must be 7
             {
-                if (numStrong[i] < 5 || numWeak[i] < 5)
+                if (numStrong[i] != 5 || numWeak[i] != 5)
                 {
                     PluginLog.Debug("Don't have enough d7 peaks ({0} strong and {1} weak)", numStrong[i], numWeak[i]);
                     return false;
@@ -437,7 +437,7 @@ public class CSVImporter
             }
             else
             {
-                if (numStrong[i] < 4 || numWeak[i] < 4)
+                if (numStrong[i] != 4 || numWeak[i] != 4)
                 {
                     PluginLog.Debug("Don't have enough d{2} peaks ({0} strong and {1} weak)", numStrong[i], numWeak[i], i+day+1);
                     return false;

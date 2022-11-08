@@ -136,23 +136,95 @@ public class WorkshopSchedule
     public int GetValueWithGrooveEstimate(int day, int startingGroove)
     {
         bool verboseLogging = false;
-        /*if (items.Count == 5 && items[0] == Item.BakedPumpkin && items[1] == Item.ParsnipSalad && items[2] == Item.OnionSoup && items[3] == Item.ParsnipSalad && items[4] == Item.OnionSoup)
+       /* if (items.Count == 5 && items[0] == Item.Earrings && items[1] == Item.Necklace && items[2] == Item.Earrings && items[3] == Item.Necklace && items[4] == Item.SpruceRoundShield)
             verboseLogging = true;*/
 
         int craftsAbove4 = GetNumCrafts() - 4;
-        int daysToGroove = 5 - day;
+        int daysToGroove = 6 - day;
         if (!Solver.Rested)
             daysToGroove--;
+
+        //How many days will it take to hit max normally
+        int estimatedGroovePerDay = 3 * Solver.NumWorkshops;
+        int expectedEndingGroove = startingGroove + estimatedGroovePerDay;
+
+        if (craftsAbove4 < 0)
+            expectedEndingGroove -= Solver.NumWorkshops;
+
+        int craftingDaysLeft = daysToGroove;
+        int fullDays = 0;
+        int numRowsOfPartialDay = 0;
+        while (craftingDaysLeft > 0 && expectedEndingGroove < Solver.GROOVE_MAX)
+        {
+            if (verboseLogging)
+                PluginLog.Debug("Have {0} crafting days after today, should end at {1} groove, seeing what happens tomorrow after we get to {2}", craftingDaysLeft, expectedEndingGroove, expectedEndingGroove+estimatedGroovePerDay);
+            if (expectedEndingGroove + estimatedGroovePerDay <= Solver.GROOVE_MAX)
+            {
+                fullDays++;
+                expectedEndingGroove += estimatedGroovePerDay;
+                craftingDaysLeft--;
+                if(verboseLogging)
+                PluginLog.Debug("We can fit in a whole day");
+            }
+            else
+            {
+                int grooveToGo = Solver.GROOVE_MAX - expectedEndingGroove;
+                numRowsOfPartialDay = (grooveToGo + 1) / Solver.NumWorkshops; 
+                expectedEndingGroove = Solver.GROOVE_MAX;
+
+                if (verboseLogging)
+                    PluginLog.Debug("There's {0} groove left to add today, so lets say that's {1} rows", grooveToGo, numRowsOfPartialDay);
+            }
+        }
+
+
+        float grooveBonus = 0f;
+        switch (numRowsOfPartialDay)
+        {
+            case 0:
+                grooveBonus = fullDays;
+                break;
+            case 1:
+                grooveBonus = fullDays + 0.15f;
+                break;
+            case 2:
+                grooveBonus = fullDays + .5f;
+                break;
+            case 3:
+                grooveBonus = fullDays + .65f;
+                break;
+            case 4:
+                grooveBonus = fullDays + 1;
+                break;
+            default:
+                grooveBonus = fullDays;
+                break;
+        }
+
+        if (verboseLogging)
+            PluginLog.Debug("Groove bonus {0}% over {1} days, with the last day giving {2} rows", grooveBonus*craftsAbove4, daysToGroove, numRowsOfPartialDay);
+
+        float valuePerDay = Solver.AverageDailyValue;
+        if (Solver.IslandRank < 9)
+            valuePerDay *= 0.9f;
+        if (Solver.IslandRank < 5)
+            valuePerDay *= 0.7f;
+
+        valuePerDay = (valuePerDay * Solver.WORKSHOP_BONUS) / 100;
+
+        grooveBonus = (grooveBonus * craftsAbove4 * valuePerDay) / 100f;
+
+        if (verboseLogging)
+            PluginLog.Debug("Using average value of {0} per day {1} crafts is worth {2} cowries", valuePerDay, craftsAbove4, grooveBonus);
+
 
         if (verboseLogging)
             PluginLog.Debug("Calculating value for {0}, starting groove {3}, days to groove: {1}, crafts above 4: {2}", String.Join(", ", items), daysToGroove, craftsAbove4, startingGroove);
         int grooveValue = 0;
 
-        if (daysToGroove > 0)
+        if (daysToGroove > 0 && grooveBonus != 0)
         {
-            int fullGrooveBonus = (daysToGroove - 1) * Solver.GroovePerFullDay;
-            grooveValue = fullGrooveBonus + Solver.GroovePerPartDay;
-            grooveValue *= craftsAbove4;
+            grooveValue = (int)grooveBonus;
         }
         if (verboseLogging)
             PluginLog.Debug("groove value: {0}", grooveValue);
@@ -180,10 +252,10 @@ public class WorkshopSchedule
             if (verboseLogging)
                 PluginLog.Debug("Processing craft {0}, made previously: {1}, efficient: {2}", completedCraft.item, previouslyCrafted, efficient);
 
-            int nextGroove = Math.Min(startingGroove + i * 3, Solver.GROOVE_MAX);
+            int nextGroove = Math.Min(startingGroove + i * Solver.NumWorkshops, Solver.GROOVE_MAX);
             workshopValue += GetValueForCurrent(day, previouslyCrafted, nextGroove, efficient, verboseLogging);
             currentIndex++;
-            int amountCrafted = efficient ? 6 : 3;
+            int amountCrafted = efficient ? Solver.NumWorkshops*2 : Solver.NumWorkshops;
             numCrafted[completedCraft.item]= previouslyCrafted + amountCrafted;
         }
         int materialValue = (int)(GetMaterialCost() * Solver.MaterialWeight);
@@ -224,9 +296,9 @@ public class WorkshopSchedule
         for (int i = 0; i < items.Count; i++)
         {
             if (!used.ContainsKey(items[i]))
-                used.Add(items[i], 3 + (i > 0 ? 3 : 0));
+                used.Add(items[i], Solver.NumWorkshops + (i > 0 ? Solver.NumWorkshops : 0));
             else
-                used[items[i]] = used[items[i]] + 3 + (i > 0 ? 3 : 0);
+                used[items[i]] = used[items[i]] + Solver.NumWorkshops + (i > 0 ? Solver.NumWorkshops : 0);
         }
         foreach (var kvp in used)
         {
@@ -256,7 +328,7 @@ public class WorkshopSchedule
             if (!limitedUses.ContainsKey(items[i]))
                 limitedUses.Add(items[i], 12);
 
-            limitedUses[items[i]]= limitedUses[items[i]] - 3 - (i > 0 ? 3 : 0);
+            limitedUses[items[i]]= limitedUses[items[i]] - Solver.NumWorkshops - (i > 0 ? Solver.NumWorkshops : 0);
         }
 
         return limitedUses;

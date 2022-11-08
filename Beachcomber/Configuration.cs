@@ -13,6 +13,7 @@ namespace Beachcomber
         public int suggestionsToShow { get; set; } = 10;
         public float materialValue { get; set; } = 0.5f;
         public int islandRank { get; set; } = 1;
+        public int numWorkshops { get; set; } = 0;
         public int workshopBonus { get; set; } = 100;
         public int maxGroove { get; set; } = 10;
         public bool showNetCowries { get; set; } = false;
