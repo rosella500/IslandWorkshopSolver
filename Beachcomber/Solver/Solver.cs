@@ -650,17 +650,21 @@ public class Solver
 
     public static void SetDay(List<Item> crafts, int day)
     {
+        PluginLog.Debug("1");
         if (day != 0)
             PluginLog.LogInformation("Day {0}, crafts: {1}", day+1, crafts);
 
-
+        PluginLog.Debug("2");
         CycleSchedule schedule = new CycleSchedule(day, 0);
+        PluginLog.Debug("3");
         schedule.SetForAllWorkshops(crafts);
-
+        PluginLog.Debug("4");
         RemoveSetDay(day);
-
+        PluginLog.Debug("5");
         int zeroGrooveValue = schedule.GetValue();
+        PluginLog.Debug("6");
         int groove = GetEndingGrooveForDay(day - 1);
+        PluginLog.Debug("7");
         schedule.startingGroove = groove;
         int gross = schedule.GetValue();
         TotalGross += gross;
