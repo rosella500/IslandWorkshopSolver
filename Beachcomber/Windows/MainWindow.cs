@@ -74,7 +74,7 @@ public class MainWindow : Window, IDisposable
         }
         else
         {
-            PluginLog.Debug("Null workshop info,  continuing");
+            PluginLog.Debug("Null workshop info, continuing");
         }
         if(changedConfig)
             config.Save();

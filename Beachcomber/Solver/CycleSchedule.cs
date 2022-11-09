@@ -17,7 +17,6 @@ public class CycleSchedule
     public CycleSchedule(int day, int groove)
     {
         this.day = day;
-        PluginLog.Debug("Creating cycle schedule with {0} workshops", Solver.NumWorkshops);
         workshops = new WorkshopSchedule[Solver.NumWorkshops];
         
         startingGroove = groove;

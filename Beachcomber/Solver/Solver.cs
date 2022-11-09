@@ -657,44 +657,32 @@ public class Solver
             PluginLog.LogInformation("Day {0}, crafts: {1}", day+1, crafts);
 
         CycleSchedule schedule = new CycleSchedule(day, 0);
-        
         schedule.SetForAllWorkshops(crafts);
-        
         RemoveSetDay(day);
         
         int zeroGrooveValue = schedule.GetValue();
-        
         int groove = GetEndingGrooveForDay(day - 1);
-        
         schedule.startingGroove = groove;
-        
         int gross = schedule.GetValue();
         
         TotalGross += gross;
-        
         int net = gross - schedule.GetMaterialCost();
-        
         TotalNet += net;
-        
+
         groove = schedule.endingGroove;
         
 
         if (day != 0)
             PluginLog.LogInformation("day {0} total, 0 groove: {1}. Starting groove {2}: {3}, net {4}.", day + 1, zeroGrooveValue, schedule.startingGroove, gross, net);
-        PluginLog.Debug("Pre loop");
         foreach (var kvp in schedule.numCrafted)
         {
-            PluginLog.Debug("Setting crafted for item {0} to {1} for day {2}", kvp.Key, kvp.Value, day);
             Items[(int)kvp.Key].SetCrafted(kvp.Value, day);
         }
-        PluginLog.Debug("post loop");
         SchedulesPerDay.Add(day, (schedule, gross));
-        PluginLog.Debug("1");
         if (schedule.HasAnyUnsurePeaks())
             Importer.WriteEndDay(day, groove, -1, -1, crafts);
         else
             Importer.WriteEndDay(day, groove, gross, net, crafts);
-        PluginLog.Debug("2");
         //Don't think we should do this
         //updateRestedStatus();
     }
