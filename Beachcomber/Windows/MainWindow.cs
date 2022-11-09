@@ -69,6 +69,7 @@ public class MainWindow : Window, IDisposable
             showWorkshopError = workshopInfo.ShowError;
             config.workshopBonus = workshopInfo.WorkshopBonus;
             config.numWorkshops = workshopInfo.NumWorkshops;
+            Solver.Solver.NumWorkshops = workshopInfo.NumWorkshops;
             PluginLog.Debug("Setting config workshops to {0}", workshopInfo.NumWorkshops);
         }
         else
