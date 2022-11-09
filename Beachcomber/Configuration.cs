@@ -13,6 +13,7 @@ namespace Beachcomber
         public int suggestionsToShow { get; set; } = 10;
         public float materialValue { get; set; } = 0.5f;
         public int islandRank { get; set; } = 1;
+        public int numWorkshops { get; set; } = 0;
         public int workshopBonus { get; set; } = 100;
         public int maxGroove { get; set; } = 10;
         public bool showNetCowries { get; set; } = false;
@@ -22,7 +23,6 @@ namespace Beachcomber
 
         public string[] flavorText { get; set; } = new string[3] { "Isleworks", "Island", "Sanctuary" };
         public bool onlySuggestMaterialsOwned { get; set; } = false;
-        public int numWorkshops { get; set; } = 0;
 
 
         public Dictionary<Item, bool>? unknownD2Items { get; set; } = null;
