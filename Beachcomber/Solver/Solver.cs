@@ -650,38 +650,46 @@ public class Solver
 
     public static void SetDay(List<Item> crafts, int day)
     {
-        PluginLog.Debug("1");
+        int index = 0;
+        PluginLog.Debug((++index).ToString());
         if (day != 0)
             PluginLog.LogInformation("Day {0}, crafts: {1}", day+1, crafts);
 
-        PluginLog.Debug("2");
+        PluginLog.Debug((++index).ToString());
         CycleSchedule schedule = new CycleSchedule(day, 0);
-        PluginLog.Debug("3");
+        PluginLog.Debug((++index).ToString());
         schedule.SetForAllWorkshops(crafts);
-        PluginLog.Debug("4");
+        PluginLog.Debug((++index).ToString());
         RemoveSetDay(day);
-        PluginLog.Debug("5");
+        PluginLog.Debug((++index).ToString());
         int zeroGrooveValue = schedule.GetValue();
-        PluginLog.Debug("6");
+        PluginLog.Debug((++index).ToString());
         int groove = GetEndingGrooveForDay(day - 1);
-        PluginLog.Debug("7");
+        PluginLog.Debug((++index).ToString());
         schedule.startingGroove = groove;
+        PluginLog.Debug((++index).ToString());
         int gross = schedule.GetValue();
+        PluginLog.Debug((++index).ToString());
         TotalGross += gross;
-
+        PluginLog.Debug((++index).ToString());
         int net = gross - schedule.GetMaterialCost();
+        PluginLog.Debug((++index).ToString());
         TotalNet += net;
+        PluginLog.Debug((++index).ToString());
         groove = schedule.endingGroove;
+        PluginLog.Debug((++index).ToString());
 
         if (day != 0)
             PluginLog.LogInformation("day {0} total, 0 groove: {1}. Starting groove {2}: {3}, net {4}.", day + 1, zeroGrooveValue, schedule.startingGroove, gross, net);
-
+        PluginLog.Debug((++index).ToString());
         foreach (var kvp in schedule.numCrafted)
         {
+            PluginLog.Debug((++index).ToString());
             Items[(int)kvp.Key].SetCrafted(kvp.Value, day);
         }
+        PluginLog.Debug((++index).ToString());
         SchedulesPerDay.Add(day, (schedule, gross));
-
+        PluginLog.Debug((++index).ToString());
         if (schedule.HasAnyUnsurePeaks())
             Importer.WriteEndDay(day, groove, -1, -1, crafts);
         else
