@@ -43,6 +43,7 @@ public class Solver
         GROOVE_MAX = Config.maxGroove;
         IslandRank = Config.islandRank;
         NumWorkshops = Config.numWorkshops;
+        PluginLog.Debug("Set num workshops to {0} from config ({1})", NumWorkshops, Config.numWorkshops);
 
         if (InitStep != 0 && (CurrentDay != GetCurrentDay() || Week != GetCurrentWeek()))
         {
@@ -655,7 +656,6 @@ public class Solver
         if (day != 0)
             PluginLog.LogInformation("Day {0}, crafts: {1}", day+1, crafts);
 
-        
         CycleSchedule schedule = new CycleSchedule(day, 0);
         
         schedule.SetForAllWorkshops(crafts);
