@@ -145,6 +145,7 @@ public class CycleSchedule
 
     public bool HasAnyUnsurePeaks()
     {
+        PluginLog.Debug("Num workshops: " + workshops.Length);
         return workshops[0].HasAnyUnsurePeaks();
     }
 

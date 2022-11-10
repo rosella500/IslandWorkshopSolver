@@ -46,6 +46,7 @@ public class Solver
         GROOVE_MAX = Config.maxGroove;
         IslandRank = Config.islandRank;
         NumWorkshops = Config.numWorkshops;
+        PluginLog.Debug("Set num workshops to {0} from config ({1})", NumWorkshops, Config.numWorkshops);
 
         if (InitStep != 0 && (CurrentDay != GetCurrentDay() || Week != GetCurrentWeek()))
         {
@@ -666,39 +667,38 @@ public class Solver
 
     public static void SetDay(List<Item> crafts, int day)
     {
+        int index = 0;
+        
         if (day != 0)
             PluginLog.LogInformation("Day {0}, crafts: {1}", day+1, crafts);
 
-
         CycleSchedule schedule = new CycleSchedule(day, 0);
         schedule.SetForAllWorkshops(crafts);
-
         RemoveSetDay(day);
-
+        
         int zeroGrooveValue = schedule.GetValue();
         int groove = GetEndingGrooveForDay(day - 1);
         schedule.startingGroove = groove;
         int gross = schedule.GetValue();
+        
         TotalGross += gross;
-
         int net = gross - schedule.GetMaterialCost();
         TotalNet += net;
+
         groove = schedule.endingGroove;
+        
 
         if (day != 0)
             PluginLog.LogInformation("day {0} total, 0 groove: {1}. Starting groove {2}: {3}, net {4}.", day + 1, zeroGrooveValue, schedule.startingGroove, gross, net);
-
         foreach (var kvp in schedule.numCrafted)
         {
             Items[(int)kvp.Key].SetCrafted(kvp.Value, day);
         }
         SchedulesPerDay.Add(day, (schedule, gross));
-
         if (schedule.HasAnyUnsurePeaks())
             Importer.WriteEndDay(day, groove, -1, -1, crafts);
         else
             Importer.WriteEndDay(day, groove, gross, net, crafts);
-
         //Don't think we should do this
         //updateRestedStatus();
     }
