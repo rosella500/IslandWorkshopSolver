@@ -651,8 +651,6 @@ public class Solver
 
     public static void SetDay(List<Item> crafts, int day)
     {
-        int index = 0;
-        
         if (day != 0)
             PluginLog.LogInformation("Day {0}, crafts: {1}", day+1, crafts);
 
@@ -785,12 +783,36 @@ public class Solver
                 var sixHourMatch = sixMatchEnum.Current;
                 if (!sixHourMatch.GetsEfficiencyBonus(topItem))
                     continue;
+                var sixSixMatchEnum = sixHour.GetEnumerator();
+                while (sixSixMatchEnum.MoveNext())
+                {
+                    if (!sixSixMatchEnum.Current.GetsEfficiencyBonus(sixHourMatch))
+                        continue;
+
+                    //4-6-6-8
+                    var fourSixMatchEnum = fourHour.GetEnumerator();
+                    while (fourSixMatchEnum.MoveNext())
+                    {
+                        AddScheduleIfEfficient(fourSixMatchEnum.Current, sixSixMatchEnum.Current,
+                        new List<Item> { fourSixMatchEnum.Current.item, sixSixMatchEnum.Current.item, sixHourMatch.item, topItem.item },
+                        day, safeSchedules, limitedUse, startingGroove);
+                    }
+                }
+
                 var fourMatchEnum = fourHour.GetEnumerator();
                 while (fourMatchEnum.MoveNext())
                 {
-                    AddScheduleIfEfficient(fourMatchEnum.Current, sixHourMatch,
-                        new List<Item> { fourMatchEnum.Current.item, sixHourMatch.item, topItem.item, sixHourMatch.item },
+                    if (!fourMatchEnum.Current.GetsEfficiencyBonus(sixHourMatch))
+                        continue;
+
+                    var other6MatchEnum = sixHour.GetEnumerator();
+                    while (other6MatchEnum.MoveNext())
+                    {
+                        AddScheduleIfEfficient(other6MatchEnum.Current, topItem,
+                        new List<Item> { fourMatchEnum.Current.item, sixHourMatch.item, topItem.item, other6MatchEnum.Current.item },
                         day, safeSchedules, limitedUse, startingGroove);
+                    }
+
                 }
             }
         }
