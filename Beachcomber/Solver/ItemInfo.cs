@@ -277,8 +277,7 @@ public class ItemInfo
     public int GetSupplyOnDay(int day)
     {
         observedSupplies.TryGetValue(day, out var observedToday);
-        observedSupplies.TryGetValue(day - 1, out var observedEarlier);
-
+        observedSupplies.TryGetValue(day - 1, out var observedEarlier);        
         
         int supply = SUPPLY_PATH[(int)peak][0];
         for (int c = 1; c < day; c++)
@@ -287,51 +286,67 @@ public class ItemInfo
             supply += SUPPLY_PATH[(int)peak][c];
         }
 
-        //Only return exact supply number if it matches what we observed
-        if (observedEarlier == null || GetSupplyBucket(supply) == observedEarlier.supply)
+        if(observedEarlier!= null && Solver.Importer.endDays[day - 1] != null)
         {
-            return supply + SUPPLY_PATH[(int)peak][day];
-        }
-        else
-        {
-            /*PluginLog.Warning("Estimated supply for item {4} day {3}: {0} ({1}) doesn't match observed supply: {2}",
-                supply, GetSupplyBucket(supply), observedEarlier.supply, day, item);*/
-
-            if (observedToday != null)
+            int craftedToday = 0;
+            if(Solver.Importer.endDays[day - 1].crafts.Count > 0)
             {
-                //Make best guess using last observed day
-                Supply observedSupply = observedToday.supply;
-                return GetEstimatedSupplyNum(observedSupply);
+                CycleSchedule schedule = new CycleSchedule(day - 1, 0); //groove doesn't matter for this
+                schedule.SetForAllWorkshops(Solver.Importer.endDays[day - 1].crafts);
+                craftedToday = schedule.GetCraftedBeforeHour(item, Solver.Importer.observedSupplyHours[day - 1]);
+                /*if (craftedToday > 0)
+                    PluginLog.Debug("Found {0}x {3} crafted already today, so we're looking at a supply of {1} when observed as {2}", craftedToday, craftedToday + supply, observedEarlier, item);*/
+            }
+            
+            //Only return exact supply number if it matches what we observed
+            if (GetSupplyBucket(supply + craftedToday) == observedEarlier.supply)
+            {
+                return supply + SUPPLY_PATH[(int)peak][day] + craftedPerDay[day - 1];
             }
             else
             {
-                Supply yesterdaySupply = observedEarlier.supply;
-                if (peak == Unknown)
+                PluginLog.Warning("Estimated supply for item {4} day {3}: {0} ({1}) doesn't match observed supply: {2}",
+                    supply, GetSupplyBucket(supply), observedEarlier.supply, day, item);
+
+                if (observedToday != null)
                 {
-                    
-                    int estimatedSupply = GetEstimatedSupplyTomorrow(yesterdaySupply);
-                    //PluginLog.Debug("Assuming it peaked in the past, sending supply {0} ({1})", estimatedSupply, GetSupplyBucket(estimatedSupply));
-                    return estimatedSupply;
+                    //Make best guess using last observed day
+                    Supply observedSupply = observedToday.supply;
+                    return GetEstimatedSupplyNum(observedSupply);
                 }
                 else
                 {
-                    int estimatedYesterday = GetEstimatedSupplyNum(yesterdaySupply);
-                    
-                    if (peak.IsTerminal())
+                    Supply yesterdaySupply = observedEarlier.supply;
+                    if (peak == Unknown)
                     {
-                        if ((int)peak == day * 2) //Strong peaking on the day we're estimating for
-                            estimatedYesterday -= 4;
-                        else if ((int)peak % 2 == 0) //Strong peaked in the past
-                            estimatedYesterday -= 2;
+
+                        int estimatedSupply = GetEstimatedSupplyTomorrow(yesterdaySupply);
+                        //PluginLog.Debug("Assuming it peaked in the past, sending supply {0} ({1})", estimatedSupply, GetSupplyBucket(estimatedSupply));
+                        return estimatedSupply;
                     }
-                    
-                    int finalEstimate = estimatedYesterday + SUPPLY_PATH[(int)peak][day];
-                    /*PluginLog.Debug("We know its peak, so estimating today as {0} and adding {1} for tomorrow, sending supply {2} ({3})",
-                        estimatedYesterday, SUPPLY_PATH[(int)peak][day], finalEstimate, GetSupplyBucket(finalEstimate));*/
-                    return finalEstimate;
+                    else
+                    {
+                        int estimatedYesterday = GetEstimatedSupplyNum(yesterdaySupply);
+
+                        if (peak.IsTerminal())
+                        {
+                            if ((int)peak == day * 2) //Strong peaking on the day we're estimating for
+                                estimatedYesterday -= 4;
+                            else if ((int)peak % 2 == 0) //Strong peaked in the past
+                                estimatedYesterday -= 2;
+                        }
+
+                        int finalEstimate = estimatedYesterday + SUPPLY_PATH[(int)peak][day];
+                        PluginLog.Debug("We know its peak, so estimating today as {0} and adding {1} for tomorrow, sending supply {2} ({3})",
+                            estimatedYesterday, SUPPLY_PATH[(int)peak][day], finalEstimate, GetSupplyBucket(finalEstimate));
+                        return finalEstimate;
+                    }
                 }
             }
         }
+
+
+        return supply +SUPPLY_PATH[(int)peak][day] + craftedPerDay[day - 1]; //We don't have valid data from previous day so idk, just do our best        
     }
 
     public int GetValueWithSupply(Supply supply)
