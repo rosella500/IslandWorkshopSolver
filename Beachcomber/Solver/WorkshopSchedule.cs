@@ -99,6 +99,17 @@ public class WorkshopSchedule
         return false;
     }
 
+    public List<ItemInfo> GetItemsStillToStart(int hour)
+    {        
+        List<ItemInfo> itemsToGo = new List<ItemInfo>();
+        for(int i=1; i<crafts.Count; i++)
+        {
+            if (hour < completionHours[i-1])
+                itemsToGo.Add(crafts[i]);
+        }
+        return itemsToGo;
+    }
+
     public int GetValueForCurrent(int day, int craftedSoFar, int currentGroove, bool isEfficient, bool verboseLogging = false)
     {
         ItemInfo craft = crafts[currentIndex];

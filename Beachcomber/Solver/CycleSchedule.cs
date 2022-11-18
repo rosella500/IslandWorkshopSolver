@@ -142,6 +142,27 @@ public class CycleSchedule
         }
         return totalCrafted;
     }
+    public Dictionary<Material, int> GetMaterialsNeededAfterHour(int hour)
+    {
+        List<ItemInfo> craftsToGo = new List<ItemInfo>();
+        var mats = new Dictionary<Material, int>();
+        //Hour is next hour to start
+        for (int i=0; i<workshops.Length; i++)
+        {
+            craftsToGo.AddRange(workshops[i].GetItemsStillToStart(hour));
+        }
+        foreach(var item in craftsToGo)
+        {
+            foreach (var mat in item.materialsRequired)
+            {
+                if (mats.ContainsKey(mat.Key))
+                    mats[mat.Key] += mat.Value;
+                else
+                    mats.Add(mat.Key, mat.Value);
+            }
+        }
+        return mats;
+    }
 
     public bool HasAnyUnsurePeaks()
     {
