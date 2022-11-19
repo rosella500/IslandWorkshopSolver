@@ -259,7 +259,6 @@ public class Solver
             return null;
         }
 
-        //TODO: Figure out how to handle D2 because no one's going to craft things D1 to find out
         long time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         int dayToSolve = CurrentDay + 1;
@@ -467,8 +466,8 @@ public class Solver
         Dictionary<Item, int>? reservedFor5 = null;
         int startingGroove = GetEndingGrooveForDay(CurrentDay);
         bool fiveSet = false;
-        bool sixSelected = false;
         bool sixSet = false;
+        bool sixFinal = false;
         bool sevenSet = false;
         int dayRested = -1;
 
@@ -481,12 +480,12 @@ public class Solver
 
         if (SchedulesPerDay.TryGetValue(5, out var schedule6))
         {
-            sixSelected = true;
+            sixSet = true;
             List<Item> items6 = schedule6.schedule.workshops[0].GetItems();
             if (fiveSet)
             {
                 SetDay(items6, 5); //Recalculate with 5's groove
-                sixSet = true;
+                sixFinal = true;
             }
             if (schedule6.schedule.workshops[0].GetItems().Count == 0)
                 dayRested = 5;
@@ -498,19 +497,20 @@ public class Solver
         {
             sevenSet = true;
             List<Item> items7 = schedule7.schedule.workshops[0].GetItems();
-            if (sixSet)
+            if (sixFinal)
             {
                 SetDay(items7, 6); //Recalculate with 6's groove
             }
             if (schedule7.schedule.workshops[0].GetItems().Count == 0)
-                dayRested = 7;
+                dayRested = 6;
             reservedFor5 = schedule7.schedule.workshops[0].GetLimitedUses(reservedFor5);
             reservedFor6 = schedule7.schedule.workshops[0].GetLimitedUses(reservedFor6);
         }
 
         List<Dictionary<WorkshopSchedule, int>> initialSchedules = new List<Dictionary<WorkshopSchedule, int>>
         {
-            GetSuggestedSchedules(4, startingGroove, reservedFor5, sevenSet?6:sixSelected?5:4),
+
+            GetSuggestedSchedules(4, startingGroove, reservedFor5, sevenSet&&sixSet?6:sixSet?5:4),
             GetSuggestedSchedules(5, startingGroove, reservedFor6, sevenSet?6:5),
             GetSuggestedSchedules(6, startingGroove)
         };
@@ -646,7 +646,7 @@ public class Solver
             return Importer.endDays[day].endingGroove;
         else if(SchedulesPerDay.TryGetValue(day, out var schedule))
         {
-            PluginLog.LogDebug("Getting ending groove from scheduled day " +day+": " + schedule.schedule.endingGroove);
+            PluginLog.LogDebug("Getting ending groove from scheduled day " +(day+1)+": " + schedule.schedule.endingGroove);
             return schedule.schedule.endingGroove;
         }
         PluginLog.LogDebug("Can't find day in summaries or schedules. Returning 0");
@@ -715,7 +715,6 @@ public class Solver
         var eightHour = new List<ItemInfo>();
         var sixHour = new List<ItemInfo>();
 
-        //TODO:::::::
         Dictionary<Material, int>? materials = null;
         if (Config.onlySuggestMaterialsOwned)
             materials = GetAllScheduledMats(day);
