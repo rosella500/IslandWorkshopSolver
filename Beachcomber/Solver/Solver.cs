@@ -20,7 +20,7 @@ public class Solver
 
     public static int GroovePerFullDay = 40;
     public static int GroovePerPartDay = 20;
-    public static int AverageDailyValue = 3580;
+    public static int AverageDailyValue = 4044;
     public static int IslandRank = 10;
     public static int NumWorkshops = 3;
     public static double MaterialWeight = 0.5;

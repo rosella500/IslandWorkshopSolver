@@ -147,73 +147,88 @@ public class WorkshopSchedule
     public int GetValueWithGrooveEstimate(int day, int startingGroove)
     {
         bool verboseLogging = false;
-       /* if (items.Count == 5 && items[0] == Item.Earrings && items[1] == Item.Necklace && items[2] == Item.Earrings && items[3] == Item.Necklace && items[4] == Item.SpruceRoundShield)
+        /*if (items.Count == 5 && items[0] == Item.Earrings && items[1] == Item.Necklace && items[2] == Item.Earrings && items[3] == Item.Necklace && items[4] == Item.SpruceRoundShield)
             verboseLogging = true;*/
 
         int craftsAbove4 = GetNumCrafts() - 4;
         int daysToGroove = 6 - day;
+
         if (!Solver.Rested)
             daysToGroove--;
 
+        if (verboseLogging)
+            PluginLog.Debug("Calculating workshop value for day {0}. Rested? {1}. Crafting days after this: {2}", day + 1, Solver.Rested, daysToGroove);
+
+
         //How many days will it take to hit max normally
         int estimatedGroovePerDay = 3 * Solver.NumWorkshops;
-        int expectedEndingGroove = startingGroove + estimatedGroovePerDay;
+        int expectedStartingGroove = startingGroove + estimatedGroovePerDay;
+        bool penalty = false;
 
         if (craftsAbove4 < 0)
-            expectedEndingGroove -= Solver.NumWorkshops;
+        {
+            penalty = true;
+            expectedStartingGroove += Solver.NumWorkshops * craftsAbove4;
+
+            craftsAbove4 *= -1;
+        }
+            
 
         int craftingDaysLeft = daysToGroove;
-        int fullDays = 0;
-        int numRowsOfPartialDay = 0;
-        while (craftingDaysLeft > 0 && expectedEndingGroove < Solver.GROOVE_MAX)
+        float grooveBonus = 0;
+        for (int i = 0; i < craftsAbove4; i++)
         {
-            if (verboseLogging)
-                PluginLog.Debug("Have {0} crafting days after today, should end at {1} groove, seeing what happens tomorrow after we get to {2}", craftingDaysLeft, expectedEndingGroove, expectedEndingGroove+estimatedGroovePerDay);
-            if (expectedEndingGroove + estimatedGroovePerDay <= Solver.GROOVE_MAX)
+            int fullDays = 0;
+            int numRowsOfPartialDay = 0;
+            int expendedEndingGroove = expectedStartingGroove;
+            while (craftingDaysLeft > 0 && expendedEndingGroove < Solver.GROOVE_MAX)
             {
-                fullDays++;
-                expectedEndingGroove += estimatedGroovePerDay;
-                craftingDaysLeft--;
-                if(verboseLogging)
-                PluginLog.Debug("We can fit in a whole day");
-            }
-            else
-            {
-                int grooveToGo = Solver.GROOVE_MAX - expectedEndingGroove;
-                numRowsOfPartialDay = (grooveToGo + 1) / Solver.NumWorkshops; 
-                expectedEndingGroove = Solver.GROOVE_MAX;
-
                 if (verboseLogging)
-                    PluginLog.Debug("There's {0} groove left to add today, so lets say that's {1} rows", grooveToGo, numRowsOfPartialDay);
+                    PluginLog.Debug("Have {0} crafting days after today, should end at {1} groove, seeing what happens tomorrow after we get to {2}", craftingDaysLeft, expectedStartingGroove, expectedStartingGroove + estimatedGroovePerDay);
+                if (expendedEndingGroove + estimatedGroovePerDay + Solver.NumWorkshops <= Solver.GROOVE_MAX)
+                {
+                    fullDays++;
+                    expendedEndingGroove += estimatedGroovePerDay;
+                    craftingDaysLeft--;
+                    if (verboseLogging)
+                        PluginLog.Debug("We can fit in a whole day");
+                }
+                else
+                {
+                    int grooveToGo = Solver.GROOVE_MAX - expendedEndingGroove;
+                    numRowsOfPartialDay = (grooveToGo + 1) / Solver.NumWorkshops;
+                    expendedEndingGroove = Solver.GROOVE_MAX;
+
+                    if (verboseLogging)
+                        PluginLog.Debug("There's {0} groove left to add today, so lets say that's {1} rows", grooveToGo, numRowsOfPartialDay);
+                }
             }
+
+            switch (numRowsOfPartialDay)
+            {
+                case 1:
+                    grooveBonus += fullDays + 0.10f;
+                    break;
+                case 2:
+                    grooveBonus += fullDays + .5f;
+                    break;
+                case 3:
+                    grooveBonus += fullDays + .60f;
+                    break;
+                case 4:
+                    grooveBonus += fullDays + 1;
+                    break;
+                default:
+                    grooveBonus += fullDays;
+                    break;
+            }
+            
+            if (verboseLogging)
+                PluginLog.Debug("Groove bonus {0}% over {1} days, starting with day {3} with the last day giving {2} rows", grooveBonus, daysToGroove, numRowsOfPartialDay, day+2);
+
+            expectedStartingGroove += Solver.NumWorkshops;
         }
 
-
-        float grooveBonus = 0f;
-        switch (numRowsOfPartialDay)
-        {
-            case 0:
-                grooveBonus = fullDays;
-                break;
-            case 1:
-                grooveBonus = fullDays + 0.15f;
-                break;
-            case 2:
-                grooveBonus = fullDays + .5f;
-                break;
-            case 3:
-                grooveBonus = fullDays + .65f;
-                break;
-            case 4:
-                grooveBonus = fullDays + 1;
-                break;
-            default:
-                grooveBonus = fullDays;
-                break;
-        }
-
-        if (verboseLogging)
-            PluginLog.Debug("Groove bonus {0}% over {1} days, with the last day giving {2} rows", grooveBonus*craftsAbove4, daysToGroove, numRowsOfPartialDay);
 
         float valuePerDay = Solver.AverageDailyValue;
         if (Solver.IslandRank < 9)
@@ -221,9 +236,12 @@ public class WorkshopSchedule
         if (Solver.IslandRank < 5)
             valuePerDay *= 0.7f;
 
-        valuePerDay = (valuePerDay * Solver.WORKSHOP_BONUS) / 100;
+        valuePerDay = valuePerDay * Solver.WORKSHOP_BONUS / 120;
 
-        grooveBonus = (grooveBonus * craftsAbove4 * valuePerDay) / 100f;
+        grooveBonus = grooveBonus * valuePerDay / 100f;
+
+        if (penalty)
+            grooveBonus *= -1;
 
         if (verboseLogging)
             PluginLog.Debug("Using average value of {0} per day {1} crafts is worth {2} cowries", valuePerDay, craftsAbove4, grooveBonus);
