@@ -172,12 +172,11 @@ public class WorkshopSchedule
 
             craftsAbove4 *= -1;
         }
-            
 
-        int craftingDaysLeft = daysToGroove;
         float grooveBonus = 0;
         for (int i = 0; i < craftsAbove4; i++)
         {
+            int craftingDaysLeft = daysToGroove;
             int fullDays = 0;
             int numRowsOfPartialDay = 0;
             int expendedEndingGroove = expectedStartingGroove;
@@ -185,7 +184,7 @@ public class WorkshopSchedule
             {
                 if (verboseLogging)
                     PluginLog.Debug("Have {0} crafting days after today, should end at {1} groove, seeing what happens tomorrow after we get to {2}", craftingDaysLeft, expectedStartingGroove, expectedStartingGroove + estimatedGroovePerDay);
-                if (expendedEndingGroove + estimatedGroovePerDay + Solver.NumWorkshops <= Solver.GROOVE_MAX)
+                if (expendedEndingGroove + estimatedGroovePerDay + Solver.NumWorkshops - 1 <= Solver.GROOVE_MAX)
                 {
                     fullDays++;
                     expendedEndingGroove += estimatedGroovePerDay;
