@@ -73,17 +73,6 @@ public class ConfigWindow : Window, IDisposable
             {
                 ImGui.SetTooltip("Removes all suggested schedules that require more of a rare material than you have in your isleventory");
             }
-            ImGui.Spacing();
-            bool enforceRest = Configuration.enforceRestDays;
-            if (ImGui.Checkbox("Enforce rest days", ref enforceRest))
-            {
-                Configuration.enforceRestDays = enforceRest;
-                Configuration.Save();
-            }
-            if (ImGui.IsItemHovered())
-            {
-                ImGui.SetTooltip("Force you to rest one and only one day (other than day 1).");
-            }
         }
         ImGui.Spacing();
         ImGui.Separator();
@@ -142,6 +131,17 @@ public class ConfigWindow : Window, IDisposable
                 ImGui.SetTooltip("A list of extra words, separated by commas, to ignore when displaying the names of items.");
             }
             ImGui.PushItemWidth(itemWidth);
+            ImGui.Spacing();
+            bool enforceRest = Configuration.enforceRestDays;
+            if (ImGui.Checkbox("Enforce rest days", ref enforceRest))
+            {
+                Configuration.enforceRestDays = enforceRest;
+                Configuration.Save();
+            }
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Force you to rest one and only one day (other than day 1).");
+            }
             if (Configuration.day == 0 && Configuration.unknownD2Items != null && Configuration.unknownD2Items.Count > 0)
             {
                 ImGui.Spacing();

@@ -256,7 +256,7 @@ public class ItemInfo
                     int expectedSupply = GetSupplyOnDayByPeak(potentialPeak, day) + craftedToday;
                     ObservedSupply expectedObservation = new ObservedSupply(GetSupplyBucket(craftedPreviously + expectedSupply),
                             GetDemandShift(expectedPrevious, expectedSupply));
-                        PluginLog.LogVerbose("Checking against peak " + potentialPeak + ", expecting: " + expectedObservation);
+                    PluginLog.LogVerbose("Checking against peak " + potentialPeak + ", expecting: " + expectedObservation);
 
                     if (observedToday.Equals(expectedObservation))
                     {
