@@ -418,7 +418,7 @@ public class MainWindow : Window, IDisposable
                             }
                             else
                             {
-                                ImGui.Text("Rest!!!");
+                                ImGui.Text("Rest!");
                             }
                             ImGui.EndTabItem();
                         }

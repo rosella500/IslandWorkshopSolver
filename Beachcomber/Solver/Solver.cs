@@ -419,7 +419,7 @@ public class Solver
                 SetDay(items7, 6); //Recalculate with 6's groove
             }
             if (schedule7.schedule.workshops[0].GetItems().Count == 0)
-                dayRested = 7;
+                dayRested = 6;
             reservedFor6 = schedule7.schedule.workshops[0].GetLimitedUses();
         }
 
