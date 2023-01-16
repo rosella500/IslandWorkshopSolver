@@ -171,8 +171,14 @@ public class CSVImporter
                 List<string> newFileInfo = new List<string>(fileInfo);
                 //Add summary line
                 int lastWroteHour = Solver.GetCurrentHour();
-                while (observedSupplyHours.Count <= currentDay)
-                    observedSupplyHours.Add(lastWroteHour);
+                if (observedSupplyHours.Count <= currentDay)
+                {
+                    while (observedSupplyHours.Count <= currentDay)
+                        observedSupplyHours.Add(lastWroteHour);
+                }
+                else
+                    observedSupplyHours[currentDay] = lastWroteHour;
+                
 
                 if (Solver.Items.Count >= newFileInfo.Count()) //Missing two summary rows
                 {
@@ -669,19 +675,23 @@ public class CSVImporter
     {
         PluginLog.LogDebug("Adding summary row of groove {0}, gross {1}, net {2}, hourRecorded: {3}, and crafts {4}",
             data1, data2, data3, hourRecorded, craftsStr);
-        int.TryParse(data1, out int groove);
-        int.TryParse(data2, out int gross);
-        int.TryParse(data3, out int net);
-        int.TryParse(hourRecorded, out int currentHour);
-        string[] items = craftsStr.Split(";");
-        List<Item> schedule = new List<Item>();
-        foreach (var itemStr in items)
+        if(int.TryParse(data1, out int groove))
         {
-            if(Enum.TryParse(itemStr, out Item item))
-                schedule.Add(item);
+            int.TryParse(data2, out int gross);
+            int.TryParse(data3, out int net);
+            string[] items = craftsStr.Split(";");
+            List<Item> schedule = new List<Item>();
+            foreach (var itemStr in items)
+            {
+                if (Enum.TryParse(itemStr, out Item item))
+                    schedule.Add(item);
+            }
+
+            endDays.Add(new EndDaySummary(crafted, groove, gross, net, schedule));
         }
-        endDays.Add(new EndDaySummary(crafted, groove, gross, net, schedule));
-        observedSupplyHours.Add(currentHour);
+        
+        if(int.TryParse(hourRecorded, out int currentHour))
+            observedSupplyHours.Add(currentHour);
     }
 
     public string GetPathForWeek(int week)
