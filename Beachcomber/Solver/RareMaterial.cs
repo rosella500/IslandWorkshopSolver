@@ -1,6 +1,7 @@
 using Dalamud.Logging;
 using System;
 using System.Collections.Generic;
+using System.Xml.Linq;
 
 namespace Beachcomber.Solver;
 
@@ -58,14 +59,20 @@ public enum Material
     Fang = 58,
     Horn = 59,
     Milk = 60,
-    NumMats = 61
+    Resin = 67,
+    Coconut = 68,
+    BeehiveChip = 69,
+    WoodOpal = 70,
+    Islebloom = 71,
+    Paprika = 74,
+    Leek = 75
 }
 public static class RareMaterialHelper
 {
     private static Dictionary<Material, int> materialValues = new Dictionary<Material, int>();
     private static Dictionary<Material, string> materialNames = new Dictionary<Material, string>();
 
-    public static void InitFromGameData(Dictionary<byte,ushort> matData, ICollection<string> names)
+    public static void InitFromGameData(Dictionary<byte,ushort> matData, IList<string> names)
     {
         materialValues.Clear();
         foreach(var kvp in matData)

@@ -59,6 +59,16 @@ public enum Item
     Bed,
     ScaleFingers,
     Crook,
+    CoralSword,
+    CoconutJuice,
+    Honey,
+    SeashineOpal,
+    DriedFlowers,
+    PowderedPaprika,
+    CawlCennin,
+    Isloaf,
+    PopotoSalad,
+    Dressing,
     NumCrafts
 }
 
