@@ -28,14 +28,16 @@ namespace Beachcomber
         private int lastValidDay = -1;
         private int lastHash = -1;
 
-        public Reader(DalamudPluginInterface pluginInterface)
+        public Reader()
         {
             SignatureHelper.Initialise(this);
             items = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Select(o => o.Item.Value?.Name.ToString() ?? string.Empty)
                .Where(s => s.Length > 0).Prepend(string.Empty).ToArray();
             var itemSheet = DalamudPlugins.GameData.GetExcelSheet<Lumina.Excel.GeneratedSheets.Item>()!;
             //This will probably need to be changed if we get new mats/crafts
-            string[] materialNames = Enumerable.Range(37551, 61).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()).ToArray();
+            var materialNames = Enumerable.Range(37551, 61).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()).ToList();
+            materialNames.AddRange(Enumerable.Range(39224, 5).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()));
+            materialNames.AddRange(Enumerable.Range(39231, 2).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()));
             var addon = DalamudPlugins.GameData.GetExcelSheet<Addon>()!;
             shifts = Enumerable.Range(15186, 5).Select(i => addon.GetRow((uint)i)!.Text.ToString()).ToArray();
             supplies = Enumerable.Range(15181, 5).Reverse().Select(i => addon.GetRow((uint)i)!.Text.ToString()).ToArray();
@@ -43,7 +45,7 @@ namespace Beachcomber
             
             var craftIDs = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Select(o => o.Item.Value?.RowId ?? 0)
                .Where(r => r > 0).ToArray();
-            List<string> craftNames = new List<string>();
+            List<string> craftNames = new();
             foreach (var craft in craftIDs)
             {
                 string name = itemSheet.GetRow((uint)craft)!.Name.ToString();
@@ -55,10 +57,10 @@ namespace Beachcomber
             var rareMats = DalamudPlugins.GameData.GetExcelSheet<MJIDisposalShopItem>()!.Where(i => i.Unknown1 == 0).ToDictionary(i => i.Unknown0, i=> i.Unknown2);
             RareMaterialHelper.InitFromGameData(rareMats, materialNames);
 
-            var supplyMods = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksSupplyDefine>()!.ToDictionary(i => i.RowId, i => i.Unknown1);
+            var supplyMods = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksSupplyDefine>()!.ToDictionary(i => i.RowId, i => i.Ratio);
             SupplyHelper.InitFromGameData(supplyMods);
 
-            var popMods = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksPopularityType>()!.ToDictionary(i => i.RowId, i => i.Unknown0);
+            var popMods = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksPopularityType>()!.ToDictionary(i => i.RowId, i => i.Ratio);
             PopularityHelper.InitFromGameData(popMods);
 
             var validItemRows = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Where(s => (s.Item.Value?.Name.ToString() ?? string.Empty).Length > 0);
@@ -69,22 +71,23 @@ namespace Beachcomber
             //0, 0, 8, 6, 78 ?? rank, hours, basevalue firstItem.Unknown10, firstItem.Unknown11, firstItem.Unknown12, firstItem.Unknown13, firstItem.Unknown14
             //Items.Add(new ItemInfo(PumpkinPudding, Confections, Invalid, 78, 6, 8, new Dictionary<RareMaterial, int>() { { Pumpkin, 3 }, { Egg, 1 }, { Milk, 1 } }));
 
-            List<ItemInfo> itemInfos = new List<ItemInfo>();
+            List<ItemInfo> itemInfos = new();
             int itemIndex = 0;
             foreach (var item in validItemRows)
             {
-                Dictionary<Material, int> mats = new Dictionary<Material, int>();
-                if(item.Unknown5 > 0)
-                    mats.Add((Material)item.Unknown4, item.Unknown5);
-                if (item.Unknown7 > 0)
-                    mats.Add((Material)item.Unknown6, item.Unknown7);
-                if (item.Unknown9 > 0)
-                    mats.Add((Material)item.Unknown8, item.Unknown9);
+                Dictionary<Material, int> mats = new();
+                foreach(var mat in item.UnkData4)
+                {
+                    if(mat.Amount > 0)
+                        mats.Add((Material)mat.Material, mat.Amount);
+                }
 
                 if(Enum.IsDefined((Solver.Item)itemIndex))
                 {
-                    itemInfos.Add(new ItemInfo((Solver.Item)itemIndex, (ItemCategory)item.Unknown1, (ItemCategory)item.Unknown2, item.Unknown14, item.Unknown13, item.Unknown12, mats));
-                    PluginLog.Verbose("Adding item {0} with material count {1}", (Solver.Item)itemIndex, mats.Count);
+
+                    itemInfos.Add(new ItemInfo((Solver.Item)itemIndex, (ItemCategory)(item.Theme[0].Value!.RowId), (ItemCategory)item.Theme[1].Value!.RowId, item.Value, item.CraftingTime, item.LevelReq, mats));
+                    PluginLog.Verbose("Adding item {0} with material count {1} and categories {2}({4}), {3}({5})", (Solver.Item)itemIndex, mats.Count, item.Theme[0].Value!.RowId, item.Theme[1].Value!.RowId,
+                        (ItemCategory)(item.Theme[0].Value!.RowId), (ItemCategory)item.Theme[1].Value!.RowId);
 
                     itemIndex++;
                 }
@@ -159,11 +162,11 @@ namespace Beachcomber
 
             minLevel++; //Level appears to be 0-indexed but data is 1-indexed, so
             var workshopBonusSheet = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksRankRatio>()!;
-            bonus = workshopBonusSheet.GetRow((uint)minLevel)!.Unknown0;
+            bonus = workshopBonusSheet.GetRow((uint)minLevel)!.Ratio;
             
 
             PluginLog.Debug("Found min workshop rank of {0} with {2} workshops, setting bonus to {1}", minLevel, bonus, numWorkshops);
-            WorkshopInfo workshopInfo = new WorkshopInfo { NumWorkshops = numWorkshops, ShowError = showError, WorkshopBonus = bonus };
+            WorkshopInfo workshopInfo = new() { NumWorkshops = numWorkshops, ShowError = showError, WorkshopBonus = bonus };
             return workshopInfo;
         }
 
@@ -191,8 +194,7 @@ namespace Beachcomber
                 var invItem = mjiPouch->InventoryData->Inventory.Get(i);
                 PluginLog.Verbose("MJI Pouch inventory item: name {2}, slotIndex {0}, stack {1}", invItem.SlotIndex, invItem.StackSize, invItem.Name);
                 totalItems += invItem.StackSize;
-                if(i < (int)Material.NumMats)
-                    inventory.Add(invItem.SlotIndex, invItem.StackSize);
+                //inventory.Add(invItem.SlotIndex, invItem.StackSize);
             }
 
             return totalItems > 0;
@@ -249,10 +251,12 @@ namespace Beachcomber
             return (lastValidDay, sb.ToString());
         }
 
-        private int GetPopularity(MJICraftworksPopularity pop, int idx)
+        private static int GetPopularity(MJICraftworksPopularity pop, int idx)
         {
-            var val = (byte?)pop.GetType().GetProperty($"Unknown{idx}", BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty)?.GetValue(pop, null);
-            return val == null ? 0 : val.Value; // string.Empty : popularities[val.Value];
+            var val = pop.Popularity[idx].Value;
+
+            //var val = (byte?)pop.GetType().GetProperty($"Unknown{idx}", BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty)?.GetValue(pop, null);
+            return val == null ? 0 : (int)val.RowId; // string.Empty : popularities[val.Value];
         }
     }
 }

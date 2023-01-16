@@ -26,7 +26,7 @@ namespace Beachcomber
             Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             Configuration.Initialize(PluginInterface);
             DalamudPlugins.Initialize(PluginInterface);
-            Reader reader = new Reader(this.PluginInterface);
+            Reader reader = new();
 
             WindowSystem.AddWindow(new ConfigWindow(this, PluginInterface.GetPluginConfigDirectory()));
             WindowSystem.AddWindow(new MainWindow(this, reader));
