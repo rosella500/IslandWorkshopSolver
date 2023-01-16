@@ -85,9 +85,10 @@ public static class RareMaterialHelper
 
         materialNames.Clear();
         int index = 0;
-        foreach (Material mat in Enum.GetValues(typeof(Material)))
+        foreach (string name in names)
         {
-            materialNames.Add(mat, names[index]);
+            if (Enum.IsDefined((Material)index))
+                materialNames.Add((Material)index, name);
 
             index++;
         }

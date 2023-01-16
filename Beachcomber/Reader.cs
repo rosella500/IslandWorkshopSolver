@@ -36,8 +36,9 @@ namespace Beachcomber
             var itemSheet = DalamudPlugins.GameData.GetExcelSheet<Lumina.Excel.GeneratedSheets.Item>()!;
             //This will probably need to be changed if we get new mats/crafts
             var materialNames = Enumerable.Range(37551, 61).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()).ToList();
-            materialNames.AddRange(Enumerable.Range(39224, 5).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()));
-            materialNames.AddRange(Enumerable.Range(39231, 2).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()));
+            for (int i = 0; i < 6; i++)//Add 6 dummy items in between Milk and Resin
+                materialNames.Add("None");
+            materialNames.AddRange(Enumerable.Range(39224, 9).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()));
             var addon = DalamudPlugins.GameData.GetExcelSheet<Addon>()!;
             shifts = Enumerable.Range(15186, 5).Select(i => addon.GetRow((uint)i)!.Text.ToString()).ToArray();
             supplies = Enumerable.Range(15181, 5).Reverse().Select(i => addon.GetRow((uint)i)!.Text.ToString()).ToArray();
@@ -102,7 +103,7 @@ namespace Beachcomber
         //This is in one method because island rank has a default invalid value whereas landmarks might just not be built
         public unsafe (int rank, int maxGroove) GetIslandRankAndMaxGroove()
         {
-            if (MJIManager.Instance() == null)
+            //if (MJIManager.Instance() == null)
                 return (-1,-1);
 
             var currentRank = MJIManager.Instance()->CurrentRank;
@@ -130,7 +131,7 @@ namespace Beachcomber
 
         public unsafe WorkshopInfo? GetWorkshopInfo()
         {
-            if (MJIManager.Instance() == null)
+            //if (MJIManager.Instance() == null)
                 return null;
 
             int minLevel = 999;
@@ -202,7 +203,7 @@ namespace Beachcomber
 
         public unsafe (int,string) ExportIsleData()
         {
-            if (MJIManager.Instance() == null)
+            //if (MJIManager.Instance() == null)
                 return (-1, ""); 
 
 
@@ -256,6 +257,7 @@ namespace Beachcomber
             var val = pop.Popularity[idx].Value;
 
             //var val = (byte?)pop.GetType().GetProperty($"Unknown{idx}", BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty)?.GetValue(pop, null);
+            PluginLog.LogVerbose("Getting popularity {3} for index {0}: {2} ({1})", idx, val.Ratio, val.RowId, pop.RowId);
             return val == null ? 0 : (int)val.RowId; // string.Empty : popularities[val.Value];
         }
     }
