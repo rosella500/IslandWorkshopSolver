@@ -383,6 +383,15 @@ public class ItemInfo
         return false; //Peak is Unknown, so definitely hasn't passed
     }
 
+    public bool couldPrePeak(int day)
+    {
+        if (peak == Cycle45)
+            return day == 2;
+        else if (peak == UnknownD1)
+            return day == 1;
+        return false;
+    }
+
     public static Supply GetSupplyBucket(int supply)
     {
         if (supply < -8)
