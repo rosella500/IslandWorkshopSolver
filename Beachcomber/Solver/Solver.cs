@@ -1142,8 +1142,9 @@ public class Solver
 
             if (CurrentDay == 0 && numNE > 0)
                 return false;
-            if (numNE > 4)
-                return false;
+            //230311 now Nonexistent can be greater than 4. idk the new cap.
+            //if (numNE > 4)
+            //    return false;
         }
 
         //Need to check this in a second loop because we don't want those fake NEs counting as supply going down
