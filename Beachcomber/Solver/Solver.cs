@@ -319,6 +319,10 @@ public class Solver
         safeSchedules.Add(new WorkshopSchedule(new List<Item>()), restValue);
     }
 
+    public static void AddUnknownD2(int itemIndex)
+    {
+        AddUnknownD2(Items[itemIndex].item);
+    }
     public static void AddUnknownD2(Item item)
     {
         if (Config.unknownD2Items == null)
@@ -347,7 +351,7 @@ public class Solver
             else if (item.peak == Cycle2Weak)
                 weak++;
         }
-        return "D2: " + weak + "/4 weak peaks and " + strong + "/4 strong peaks";
+        return "D2: " + weak + "/5 weak peaks and " + strong + "/5 strong peaks";
     }
 
     public static IOrderedEnumerable<KeyValuePair<Material, int>>? GetScheduledMatsNeeded()
