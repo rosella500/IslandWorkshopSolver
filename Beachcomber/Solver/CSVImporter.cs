@@ -2,8 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
+using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Logging;
+using Lumina.Excel.GeneratedSheets;
+using Newtonsoft.Json.Linq;
 
 namespace Beachcomber.Solver;
 
@@ -17,6 +22,10 @@ public class CSVImporter
     public PeakCycle[] currentPeaks;
     private string rootPath;
     private int currentWeek;
+
+    private static readonly HttpClient client = new HttpClient();
+    int lastDayRead = -1;
+    int weekRead = -1;
 
     //Don't ever call this, it's just there to make the compiler happy
     public CSVImporter()
@@ -82,8 +91,8 @@ public class CSVImporter
     }
 
     public bool NeedNewTodayData(int currentDay)
-    {
-        return observedSupplies.Count == 0 || !observedSupplies[0].ContainsKey(currentDay);
+    {   
+        return lastDayRead < Math.Min(currentDay,3) && (observedSupplies.Count == 0 || !observedSupplies[0].ContainsKey(currentDay));
     }
 
     public bool NeedToOverwriteTodayData(int currentDay, string[] products)
@@ -697,6 +706,104 @@ public class CSVImporter
     public string GetPathForWeek(int week)
     {
         return rootPath + "\\" + "Week" + week + "Supply.csv";
+    }
+
+    public async Task ImportFromExternalDB(int week, int currentDay)
+    {
+        if(week == weekRead && lastDayRead >= currentDay) return;
+        var responseString = await client.GetStringAsync("http://island.ws:1483/?week=" + week);
+        PluginLog.LogDebug("Response from get data: " + responseString);
+        if (responseString.Contains("error"))
+            PluginLog.Error(responseString);
+        else
+        {
+
+            var obj = JObject.Parse(responseString);
+            if (!obj.ContainsKey("day"))
+                return;
+
+            int day = (int)obj.GetValue("day")!;
+            /*if (day < currentDay)
+                return;*/
+
+            
+
+            if (!obj.ContainsKey("popularity"))
+                return;
+            int popularity = (int)obj.GetValue("popularity")!;
+
+            if (!obj.ContainsKey("peaks"))
+                return;
+            var peakList = obj.GetValue("peaks")!.ToList();
+
+            if (peakList == null)
+                return;
+
+            int index = 0;
+            foreach (var peak in peakList)
+            {   
+                switch ((string)peak!)
+                {
+                    case "U1":
+                        Solver.Items[index].peak = PeakCycle.UnknownD1;
+                        break;
+                    case "2W":
+                        Solver.Items[index].peak = PeakCycle.Cycle2Weak;
+                        break;
+                    case "2S":
+                        Solver.Items[index].peak = PeakCycle.Cycle2Strong;
+                        break;
+                    case "3W":
+                        Solver.Items[index].peak = PeakCycle.Cycle3Weak;
+                        break;
+                    case "3S":
+                        Solver.Items[index].peak = PeakCycle.Cycle3Strong;
+                        break;
+                    case "4W":
+                        Solver.Items[index].peak = PeakCycle.Cycle4Weak;
+                        break;
+                    case "4S":
+                        Solver.Items[index].peak = PeakCycle.Cycle4Strong;
+                        break;
+                    case "5W":
+                        Solver.Items[index].peak = PeakCycle.Cycle5Weak;
+                        break;
+                    case "5S":
+                        Solver.Items[index].peak = PeakCycle.Cycle5Strong;
+                        break;
+                    case "6W":
+                        Solver.Items[index].peak = PeakCycle.Cycle6Weak;
+                        break;
+                    case "6S":
+                        Solver.Items[index].peak = PeakCycle.Cycle6Strong;
+                        break;
+                    case "7W":
+                        Solver.Items[index].peak = PeakCycle.Cycle7Weak;
+                        break;
+                    case "7S":
+                        Solver.Items[index].peak = PeakCycle.Cycle7Strong;
+                        break;
+                    case "45":
+                        Solver.Items[index].peak = PeakCycle.Cycle45;
+                        break;
+                    case "5U":
+                        Solver.Items[index].peak = PeakCycle.Cycle5;
+                        break;
+                    case "67":
+                        Solver.Items[index].peak = PeakCycle.Cycle67;
+                        break;
+                    case "2U":
+                        Solver.Items[index].peak = PeakCycle.Cycle2Unknown;
+                        Solver.AddUnknownD2(index);
+                        break;
+                }
+                index++;
+            }
+
+            lastDayRead = day;
+            weekRead = week;
+        }
+
     }
 
 }

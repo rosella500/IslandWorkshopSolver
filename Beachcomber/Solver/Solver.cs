@@ -66,6 +66,8 @@ public class Solver
         try
         {
             Importer = new CSVImporter(Config.rootPath, Week);
+            if(!Importer.HasAllPeaks())
+                Importer.ImportFromExternalDB(Week, CurrentDay).Wait();
             InitStep = 1;
         }
         catch (Exception e)
@@ -90,7 +92,6 @@ public class Solver
 
         SetInitialFromCSV();
 
-
         bool hasCurrentDay = false;
         for (int i = 0; i <= CurrentDay; i++)
             hasCurrentDay = SetObservedFromCSV(i);
@@ -99,19 +100,19 @@ public class Solver
         {
             for (int i = 0; i < Items.Count; i++)
             {
-                Items[i].peak = Importer.currentPeaks[i];
-                PluginLog.Debug("Item {0}, final peak: {1}", Items[i].item, Items[i].peak);
+                PluginLog.Debug("Setting item {0} to peak {1} from CSV", Items[i].item, Importer.currentPeaks[i]);
             }
+            PluginLog.Debug("Above peaks are final");
 
         }
         else if (CurrentDay == 6) //We don't get data from today but we should set the peaks anyway
         {
             for (int i = 0; i < Items.Count; i++)
             {
-                Items[i].SetPeakBasedOnObserved(0);
+                Items[i].SetPeakBasedOnObserved(6, 0);
             }
         }
-        else if (!hasCurrentDay)
+        else if (!hasCurrentDay && Importer.NeedNewTodayData(CurrentDay))
         {
             DalamudPlugins.Chat.PrintError("Don't have supply info from current day. Make sure you've viewed the Supply/Demand chart and reopen the window.");
             InitStep = 0;
@@ -131,12 +132,16 @@ public class Solver
                 else if (item.peak == Cycle2Weak)
                     weak++;
             }
-            if (strong == 4)
+            if (strong == 5)
             {
                 PluginLog.Debug("We have all the strong peaks we need! All unknowns are weak");
+                foreach (var item in Config.unknownD2Items.Keys)
+                {
+                    Items[(int)item].peak = Cycle2Weak;
+                }
                 Config.unknownD2Items.Clear();
             }
-            else if (weak - Config.unknownD2Items.Count == 4)
+            else if (weak == 5)
             {
                 PluginLog.Debug("We have all the weak we need! All unknowns are strong");
                 foreach (var item in Config.unknownD2Items.Keys)
@@ -272,10 +277,10 @@ public class Solver
             SetDay(new List<Item>(), 0);
         }
 
-        if(dayToSolve >= 4 && Importer.NeedCurrentPeaks())
+        if(Importer.NeedCurrentPeaks())
             Importer.WriteCurrentPeaks(Week);
         
-        if (!Importer.HasAllPeaksForward(dayToSolve)) //We don't know the whole week, so just solve the day in front of us
+        if (!Importer.HasAllPeaks()) //We don't know the whole week, so just solve the day in front of us
         {
             Dictionary<WorkshopSchedule, int> safeSchedules = GetSuggestedSchedules(dayToSolve, -1, null);
 
@@ -1121,6 +1126,7 @@ public class Solver
         else if(Importer.HasAllPeaks())
             return true;
 
+        PluginLog.LogInformation("Supply info invalid. Failed to write.");
         return false;
         
     }
@@ -1142,9 +1148,9 @@ public class Solver
 
             if (CurrentDay == 0 && numNE > 0)
                 return false;
-            //230311 now Nonexistent can be greater than 4. idk the new cap.
-            //if (numNE > 4)
-            //    return false;
+
+            if (numNE > 5)
+                return false;
         }
 
         //Need to check this in a second loop because we don't want those fake NEs counting as supply going down
