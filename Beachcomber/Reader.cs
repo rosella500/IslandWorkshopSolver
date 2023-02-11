@@ -14,6 +14,9 @@ using FFXIVClientStructs.FFXIV.Client.Game;
 using Dalamud.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using FFXIVClientStructs.FFXIV.Client.Game.MJI;
+using System.Runtime.InteropServices;
+using System.Drawing;
 
 namespace Beachcomber
 {
@@ -103,22 +106,23 @@ namespace Beachcomber
         //This is in one method because island rank has a default invalid value whereas landmarks might just not be built
         public unsafe (int rank, int maxGroove) GetIslandRankAndMaxGroove()
         {
-            //if (MJIManager.Instance() == null)
-                return (-1,-1);
+            if (MJIManager.Instance() == null)
+                return (-1, -1);
 
-            var currentRank = MJIManager.Instance()->CurrentRank;
+
+            var currentRank = MJIManager.Instance()->IslandState.CurrentRank;
 
             int completedLandmarks = 0;
-            for (int i=0;  i< MJILandmarkPlacements.Slots; i++)
+            for (int i = 0; i < /*MJILandmarkPlacements.Slots*/ 4; i++)
             {
                 PluginLog.Verbose("Landmark {0} ID {1}, placement {4}, under construction {2}, hours to complete {3}", i,
-                     MJIManager.Instance()->LandmarkIds[i], MJIManager.Instance()->LandmarkUnderConstruction[i], MJIManager.Instance()->LandmarkHoursToCompletion[i], MJIManager.Instance()->LandmarkPlacements[i]->LandmarkId);
-                if (MJIManager.Instance()->LandmarkIds[i] != 0)
+                     MJIManager.Instance()->IslandState.LandmarkIds[i], MJIManager.Instance()->IslandState.LandmarkUnderConstruction[i], MJIManager.Instance()->IslandState.LandmarkHoursToCompletion[i], MJIManager.Instance()->LandmarkPlacementsSpan[i]);
+                if (MJIManager.Instance()->IslandState.LandmarkIds[i] != 0)
                 {
-                    if (MJIManager.Instance()->LandmarkUnderConstruction[i] == 0)
+                    if (MJIManager.Instance()->IslandState.LandmarkUnderConstruction[i] == 0)
                         completedLandmarks++;
                 }
-                    
+
             }
             var tension = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksTension>()!;
             var maxGroove = tension.GetRow((uint)completedLandmarks)!.Unknown0;
@@ -131,31 +135,32 @@ namespace Beachcomber
 
         public unsafe WorkshopInfo? GetWorkshopInfo()
         {
-            //if (MJIManager.Instance() == null)
+            if (MJIManager.Instance() == null)
                 return null;
 
             int minLevel = 999;
             bool showError = false;
             int numWorkshops = 0;
+
             for (int i = 0; i < /*MJIWorkshops.MaxWorkshops*/ 3; i++)
             {
-                if (MJIManager.Instance()->Workshops.PlaceId[i] != 0)
+                if (MJIManager.Instance()->IslandState.Workshops.PlaceId[i] != 0)
                 {
                     PluginLog.Verbose("Workshop {0} level {1}, under construction {2}, hours to complete {3}, placeID {4}", i,
-                    MJIManager.Instance()->Workshops.BuildingLevel[i] + 1, MJIManager.Instance()->Workshops.UnderConstruction[i],
-                    MJIManager.Instance()->Workshops.HoursToCompletion[i], MJIManager.Instance()->Workshops.PlaceId[i]);
+                    MJIManager.Instance()->IslandState.Workshops.BuildingLevel[i] + 1, MJIManager.Instance()->IslandState.Workshops.UnderConstruction[i],
+                    MJIManager.Instance()->IslandState.Workshops.HoursToCompletion[i], MJIManager.Instance()->IslandState.Workshops.PlaceId[i]);
                     numWorkshops++;
-                    if (MJIManager.Instance()->Workshops.UnderConstruction[i] == 0)
-                        minLevel = Math.Min(minLevel, MJIManager.Instance()->Workshops.BuildingLevel[i]);
-                    else if (MJIManager.Instance()->Workshops.HoursToCompletion[i] == 0)
-                        showError = true;  
+                    if (MJIManager.Instance()->IslandState.Workshops.UnderConstruction[i] == 0)
+                        minLevel = Math.Min(minLevel, MJIManager.Instance()->IslandState.Workshops.BuildingLevel[i]);
+                    else if (MJIManager.Instance()->IslandState.Workshops.HoursToCompletion[i] == 0)
+                        showError = true;
                 }
                 else
                 {
                     PluginLog.Verbose("Workshop {0} not built", i);
                 }
             }
-            
+
             int bonus = -1;
 
             if (minLevel == 999)
@@ -164,7 +169,7 @@ namespace Beachcomber
             minLevel++; //Level appears to be 0-indexed but data is 1-indexed, so
             var workshopBonusSheet = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksRankRatio>()!;
             bonus = workshopBonusSheet.GetRow((uint)minLevel)!.Ratio;
-            
+
 
             PluginLog.Debug("Found min workshop rank of {0} with {2} workshops, setting bonus to {1}", minLevel, bonus, numWorkshops);
             WorkshopInfo workshopInfo = new() { NumWorkshops = numWorkshops, ShowError = showError, WorkshopBonus = bonus };
@@ -203,7 +208,7 @@ namespace Beachcomber
 
         public unsafe (int,string) ExportIsleData()
         {
-            //if (MJIManager.Instance() == null)
+            if (MJIManager.Instance() == null)
                 return (-1, ""); 
 
 
