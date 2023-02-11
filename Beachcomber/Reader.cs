@@ -108,7 +108,7 @@ namespace Beachcomber
             for (int i = 0; i < /*MJILandmarkPlacements.Slots*/ 4; i++)
             {
                 PluginLog.Verbose("Landmark {0} ID {1}, placement {4}, under construction {2}, hours to complete {3}", i,
-                     MJIManager.Instance()->IslandState.LandmarkIds[i], MJIManager.Instance()->IslandState.LandmarkUnderConstruction[i], MJIManager.Instance()->IslandState.LandmarkHoursToCompletion[i], MJIManager.Instance()->LandmarkPlacementsSpan[i]);
+                     MJIManager.Instance()->IslandState.LandmarkIds[i], MJIManager.Instance()->IslandState.LandmarkUnderConstruction[i], MJIManager.Instance()->IslandState.LandmarkHoursToCompletion[i], MJIManager.Instance()->LandmarkPlacementsSpan[i].LandmarkId);
                 if (MJIManager.Instance()->IslandState.LandmarkIds[i] != 0)
                 {
                     if (MJIManager.Instance()->IslandState.LandmarkUnderConstruction[i] == 0)
@@ -251,7 +251,7 @@ namespace Beachcomber
 
         private static int GetPopularity(MJICraftworksPopularity pop, int idx)
         {
-            var val = pop.Popularity[idx].Value;
+            var val = pop.Popularity[idx].Value!;
 
             //var val = (byte?)pop.GetType().GetProperty($"Unknown{idx}", BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty)?.GetValue(pop, null);
             PluginLog.LogVerbose("Getting popularity {3} for index {0}: {2} ({1})", idx, val.Ratio, val.RowId, pop.RowId);

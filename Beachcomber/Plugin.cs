@@ -16,6 +16,9 @@ namespace Beachcomber
         public Configuration Configuration { get; init; }
         public WindowSystem WindowSystem = new("WorkshopSolver");
 
+        public Window mainWindow;
+        public Window configWindow;
+
         public Plugin(
             [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
             [RequiredVersion("1.0")] CommandManager commandManager)
@@ -28,8 +31,10 @@ namespace Beachcomber
             DalamudPlugins.Initialize(PluginInterface);
             Reader reader = new();
 
-            WindowSystem.AddWindow(new ConfigWindow(this, PluginInterface.GetPluginConfigDirectory()));
-            WindowSystem.AddWindow(new MainWindow(this, reader));
+            configWindow = new ConfigWindow(this, PluginInterface.GetPluginConfigDirectory());
+            WindowSystem.AddWindow(configWindow);
+            mainWindow = new MainWindow(this, reader);
+            WindowSystem.AddWindow(mainWindow);
 
 
             CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
@@ -51,11 +56,10 @@ namespace Beachcomber
         {
             // in response to the slash command, just display our main ui
             if (WindowSystem != null)
-            {
-                var window = WindowSystem.GetWindow("Beachcomber");
-                if (window != null)
+            {  
+                if (mainWindow != null)
                 {
-                    window.IsOpen = true;
+                    mainWindow.IsOpen = true;
                 }
             }
         }
@@ -69,10 +73,9 @@ namespace Beachcomber
         {
             if (WindowSystem != null)
             {
-                var window = WindowSystem.GetWindow("Beachcomber Configuration");
-                if (window != null)
+                if (configWindow != null)
                 {
-                    window.IsOpen = true;
+                    configWindow.IsOpen = true;
                 }
             }
         }
