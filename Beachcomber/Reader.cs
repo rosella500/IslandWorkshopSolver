@@ -2,21 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Dalamud.Plugin;
-using System.Reflection;
 using Dalamud.Utility.Signatures;
 using Lumina.Excel.GeneratedSheets;
 using Lumina.Excel;
 using Dalamud.Logging;
 using Beachcomber.Solver;
-using Lumina;
-using FFXIVClientStructs.FFXIV.Client.Game;
-using Dalamud.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.Game.MJI;
-using System.Runtime.InteropServices;
-using System.Drawing;
 
 namespace Beachcomber
 {
