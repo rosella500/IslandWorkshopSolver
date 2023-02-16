@@ -22,6 +22,7 @@ public class CSVImporter
     public PeakCycle[] currentPeaks;
     private string rootPath;
     private int currentWeek;
+    public byte popularityIndex;
 
     private static readonly HttpClient client = new HttpClient();
     int lastDayRead = -1;
@@ -730,19 +731,25 @@ public class CSVImporter
 
             if (!obj.ContainsKey("popularity"))
                 return;
-            int popularity = (int)obj.GetValue("popularity")!;
+            byte popularity = (byte)obj.GetValue("popularity")!;
 
             if (!obj.ContainsKey("peaks"))
                 return;
-            var peakList = obj.GetValue("peaks")!.ToList();
+            //var peakList = obj.GetValue("peaks")!;
+
+            JArray a = (JArray)obj["peaks"]!;
+
+            IList<string> peakList = a.ToObject<IList<string>>()!;
 
             if (peakList == null)
                 return;
 
+            PluginLog.Verbose("List received: {0}. Length {2} Items available {1}", peakList, Solver.Items.Count, peakList.Count);
+
             int index = 0;
-            foreach (var peak in peakList)
-            {   
-                switch ((string)peak!)
+            foreach (string peak in peakList)
+            {  
+                switch (peak)
                 {
                     case "U1":
                         Solver.Items[index].peak = PeakCycle.UnknownD1;
@@ -802,6 +809,8 @@ public class CSVImporter
 
             lastDayRead = day;
             weekRead = week;
+            popularityIndex = popularity;
+            PluginLog.Verbose("Last day read {0}", lastDayRead);
         }
 
     }

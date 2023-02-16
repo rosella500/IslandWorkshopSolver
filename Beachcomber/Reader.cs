@@ -201,12 +201,18 @@ namespace Beachcomber
         public unsafe (int,string) ExportIsleData()
         {
             if (MJIManager.Instance() == null)
-                return (-1, ""); 
+                return (-1, "");
 
 
-            var currentPopularity = sheet.GetRow(MJIManager.Instance()->CurrentPopularity)!; 
+            byte currentPop = MJIManager.Instance()->CurrentPopularity;
+            if (currentPop == 0)
+            {
+                PluginLog.Debug("No current pop, getting from importer");
+                currentPop = Solver.Solver.Importer.popularityIndex;
+            }
+            var currentPopularity = sheet.GetRow(currentPop)!; 
             var nextPopularity = sheet.GetRow(MJIManager.Instance()->NextPopularity)!; 
-            PluginLog.Information("Current pop index {0}, next pop index {1}", currentPopularity.RowId, nextPopularity.RowId);
+            PluginLog.Information("Current pop index {0}, next pop index {1}", currentPop, nextPopularity.RowId);
 
             var sb = new StringBuilder(64 * 128);
             int numNE = 0;

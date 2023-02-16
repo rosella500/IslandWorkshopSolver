@@ -39,8 +39,8 @@ public class ItemInfo
 
     static PeakCycle[][] PEAKS_TO_CHECK = new PeakCycle[5][]
     {
-        new PeakCycle[] { Cycle3Weak, Cycle3Strong, Cycle67, Cycle45, Cycle2Strong, Cycle2Weak }, //Day2
-        new PeakCycle[] { Cycle4Weak, Cycle4Strong, Cycle6Weak, Cycle3Strong, Cycle3Weak, Cycle5, Cycle67 }, //Day3
+        new PeakCycle[] { Cycle3Strong, Cycle67, Cycle45, Cycle2Strong, Cycle2Weak }, //Day2
+        new PeakCycle[] { Cycle4Weak, Cycle4Strong, Cycle6Weak, Cycle5, Cycle67 }, //Day3
         new PeakCycle[] { Cycle5Weak, Cycle5Strong, Cycle6Strong, Cycle7Weak, Cycle7Strong, Cycle4Weak, Cycle4Strong }, //Day4
         new PeakCycle[] { Cycle6Weak, Cycle6Strong, Cycle7Weak, Cycle7Strong, Cycle5Weak, Cycle5Strong }, //Day5 (remedial)
         new PeakCycle[] { Cycle7Weak, Cycle7Strong, Cycle6Weak, Cycle6Strong } //Day6 (remedial)
@@ -58,7 +58,9 @@ public class ItemInfo
     //Weekly info
     public Popularity popularity { get; private set; }
     public PeakCycle previousPeak { get; private set; }
-    public PeakCycle peak { get { return peak; } set { peak = value; PluginLog.Verbose("Setting item {0} to peak {1}", item, value); } } //This should be a private set but I'm allowing it so I can test different peaks
+
+    private PeakCycle _peak = Unknown;
+    public PeakCycle peak { get { return _peak; } set { _peak = value; PluginLog.Verbose("Setting item {0} to peak {1}", item, peak); } } //This should be a private set but I'm allowing it so I can test different peaks
     public int[] craftedPerDay { get; private set; }
     private Dictionary<int,ObservedSupply> observedSupplies;
     public int rankUnlocked { get; private set; }
@@ -187,6 +189,8 @@ public class ItemInfo
             }
             else
                 peak = UnknownD1;
+
+            return;
         }
         else if(day == 1 && observedSupplies.ContainsKey(1) && peak == Cycle2Unknown)
         {
@@ -228,7 +232,34 @@ public class ItemInfo
             else
                 PluginLog.LogWarning(item + " does not match any known demand shifts for day 2: " + observedSupplies[1] + " with " + craftedToday + " crafts.");
         }
-        else if(observedSupplies.ContainsKey(day))
+        
+        if(day == 2 && observedSupplies.ContainsKey(2) && peak == Cycle67)
+        {
+            if (Solver.Importer.endDays.Count > day)
+            {
+                currentDaySchedule = new CycleSchedule(day, 0);
+                currentDaySchedule.SetForAllWorkshops(Solver.Importer.endDays[day].crafts);
+            }
+
+            PluginLog.LogVerbose(item + " observed: " + observedSupplies[day]);
+            int craftedToday = currentDaySchedule == null ? 0 : currentDaySchedule.GetCraftedBeforeHour(item, currentHour);
+            if (craftedToday > 0)
+                PluginLog.Debug("Found {0} crafted before hour {1} today, including in expected supply", craftedToday, currentHour);
+
+            int weakPrevious = GetSupplyOnDayByPeak(Cycle3Weak, day - 1);
+            int weakSupply = GetSupplyOnDayByPeak(Cycle3Weak, day) + craftedToday;
+            ObservedSupply expectedWeak = new ObservedSupply(GetSupplyBucket(weakSupply),
+                    GetDemandShift(weakPrevious, weakSupply));
+            PluginLog.LogVerbose("Checking against peak Cycle3Weak, expecting: " + expectedWeak);
+            if (observedSupplies[day].Equals(expectedWeak))
+            {
+                peak = Cycle3Weak;
+                PluginLog.LogDebug("{0} has observed D2 peak {1}", item, peak);
+                return;
+            }
+        }
+        
+        if(observedSupplies.ContainsKey(day))
         {
             if (Solver.Importer.endDays.Count > day)
             {

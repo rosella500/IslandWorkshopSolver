@@ -1100,6 +1100,7 @@ public class Solver
 
         bool needNewWeek = CurrentDay < 6 && Importer.NeedNewWeekData(Week);
         bool needNewData = CurrentDay < 6 && Importer.NeedNewTodayData(CurrentDay);
+        PluginLog.LogDebug("Need new week data? {0} Need new supply data? {1}", needNewWeek, needNewData);
 
         if (!(needNewData || needNewWeek || needOverwrite))
             return true;
@@ -1107,20 +1108,18 @@ public class Solver
 
         PluginLog.LogInformation("Trying to write supply info starting with " + products[0] + ", last updated day " + (updatedDay + 1));
 
-        if (updatedDay == CurrentDay && IsProductsValid(products))
+        if ((needNewWeek || (CurrentDay == 0 && needOverwrite)) && IsPopularityValid(products))
         {
+            PluginLog.LogDebug("Writing week start info (names and popularity)");
+            Importer.WriteWeekStart(products);
+            if (!needNewData)
+                return true;
+        }
+
+        if (updatedDay == CurrentDay && (needNewData || needOverwrite) && IsProductsValid(products))
+        { 
             PluginLog.LogDebug("Products are valid and updated today");
-            if (needNewWeek || (CurrentDay == 0 && needOverwrite))
-            {
-                PluginLog.LogDebug("Writing week start info (names and popularity)");
-                Importer.WriteWeekStart(products);
-            }
-            
-            if(needNewData || needOverwrite)
-            {
-                PluginLog.LogDebug("Writing day supply info");
-                Importer.WriteNewSupply(products, CurrentDay);
-            }
+            Importer.WriteNewSupply(products, CurrentDay);
             return true;
         }
         else if(Importer.HasAllPeaks())
@@ -1131,6 +1130,20 @@ public class Solver
         
     }
 
+    private static bool IsPopularityValid(string[] products)
+    {
+        if (products.Length < Items.Count)
+            return false;
+
+        for (int i = 0; i < Items.Count; i++)
+        {
+            string product = products[i];
+            string[] productInfo = product.Split('\t');
+            if (productInfo[0] != productInfo[3])
+                return true;
+        }
+        return false;
+    }
     private static bool IsProductsValid(string[] products)
     {
         if (products.Length < Items.Count)
