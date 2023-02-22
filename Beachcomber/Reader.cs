@@ -192,7 +192,10 @@ namespace Beachcomber
                 var invItem = mjiPouch->InventoryData->Inventory.Get(i);
                 PluginLog.Verbose("MJI Pouch inventory item: name {2}, slotIndex {0}, stack {1}", invItem.SlotIndex, invItem.StackSize, invItem.Name);
                 totalItems += invItem.StackSize;
-                //inventory.Add(invItem.SlotIndex, invItem.StackSize);
+                if (inventory.ContainsKey(invItem.SlotIndex))
+                    PluginLog.Warning("Duplicate ID {0} detected: {1}", invItem.SlotIndex, invItem.Name);
+                else
+                    inventory.Add(invItem.SlotIndex, invItem.StackSize);
             }
 
             return totalItems > 0;
@@ -201,12 +204,18 @@ namespace Beachcomber
         public unsafe (int,string) ExportIsleData()
         {
             if (MJIManager.Instance() == null)
-                return (-1, ""); 
+                return (-1, "");
 
 
-            var currentPopularity = sheet.GetRow(MJIManager.Instance()->CurrentPopularity)!; 
+            byte currentPop = MJIManager.Instance()->CurrentPopularity;
+            if (currentPop == 0)
+            {
+                PluginLog.Debug("No current pop, getting from importer");
+                currentPop = Solver.Solver.Importer.popularityIndex;
+            }
+            var currentPopularity = sheet.GetRow(currentPop)!; 
             var nextPopularity = sheet.GetRow(MJIManager.Instance()->NextPopularity)!; 
-            PluginLog.Information("Current pop index {0}, next pop index {1}", currentPopularity.RowId, nextPopularity.RowId);
+            PluginLog.Information("Current pop index {0}, next pop index {1}", currentPop, nextPopularity.RowId);
 
             var sb = new StringBuilder(64 * 128);
             int numNE = 0;

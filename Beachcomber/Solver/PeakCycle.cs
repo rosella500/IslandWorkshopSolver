@@ -16,12 +16,14 @@ public enum PeakCycle
     [PeakAttr(true, true)] Cycle5Strong,
     [PeakAttr(false, true)] Cycle6Weak,
     [PeakAttr(true, true)] Cycle6Strong,
-    [PeakAttr(true, true)] Cycle7Weak,
+    [PeakAttr(false, true)] Cycle7Weak,
     [PeakAttr(false, true)] Cycle7Strong,
     [PeakAttr(false, false)] Cycle45,
     [PeakAttr(false, false)] Cycle5,
-    [PeakAttr(false, false)] Cycle67, 
+    [PeakAttr(false, false)] Cycle67,
     [PeakAttr(false, false)] UnknownD1,
+    [PeakAttr(false, false)] Cycle2Unknown,
+
 
 }
 
