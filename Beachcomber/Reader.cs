@@ -192,7 +192,10 @@ namespace Beachcomber
                 var invItem = mjiPouch->InventoryData->Inventory.Get(i);
                 PluginLog.Verbose("MJI Pouch inventory item: name {2}, slotIndex {0}, stack {1}", invItem.SlotIndex, invItem.StackSize, invItem.Name);
                 totalItems += invItem.StackSize;
-                //inventory.Add(invItem.SlotIndex, invItem.StackSize);
+                if (inventory.ContainsKey(invItem.SlotIndex))
+                    PluginLog.Warning("Duplicate ID {0} detected: {1}", invItem.SlotIndex, invItem.Name);
+                else
+                    inventory.Add(invItem.SlotIndex, invItem.StackSize);
             }
 
             return totalItems > 0;
