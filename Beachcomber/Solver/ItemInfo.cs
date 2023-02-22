@@ -159,7 +159,7 @@ public class ItemInfo
                     PluginLog.LogDebug("{0} has reliable D2 peak {1}", item, peak);
                     return;
                 }
-                else if (observedDemand == Increasing || observedDemand == Decreasing)
+                else if (observedDemand == Increasing)
                 {
                     peak = Cycle2Weak;
                     PluginLog.LogDebug("{0} has reliable D2 peak {1}", item, peak);
