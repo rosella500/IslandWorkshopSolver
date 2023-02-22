@@ -25,6 +25,7 @@ public class MainWindow : Window, IDisposable
     private bool showInventoryError = false;
     private bool showSupplyError = false;
     private bool showWorkshopError = false;
+    public bool showAPIError = false;
 
     private int makeupValue = 0;
     private int makeupGroove = 0;
@@ -174,6 +175,11 @@ public class MainWindow : Window, IDisposable
             ImGui.TextColored(yellow, "Warning: You have a workshop ready to upgrade that has not been confirmed. Please examine all your workshop placards and keep an eye out for excited mammets.");
             ImGui.Spacing();
         }
+        if(showAPIError)
+        {
+            ImGui.TextColored(red, "Beachcomber needs to be updated! Please update so you can have the best quality recommendations.");
+            return;
+        }
         try
         {
 
@@ -228,9 +234,9 @@ public class MainWindow : Window, IDisposable
 
             if (scheduleSuggestions.Count > 1 && config.day > 0)
             {
-                ImGui.TextColored(yellow, "There are suggestions for multiple days available!");
+                ImGui.TextColored(yellow, "There are suggestions for multiple cycles available!");
                 ImGui.Spacing();
-                ImGui.TextWrapped("These schedules affect each other! Select the highest-value schedules first to get better recommendations for the worse day(s).");
+                ImGui.TextWrapped("These schedules affect each other! Select the highest-value schedules first to get better recommendations for the worse cycles(s).");
                 ImGui.Spacing();
             
             }
@@ -242,7 +248,7 @@ public class MainWindow : Window, IDisposable
                 {
                     if (day <= Solver.Solver.CurrentDay && endDaySummaries.Count > day)
                     {
-                        if (ImGui.BeginTabItem("Day " + (day + 1)))
+                        if (ImGui.BeginTabItem("Cycle " + (day + 1)))
                         {
                             string title = "Crafted";
                             if (day == Solver.Solver.CurrentDay)
@@ -271,7 +277,7 @@ public class MainWindow : Window, IDisposable
                                 ImGui.Spacing();
 
 
-                                ImGui.Text("This day's value: " + endDaySummaries[day].endingGross);
+                                ImGui.Text("This cycle's value: " + endDaySummaries[day].endingGross);
                                 ImGui.SameLine(200);
                                 ImGui.Text("Used material value: " + (endDaySummaries[day].endingGross - endDaySummaries[day].endingNet));
                             }
@@ -297,7 +303,7 @@ public class MainWindow : Window, IDisposable
                                 if(day > 0 && config.allowOverwritingDays)
                                 {
                                     ImGui.Spacing();
-                                    ImGui.Text("Is this wrong? Please enter your value and groove for the day");
+                                    ImGui.Text("Is this wrong? Please enter your value and groove for the cycle");
                                     ImGui.PushItemWidth(200);
                                     ImGui.Spacing();
                                     ImGui.InputInt("Total cowries", ref makeupValue);
@@ -320,7 +326,7 @@ public class MainWindow : Window, IDisposable
                     else if (scheduleSuggestions.ContainsKey(day))
                     {
                         var schedule = scheduleSuggestions[day];
-                        if (ImGui.BeginTabItem("Day " + (day + 1)))
+                        if (ImGui.BeginTabItem("Cycle " + (day + 1)))
                         {
                             if (schedule != null)
                             {
@@ -431,9 +437,9 @@ public class MainWindow : Window, IDisposable
 
                 if(config.day == 6)
                 {
-                    if (ImGui.BeginTabItem("Day 1 Next Week"))
+                    if (ImGui.BeginTabItem("Cycle 1 Next Week"))
                     {
-                        ImGui.Text("Always rest Day 1!");
+                        ImGui.Text("Always rest Cycle 1!");
                     }
                 }
 

@@ -14,6 +14,9 @@ namespace Beachcomber.Solver;
 
 public class CSVImporter
 {
+    private const string API_VERSION = "1.2";
+
+
     public PeakCycle[] lastWeekPeaks;
     public Popularity[] currentPopularity;
     public List<Dictionary<int,ObservedSupply>> observedSupplies;
@@ -712,13 +715,18 @@ public class CSVImporter
     public async Task ImportFromExternalDB(int week, int currentDay)
     {
         if(week == weekRead && lastDayRead >= currentDay) return;
-        var responseString = await client.GetStringAsync("http://island.ws:1483/?week=" + week);
+        var responseString = await client.GetStringAsync("http://island.ws:1483/?week=" + week+"&api="+API_VERSION);
         PluginLog.LogDebug("Response from get data: " + responseString);
-        if (responseString.Contains("error"))
+        if (responseString.ToLower().Contains("error"))
+        {
             PluginLog.Error(responseString);
+            if(responseString.ToLower().Contains("api") && Solver.Window != null)
+            {
+                Solver.Window.showAPIError = true;
+            }
+        }
         else
         {
-
             var obj = JObject.Parse(responseString);
             if (!obj.ContainsKey("day"))
                 return;

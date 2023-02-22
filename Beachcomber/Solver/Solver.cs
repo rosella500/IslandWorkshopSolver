@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Beachcomber.Windows;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
 
@@ -29,14 +30,14 @@ public class Solver
     private static int InitStep = 0;
     public static int CurrentDay = -1;
     public static Configuration Config = new Configuration();
-    private static Window? Window;
+    public static MainWindow? Window;
     public static Dictionary<int, (CycleSchedule schedule, int value)> SchedulesPerDay = new Dictionary<int, (CycleSchedule schedule, int value)>();
     private static int ItemsToReserve = 15;
     private static bool ValuePerHour = true;
     public static HashSet<Item> ReservedItems = new HashSet<Item>();
     private static Dictionary<int, int> Inventory = new Dictionary<int, int>();
 
-    public static void Init(Configuration newConfig, Window window)
+    public static void Init(Configuration newConfig, MainWindow window)
     {
         Config = newConfig;
         Window = window;
