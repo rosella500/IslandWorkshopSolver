@@ -52,6 +52,17 @@ public class ConfigWindow : Window, IDisposable
                     "\n0.5 is a nice balance. Ctrl + click to type an exact value");
             }
             ImGui.Spacing();
+            bool showHrs = Configuration.showHours;
+            if (ImGui.Checkbox("Show craft time", ref showHrs))
+            {
+                Configuration.showHours = showHrs;
+                Configuration.Save();
+            }
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Show the length of time the crafts take next to their name");
+            }
+            ImGui.Spacing();
             bool showNet = Configuration.showNetCowries;
             if (ImGui.Checkbox("Show net cowries", ref showNet))
             {

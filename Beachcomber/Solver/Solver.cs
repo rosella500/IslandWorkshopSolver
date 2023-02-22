@@ -933,7 +933,7 @@ public class Solver
 
     private static KeyValuePair<WorkshopSchedule, int> GetBestSchedule(Dictionary<WorkshopSchedule, int> schedulesAvailable)
     {
-        KeyValuePair<WorkshopSchedule, int> bestSched = schedulesAvailable.First();
+        KeyValuePair<WorkshopSchedule, int> bestSched = new KeyValuePair<WorkshopSchedule, int>(new WorkshopSchedule(new List<Item>()), 0);
         foreach (var sched in schedulesAvailable)
         {
             if (sched.Value > bestSched.Value) bestSched = sched;

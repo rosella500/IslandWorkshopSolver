@@ -114,6 +114,10 @@ public class MainWindow : Window, IDisposable
         for (int i = 0; i < items.Count; i++)
         {
             sb.Append(ItemHelper.GetDisplayName(items[i]));
+            if(config.showHours)
+            {
+                sb.Append(" (").Append(Solver.Solver.Items[(int)items[i]].time).Append("h)");
+            }
             if (i < items.Count - 1)
                 sb.Append(delimiter);
         }

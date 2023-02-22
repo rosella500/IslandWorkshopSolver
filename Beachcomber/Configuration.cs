@@ -11,6 +11,7 @@ namespace Beachcomber
     {
         public int Version { get; set; } = 0;
         public int suggestionsToShow { get; set; } = 10;
+        public bool showHours { get; set; } = false;
         public float materialValue { get; set; } = 0.5f;
         public int islandRank { get; set; } = 1;
         public int numWorkshops { get; set; } = 1;
