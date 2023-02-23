@@ -297,7 +297,7 @@ public class ItemInfo
                 PluginLog.LogWarning("{0} does not match any known patterns for day {1} with observed {2}, {3} crafted before and {4} crafted today", item,day+1,observedSupplies[day], craftedPreviously,craftedToday);
             
         }
-        PluginLog.Warning("Itme {0} contains no observed data for day {1}. Can't set peak.", item, day);
+        PluginLog.Warning("Item {0} contains no observed data for day {1}. Can't set peak.", item, day);
     }
 
     public int GetSupplyOnDay(int day)

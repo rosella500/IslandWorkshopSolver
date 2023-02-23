@@ -603,7 +603,7 @@ public class CSVImporter
                                 craftsStr = itemValues[c + 2];
                             }
                         }
-                        AddSummaryValues(numCrafted, data1, data2, data3, hourRecorded, craftsStr);
+                        AddSummaryValues(numCrafted, data1, data2, data3, hourRecorded, craftsStr, (c-2)/3);
                     }
 
                     continue;
@@ -684,10 +684,10 @@ public class CSVImporter
     }
 
 
-    private void AddSummaryValues(List<int> crafted, string data1, string data2, string data3, string hourRecorded, string craftsStr)
+    private void AddSummaryValues(List<int> crafted, string data1, string data2, string data3, string hourRecorded, string craftsStr, int day)
     {
-        PluginLog.LogDebug("Adding summary row of groove {0}, gross {1}, net {2}, hourRecorded: {3}, and crafts {4}",
-            data1, data2, data3, hourRecorded, craftsStr);
+        PluginLog.LogDebug("Adding summary row of groove {0}, gross {1}, net {2}, hourRecorded: {3}, and crafts {4} for day {5}",
+            data1, data2, data3, hourRecorded, craftsStr, day);
         if(int.TryParse(data1, out int groove))
         {
             int.TryParse(data2, out int gross);
@@ -699,12 +699,18 @@ public class CSVImporter
                 if (Enum.TryParse(itemStr, out Item item))
                     schedule.Add(item);
             }
-
+            while (endDays.Count < day)
+                endDays.Add(new EndDaySummary());
             endDays.Add(new EndDaySummary(crafted, groove, gross, net, schedule));
         }
         
         if(int.TryParse(hourRecorded, out int currentHour))
+        {
+            while (observedSupplyHours.Count < day)
+                observedSupplyHours.Add(-1);
+
             observedSupplyHours.Add(currentHour);
+        }
     }
 
     public string GetPathForWeek(int week)

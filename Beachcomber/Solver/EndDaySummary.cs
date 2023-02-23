@@ -19,6 +19,15 @@ public class EndDaySummary
         this.crafts = crafts;
         valuesPerCraft = new List<int>();
     }
+    public EndDaySummary()
+    {
+        numCrafted = new List<int>(Solver.Items.Count);
+        endingGroove = 0;
+        endingGross = 0;
+        endingNet = 0;
+        crafts = new List<Item>();
+        valuesPerCraft = new List<int>();
+    }
 
     public int GetCrafted(int itemIndex)
     {
