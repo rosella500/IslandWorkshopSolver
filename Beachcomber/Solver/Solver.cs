@@ -773,21 +773,18 @@ public class Solver
                 if (!firstFourMatchEnum.Current.GetsEfficiencyBonus(topItem))
                     continue;
 
-                    //PluginLog.LogVerbose("Found 4hr match, matching with " + firstFourMatchEnum.Current.item);
+                //PluginLog.LogVerbose("Found 4hr match, matching with " + firstFourMatchEnum.Current.item);
 
+                //4-4-8-8
                 var secondFourMatchEnum = fourHour.GetEnumerator();
                 while (secondFourMatchEnum.MoveNext())
                 {
-                    //PluginLog.LogVerbose("Checking potential 4hr match: " + secondFourMatchEnum.Current.item);
                     AddScheduleIfEfficient(secondFourMatchEnum.Current, topItem,
-                        new List<Item> { firstFourMatchEnum.Current.item, topItem.item, secondFourMatchEnum.Current.item, topItem.item },
-                        day, safeSchedules, limitedUse, materials, startingGroove);
-
-
+                        new List<Item> { secondFourMatchEnum.Current.item, topItem.item, firstFourMatchEnum.Current.item, topItem.item },
+                            day, safeSchedules, limitedUse, materials, startingGroove);
                     if (!secondFourMatchEnum.Current.GetsEfficiencyBonus(firstFourMatchEnum.Current))
                         continue;
 
-                    //4-4-8-8
                     foreach(var eightMatch in eightMatches)
                         AddToScheduleMap(new List<Item> { secondFourMatchEnum.Current.item, firstFourMatchEnum.Current.item, topItem.item, eightMatch.item },
                             day, safeSchedules, limitedUse, materials, startingGroove);
@@ -799,6 +796,7 @@ public class Solver
                             continue;
 
 
+                        //4-4-4-4-8
                         var fourthFourMatchEnum = fourHour.GetEnumerator();
                         while (fourthFourMatchEnum.MoveNext())
                         {
@@ -810,42 +808,21 @@ public class Solver
                 }
             }
 
-            //4-6-8-6
+            
             var sixMatchEnum = sixHour.GetEnumerator();
             while (sixMatchEnum.MoveNext())
             {
                 var sixHourMatch = sixMatchEnum.Current;
                 if (!sixHourMatch.GetsEfficiencyBonus(topItem))
                     continue;
-                var sixSixMatchEnum = sixHour.GetEnumerator();
-                while (sixSixMatchEnum.MoveNext())
-                {
-                    if (!sixSixMatchEnum.Current.GetsEfficiencyBonus(sixHourMatch))
-                        continue;
 
-                    //4-6-6-8
-                    var fourSixMatchEnum = fourHour.GetEnumerator();
-                    while (fourSixMatchEnum.MoveNext())
-                    {
-                        AddScheduleIfEfficient(fourSixMatchEnum.Current, sixSixMatchEnum.Current,
-                        new List<Item> { fourSixMatchEnum.Current.item, sixSixMatchEnum.Current.item, sixHourMatch.item, topItem.item },
-                        day, safeSchedules, limitedUse, materials, startingGroove);
-                    }
-                }
-
+                //4-6-8-6
                 var fourMatchEnum = fourHour.GetEnumerator();
                 while (fourMatchEnum.MoveNext())
                 {
-                    if (!fourMatchEnum.Current.GetsEfficiencyBonus(sixHourMatch))
-                        continue;
-
-                    var other6MatchEnum = sixHour.GetEnumerator();
-                    while (other6MatchEnum.MoveNext())
-                    {
-                        AddScheduleIfEfficient(other6MatchEnum.Current, topItem,
-                        new List<Item> { fourMatchEnum.Current.item, sixHourMatch.item, topItem.item, other6MatchEnum.Current.item },
+                    AddScheduleIfEfficient(fourMatchEnum.Current, sixHourMatch,
+                        new List<Item> { fourMatchEnum.Current.item, sixHourMatch.item, topItem.item, sixHourMatch.item },
                         day, safeSchedules, limitedUse, materials, startingGroove);
-                    }
 
                 }
             }
@@ -883,16 +860,7 @@ public class Solver
             while (firstFourMatchEnum.MoveNext())
             {
                 if (!firstFourMatchEnum.Current.GetsEfficiencyBonus(topItem))
-                    continue;
-
-
-                var sixFourMatchEnum = sixHour.GetEnumerator();
-                //4-6-6-6
-                while (sixFourMatchEnum.MoveNext())
-                {
-                    AddToScheduleMap(new List<Item> { firstFourMatchEnum.Current.item, topItem.item, sixFourMatchEnum.Current.item, topItem.item },
-                        day, safeSchedules, limitedUse, materials, startingGroove);
-                }
+                    continue;              
 
                 var secondFourMatchEnum = fourHour.GetEnumerator();
                 while (secondFourMatchEnum.MoveNext())
@@ -907,16 +875,7 @@ public class Solver
                         AddScheduleIfEfficient(thirdFourMatchEnum.Current, topItem,
                         new List<Item> { secondFourMatchEnum.Current.item, firstFourMatchEnum.Current.item, topItem.item, thirdFourMatchEnum.Current.item, topItem.item },
                         day, safeSchedules, limitedUse, materials, startingGroove);
-                        if (!secondFourMatchEnum.Current.GetsEfficiencyBonus(thirdFourMatchEnum.Current))
-                            continue;
-                        var fourthFourMatchEnum = fourHour.GetEnumerator();
-                        while (fourthFourMatchEnum.MoveNext())
-                        {
-                            //4-4-4-4-6
-                            AddScheduleIfEfficient(fourthFourMatchEnum.Current, thirdFourMatchEnum.Current,
-                                new List<Item> { fourthFourMatchEnum.Current.item, thirdFourMatchEnum.Current.item, secondFourMatchEnum.Current.item, firstFourMatchEnum.Current.item, topItem.item },
-                                day, safeSchedules, limitedUse, materials, startingGroove);
-                        }
+                        
                     }
                 }
             }
