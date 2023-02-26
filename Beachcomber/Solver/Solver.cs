@@ -67,8 +67,8 @@ public class Solver
         try
         {
             Importer = new CSVImporter(Config.rootPath, Week);
-            if(!Importer.HasAllPeaks())
-                Importer.ImportFromExternalDB(Week, CurrentDay).Wait();
+            if (!Importer.HasAllPeaks() && !Importer.ImportFromExternalDB(Week, CurrentDay).Wait(2000))
+                PluginLog.Warning("Can't get peaks from external DB. Doing our best with what we have");
             InitStep = 1;
         }
         catch (Exception e)

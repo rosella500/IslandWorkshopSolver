@@ -5,9 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Logging;
-using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json.Linq;
 
 namespace Beachcomber.Solver;
@@ -27,7 +25,7 @@ public class CSVImporter
     private int currentWeek;
     public byte popularityIndex = 127;
 
-    private static readonly HttpClient client = new HttpClient();
+    private static readonly HttpClient HTTPClient = new HttpClient();
     int lastDayRead = -1;
     int weekRead = -1;
 
@@ -741,7 +739,7 @@ public class CSVImporter
     public async Task ImportFromExternalDB(int week, int currentDay)
     {
         if(week == weekRead && lastDayRead >= currentDay) return;
-        var responseString = await client.GetStringAsync("http://island.ws:1483/?week=" + week+"&api="+API_VERSION);
+        var responseString = await HTTPClient.GetStringAsync("http://island.ws:1483/?week=" + week+"&api="+API_VERSION);
         PluginLog.LogDebug("Response from get data: " + responseString);
         if (responseString.ToLower().Contains("error"))
         {
