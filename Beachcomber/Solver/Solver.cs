@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using Beachcomber.Windows;
-using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
 
 namespace Beachcomber.Solver;
@@ -68,7 +66,15 @@ public class Solver
         {
             Importer = new CSVImporter(Config.rootPath, Week);
             if (!Importer.HasAllPeaks() && !Importer.ImportFromExternalDB(Week, CurrentDay).Wait(2000))
+            {
                 PluginLog.Warning("Can't get peaks from external DB. Doing our best with what we have");
+                
+                for(int c=0;c<Items.Count;c++) 
+                {
+                    Items[c].peak = Importer.currentPeaks[c];
+                }
+            }
+                
             InitStep = 1;
         }
         catch (Exception e)
