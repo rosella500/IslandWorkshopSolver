@@ -25,7 +25,7 @@ public class CSVImporter
     public PeakCycle[] currentPeaks;
     private string rootPath;
     private int currentWeek;
-    public byte popularityIndex;
+    public byte popularityIndex = 127;
 
     private static readonly HttpClient client = new HttpClient();
     int lastDayRead = -1;
@@ -95,8 +95,10 @@ public class CSVImporter
     }
 
     public bool NeedNewTodayData(int currentDay)
-    {   
-        return lastDayRead < Math.Min(currentDay,3) && (observedSupplies.Count == 0 || !observedSupplies[0].ContainsKey(currentDay));
+    {
+        bool hasAllPeaks = HasAllPeaks();
+        PluginLog.Debug("Current day {0}, lastDayRead {1}, observedSupplies count {2} observed today? {3} has all peaks already? {4}", currentDay, lastDayRead, observedSupplies.Count, observedSupplies.Count > 0 ? observedSupplies[0].ContainsKey(currentDay) : "null", hasAllPeaks);
+        return !hasAllPeaks && lastDayRead < Math.Min(currentDay,3) && (observedSupplies.Count == 0 || !observedSupplies[0].ContainsKey(currentDay));
     }
 
     public bool NeedToOverwriteTodayData(int currentDay, string[] products)
@@ -525,18 +527,23 @@ public class CSVImporter
         string path = GetPathForWeek(currentWeek - 1);
         if (currentWeek > 1 && File.Exists(path))
         {
-            string[] fileInfoOld = File.ReadAllLines(path);
-            for (int c = 0; c < Solver.Items.Count; c++)
+            using (FileStream logFileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) //Open file read only, apparently?
             {
-                string line = fileInfoOld[c];
-
-                string[] values = line.Split(",");
-
-                if (values.Length > 20)
+                using (StreamReader logFileReader = new StreamReader(logFileStream))
                 {
-                    ParsePeak(c, values[20], lastWeekPeaks);
+                    for (int c = 0; c < Solver.Items.Count; c++)
+                    {
+                        string line = logFileReader.ReadLine()!;
+
+                        string[] values = line.Split(",");
+
+                        if (values.Length > 20)
+                        {
+                            ParsePeak(c, values[20], lastWeekPeaks);
+                        }
+                    }
                 }
-            }
+            }            
         }
         else
         {
@@ -555,8 +562,21 @@ public class CSVImporter
             return;
         }
 
+        List<string> lines = new();
+        using (FileStream logFileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        {
+            using (StreamReader logFileReader = new StreamReader(logFileStream))
+            {
+                string? line;
+                while ((line = logFileReader.ReadLine()) != null)
+                {
+                    lines.Add(line);
+                }
+            }
+        }
 
-        string[] fileInfo = File.ReadAllLines(path);
+        string[] fileInfo = lines.ToArray();//File.ReadAllLines(path);
+
         PluginLog.LogDebug("Reading file at {0} with {1} lines", path, fileInfo.Length);
 
         for (int c = 0; c <= 20; c += 3)

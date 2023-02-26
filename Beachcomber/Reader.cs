@@ -211,7 +211,11 @@ namespace Beachcomber
             if (currentPop == 0)
             {
                 PluginLog.Debug("No current pop, getting from importer");
-                currentPop = Solver.Solver.Importer.popularityIndex;
+                
+                if (Solver.Solver.Importer.popularityIndex == 127)
+                    PluginLog.Debug("Importer doesn't have pop either");
+                else
+                    currentPop = Solver.Solver.Importer.popularityIndex;
             }
             var currentPopularity = sheet.GetRow(currentPop)!; 
             var nextPopularity = sheet.GetRow(MJIManager.Instance()->NextPopularity)!; 

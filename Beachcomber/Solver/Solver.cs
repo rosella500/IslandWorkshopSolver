@@ -101,7 +101,7 @@ public class Solver
         {
             for (int i = 0; i < Items.Count; i++)
             {
-                PluginLog.Debug("Setting item {0} to peak {1} from CSV", Items[i].item, Importer.currentPeaks[i]);
+                Items[i].peak = Importer.currentPeaks[i];
             }
             PluginLog.Debug("Above peaks are final");
 
