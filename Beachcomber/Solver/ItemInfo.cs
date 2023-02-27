@@ -60,7 +60,7 @@ public class ItemInfo
     public PeakCycle previousPeak { get; private set; }
 
     private PeakCycle _peak = Unknown;
-    public PeakCycle peak { get { return _peak; } set { _peak = value; PluginLog.Verbose("Setting item {0} to peak {1}", item, peak); } } //This should be a private set but I'm allowing it so I can test different peaks
+    public PeakCycle peak { get { return _peak; } set { _peak = value; PluginLog.Debug("Setting item {0} to peak {1}", item, peak); } } //This should be a private set but I'm allowing it so I can test different peaks
     public int[] craftedPerDay { get; private set; }
     private Dictionary<int,ObservedSupply> observedSupplies;
     public int rankUnlocked { get; private set; }

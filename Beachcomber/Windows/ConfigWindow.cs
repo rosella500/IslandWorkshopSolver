@@ -71,7 +71,7 @@ public class ConfigWindow : Window, IDisposable
             }
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip("Calculate possible 6-craft schedules (may take longer to run solver)");
+                ImGui.SetTooltip("Calculate schedules from six 4-hour crafts (may take longer to run solver)");
             }
             ImGui.Spacing();
             bool showNet = Configuration.showNetCowries;

@@ -125,8 +125,9 @@ public class MainWindow : Window, IDisposable
         return sb.ToString();
     }
 
-    private void AddNewSuggestions(List<(int day, SuggestedSchedules? sch)>? schedules)
+    public void AddNewSuggestions(List<(int day, SuggestedSchedules? sch)>? schedules)
     {
+        PluginLog.Debug("Solver completed and new suggestions added");
         for (int c = 0; c < selectedSchedules.Length; c++)
             selectedSchedules[c] = -1;
 
@@ -200,8 +201,7 @@ public class MainWindow : Window, IDisposable
                     }
                     else
                     {
-                        List<(int day, SuggestedSchedules? sch)>? schedules = Solver.Solver.RunSolver(inventory);
-                        AddNewSuggestions(schedules);
+                        Solver.Solver.RunSolver(inventory);
                     }
                     
                 }
@@ -412,7 +412,7 @@ public class MainWindow : Window, IDisposable
                                                 inventory = maybeInv;
 
                                             Solver.Solver.SetDay(suggestion.Key.GetItems(), day);
-                                            AddNewSuggestions(Solver.Solver.RunSolver(inventory));
+                                            Solver.Solver.RunSolver(inventory);
                                         }
                                         ImGui.TableSetColumnIndex(column++);
                                         ImGui.Text(suggestion.Value.ToString());
@@ -437,7 +437,7 @@ public class MainWindow : Window, IDisposable
 
                 if(config.day == 6)
                 {
-                    if (ImGui.BeginTabItem("Cycle 1 Next Week"))
+                    if (ImGui.BeginTabItem("Cycle 1 Next Season"))
                     {
                         ImGui.Text("Always rest Cycle 1!");
                     }

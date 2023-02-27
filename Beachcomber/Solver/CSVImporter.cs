@@ -736,15 +736,21 @@ public class CSVImporter
         return rootPath + "\\" + "Week" + week + "Supply.csv";
     }
 
-    public async Task ImportFromExternalDB(int week, int currentDay)
+    public void ImportFromExternalDB(int week, int currentDay)
     {
-        if(week == weekRead && lastDayRead >= currentDay) return;
-        var responseString = await HTTPClient.GetStringAsync("http://island.ws:1483/?week=" + week+"&api="+API_VERSION);
+        if (week == weekRead && lastDayRead >= currentDay) return;
+        var request = Task.Run(() => HTTPClient.GetStringAsync("http://island.ws:1483/?week=" + week + "&api=" + API_VERSION));
+        if (!request.Wait(3000))
+        {
+            PluginLog.Warning("Can't get peaks from external DB. Doing the best with what we have");
+            return;
+        }
+        var responseString = request.Result;
         PluginLog.LogDebug("Response from get data: " + responseString);
         if (responseString.ToLower().Contains("error"))
         {
             PluginLog.Error(responseString);
-            if(responseString.ToLower().Contains("api") && Solver.Window != null)
+            if (responseString.ToLower().Contains("api") && Solver.Window != null)
             {
                 Solver.Window.showAPIError = true;
             }
@@ -759,7 +765,7 @@ public class CSVImporter
             /*if (day < currentDay)
                 return;*/
 
-            
+
 
             if (!obj.ContainsKey("popularity"))
                 return;
@@ -780,7 +786,7 @@ public class CSVImporter
 
             int index = 0;
             foreach (string peak in peakList)
-            {  
+            {
                 switch (peak)
                 {
                     case "U1":

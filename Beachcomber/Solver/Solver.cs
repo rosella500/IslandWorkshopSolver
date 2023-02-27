@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Beachcomber.Windows;
 using Dalamud.Logging;
 
@@ -65,14 +66,14 @@ public class Solver
         try
         {
             Importer = new CSVImporter(Config.rootPath, Week);
-            if (!Importer.HasAllPeaks() && !Importer.ImportFromExternalDB(Week, CurrentDay).Wait(2000))
+            for (int c = 0; c < Items.Count; c++)
             {
-                PluginLog.Warning("Can't get peaks from external DB. Doing our best with what we have");
-                
-                for(int c=0;c<Items.Count;c++) 
-                {
-                    Items[c].peak = Importer.currentPeaks[c];
-                }
+                Items[c].peak = Importer.currentPeaks[c];
+            }
+
+            if (!Importer.HasAllPeaks())
+            {
+                Task.Run(() => Importer.ImportFromExternalDB(Week, CurrentDay));
             }
                 
             InitStep = 1;
@@ -105,12 +106,7 @@ public class Solver
 
         if (Importer.HasAllPeaks()) //If we have the peaks in CSV already, just set them
         {
-            for (int i = 0; i < Items.Count; i++)
-            {
-                Items[i].peak = Importer.currentPeaks[i];
-            }
             PluginLog.Debug("Above peaks are final");
-
         }
         else if (CurrentDay == 6) //We don't get data from today but we should set the peaks anyway
         {
@@ -263,20 +259,35 @@ public class Solver
             }
         }
     }
-    static public List<(int, SuggestedSchedules?)>? RunSolver(Dictionary<int, int> inventory)
+    static public void RunSolver(Dictionary<int, int> inventory)
     {
         if (InitStep != 2)
         {
             PluginLog.LogError("Trying to run solver before solver initiated");
-            return null;
+            return;
         }
 
-        long time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+       
 
         int dayToSolve = CurrentDay + 1;
 
         Inventory = inventory;
-        List<(int, SuggestedSchedules?)> toReturn = new List<(int, SuggestedSchedules?)>();
+        
+        
+
+        if(Importer.NeedCurrentPeaks())
+            Importer.WriteCurrentPeaks(Week);
+
+
+        PluginLog.Debug("Starting running solver task");
+        Task.Run(() => RunSolverAsync(dayToSolve));
+    }
+
+    public static Task RunSolverAsync(int dayToSolve)
+    {
+        var time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var toReturn = new List<(int, SuggestedSchedules?)>();
+
         if (dayToSolve == 1)
         {
             toReturn.Add((0, null));
@@ -284,12 +295,9 @@ public class Solver
             SetDay(new List<Item>(), 0);
         }
 
-        if(Importer.NeedCurrentPeaks())
-            Importer.WriteCurrentPeaks(Week);
-        
         if (!Importer.HasAllPeaks()) //We don't know the whole week, so just solve the day in front of us
         {
-            Dictionary<WorkshopSchedule, int> safeSchedules = GetSuggestedSchedules(dayToSolve, -1, null);
+            var safeSchedules = GetSuggestedSchedules(dayToSolve, -1, null);
 
             var bestSched = GetBestSchedule(safeSchedules);
 
@@ -311,10 +319,11 @@ public class Solver
                 toReturn.Add((dayToSolve, null));
         }
 
+        if(Window != null)
+            Window.AddNewSuggestions(toReturn);
+
         PluginLog.LogInformation("Took {0} ms to calculate suggestions for day {1}. Suggestions length: {2}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time, dayToSolve + 1, toReturn.Count);
-
-        return toReturn;
-
+        return Task.CompletedTask;
     }
 
     public static void AddStubValue(int day, int groove, int value)
