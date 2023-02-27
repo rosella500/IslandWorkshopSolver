@@ -63,6 +63,17 @@ public class ConfigWindow : Window, IDisposable
                 ImGui.SetTooltip("Show the length of time the crafts take next to their name");
             }
             ImGui.Spacing();
+            bool use6Crafts = Configuration.sixCrafts;
+            if (ImGui.Checkbox("Calculate 6-craft schedules", ref use6Crafts))
+            {
+                Configuration.sixCrafts = use6Crafts;
+                Configuration.Save();
+            }
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Calculate possible 6-craft schedules (may take longer to run solver)");
+            }
+            ImGui.Spacing();
             bool showNet = Configuration.showNetCowries;
             if (ImGui.Checkbox("Show net cowries", ref showNet))
             {

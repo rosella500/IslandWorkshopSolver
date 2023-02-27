@@ -886,7 +886,36 @@ public class Solver
                 }
             }
         }
-        
+
+        if(Config.sixCrafts)
+        {
+            foreach (var topItem in fourHour)
+            {
+                foreach (var fourMatch in fourHour)
+                {
+                    if (!fourMatch.GetsEfficiencyBonus(topItem))
+                        continue;
+                    foreach (var secondFourMatch in fourHour)
+                    {
+                        if (!secondFourMatch.GetsEfficiencyBonus(fourMatch))
+                            continue;
+                        foreach (var thirdFourMatch in fourHour)
+                        {
+                            if (!secondFourMatch.GetsEfficiencyBonus(thirdFourMatch))
+                                continue;
+                            foreach (var fourthFourMatch in fourHour)
+                            {
+                                AddScheduleIfEfficient(fourthFourMatch, topItem,
+                                    new List<Item> { thirdFourMatch.item, secondFourMatch.item, fourMatch.item,
+                                        topItem.item, fourthFourMatch.item, topItem.item },
+                                            day, safeSchedules, limitedUse, materials, startingGroove);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         return safeSchedules;
     }
 
