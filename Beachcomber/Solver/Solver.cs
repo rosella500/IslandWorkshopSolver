@@ -372,7 +372,7 @@ public class Solver
             else if (item.peak == Cycle2Weak)
                 weak++;
         }
-        return "D2: " + weak + "/5 weak peaks and " + strong + "/5 strong peaks";
+        return "C2: " + weak + "/5 weak peaks and " + strong + "/5 strong peaks";
     }
 
     public static IOrderedEnumerable<KeyValuePair<Material, int>>? GetScheduledMatsNeeded()
