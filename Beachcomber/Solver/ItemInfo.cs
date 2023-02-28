@@ -393,7 +393,7 @@ public class ItemInfo
         if (Solver.ReservedItems.Count > 0 && !Solver.ReservedItems.Contains(item))
             return true;
 
-        if (peak == Cycle2Weak || peak == Cycle2Strong)
+        if (peak == Cycle2Weak || peak == Cycle2Strong || peak == Cycle2Unknown)
             return day > 0;
         if (peak == Cycle3Weak || peak == Cycle3Strong || peak == UnknownD1)
             return day > 1;
