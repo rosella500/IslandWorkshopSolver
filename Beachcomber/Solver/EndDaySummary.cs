@@ -4,7 +4,7 @@ namespace Beachcomber.Solver;
 public class EndDaySummary
 {
     private List<int> numCrafted;
-    public int endingGroove { get; private set; }
+    public int endingGroove { get; set; }
     public int endingGross { get; set; }
     public int endingNet { get; set; }  
 
