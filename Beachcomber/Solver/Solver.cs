@@ -198,10 +198,11 @@ public class Solver
         for (int summary = 1; summary < Importer.endDays.Count && summary <= CurrentDay; summary++)
         {
             var prevDaySummary = Importer.endDays[summary];
-            PluginLog.LogDebug("previous day summary: " + prevDaySummary);
+            PluginLog.LogDebug("previous day (C{0}) summary: " + prevDaySummary, summary+1);
+
+            var twoDaysAgo = Importer.endDays[summary - 1];
             if (prevDaySummary.crafts != null && prevDaySummary.crafts.Count > 0)
             {
-                var twoDaysAgo = Importer.endDays[summary - 1];
                 PluginLog.Debug("Checking value of summary for cycle {0} with starting groove {1}", summary + 1, twoDaysAgo.endingGroove);
                 CycleSchedule yesterdaySchedule = new CycleSchedule(summary, twoDaysAgo.endingGroove);
                 yesterdaySchedule.SetForAllWorkshops(prevDaySummary.crafts);
@@ -218,6 +219,19 @@ public class Solver
                 prevDaySummary.endingGross = gross;
                 prevDaySummary.endingNet = net;
                 prevDaySummary.valuesPerCraft = yesterdaySchedule.cowriesPerHour;
+            }
+            else if(prevDaySummary.endingGross==0)
+            {
+                //Resting,
+                PluginLog.Debug("Resting, making sure groove is accurate");
+                if(prevDaySummary.endingGroove != twoDaysAgo.endingGroove)
+                {
+                    PluginLog.LogDebug("Writing summary to file. New gross: 0 new groove: " + twoDaysAgo.endingGroove);
+                    Importer.WriteEndDay(summary, twoDaysAgo.endingGroove, 0, 0, new List<Item>());
+                }
+                prevDaySummary.endingGroove = twoDaysAgo.endingGroove;
+                prevDaySummary.endingGross = 0;
+                prevDaySummary.endingNet = 0;
             }
 
             if (prevDaySummary.endingGross > 0)

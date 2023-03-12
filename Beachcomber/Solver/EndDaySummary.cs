@@ -39,6 +39,6 @@ public class EndDaySummary
     }
     public override string ToString()
     {
-        return "groove: "+endingGroove+" gross: "+endingGross+" net: " + endingNet;
+        return "ending groove: "+endingGroove+" gross: "+endingGross+" net: " + endingNet;
     }
 }
