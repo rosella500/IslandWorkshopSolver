@@ -65,7 +65,19 @@ public enum Material
     WoodOpal = 70,
     Islebloom = 71,
     Paprika = 74,
-    Leek = 75
+    Leek = 75,
+    Coal = 76,
+    Shale = 77,
+    Glimshroom = 78,
+    Marble = 79,
+    MythrilOre = 80,
+    EffervescentWater = 81,
+    Spectrine = 82,
+    CaveShrimp = 83,
+    RunnerBeans = 84,
+    Beets = 85,
+    Eggplant = 86,
+    Zucchini = 87
 }
 public static class RareMaterialHelper
 {
