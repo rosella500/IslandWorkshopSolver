@@ -95,6 +95,17 @@ public class ConfigWindow : Window, IDisposable
             {
                 ImGui.SetTooltip("Removes all suggested schedules that require more of a rare material than you have in your isleventory");
             }
+            bool hideWarn = Configuration.hide4WorkshopWarn;
+            if (ImGui.Checkbox("Hide 4 workshop warning", ref hideWarn))
+            {
+                Configuration.hide4WorkshopWarn = hideWarn;
+                Configuration.Save();
+            }
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Hide the warning that 4-workshop schedules aren't optimized.");
+            }
+            ImGui.Spacing();
         }
         ImGui.Spacing();
         ImGui.Separator();

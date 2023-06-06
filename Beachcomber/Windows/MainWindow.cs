@@ -181,9 +181,9 @@ public class MainWindow : Window, IDisposable
             ImGui.TextColored(red, "Beachcomber needs to be updated! Please update so you can have the best quality recommendations.");
             return;
         }
-        if(config.numWorkshops > 3)
+        if(config.numWorkshops > 3 && !config.hide4WorkshopWarn)
         {
-            ImGui.TextColored(yellow, "Warning: Beachcomber has not yet been updated to optimize for 4 workshops.\nI'm working on it, I promise.");
+            ImGui.TextColored(yellow, "Warning: Beachcomber has not yet been updated to optimize for 4 workshops.\nIf you want fully-optimized 4-workshop recs, check out the Overseas Casuals discord at\ndiscord.gg/overseascasuals");
         }
         try
         {
