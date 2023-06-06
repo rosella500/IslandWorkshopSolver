@@ -12,7 +12,7 @@ namespace Beachcomber.Solver;
 
 public class CSVImporter
 {
-    private const string API_VERSION = "1.2";
+    private const string API_VERSION = "1.3";
 
 
     public PeakCycle[] lastWeekPeaks;
@@ -787,6 +787,9 @@ public class CSVImporter
             int index = 0;
             foreach (string peak in peakList)
             {
+                if (index >= Solver.Items.Count)
+                    break;
+
                 switch (peak)
                 {
                     case "U1":

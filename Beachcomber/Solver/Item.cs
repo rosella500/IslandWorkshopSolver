@@ -69,6 +69,18 @@ public enum Item
     Isloaf,
     PopotoSalad,
     Dressing,
+    Stove,
+    Lantern,
+    Natron,
+    Bouillabaisse,
+    FossilDisplay,
+    Bathtub,
+    Spectacles,
+    CoolingGlass,
+    RunnerBeanSaute,
+    BeetSoup,
+    ImamBayildi,
+    PickledZucchini,
     NumCrafts
 }
 

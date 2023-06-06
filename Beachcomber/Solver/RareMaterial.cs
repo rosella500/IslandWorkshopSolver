@@ -74,10 +74,10 @@ public enum Material
     EffervescentWater = 81,
     Spectrine = 82,
     CaveShrimp = 83,
-    RunnerBeans = 84,
-    Beets = 85,
-    Eggplant = 86,
-    Zucchini = 87
+    RunnerBeans = 88,
+    Beets = 89,
+    Eggplant = 90,
+    Zucchini = 91
 }
 public static class RareMaterialHelper
 {

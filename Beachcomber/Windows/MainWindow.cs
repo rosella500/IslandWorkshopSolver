@@ -12,7 +12,7 @@ namespace Beachcomber.Windows;
 
 public class MainWindow : Window, IDisposable
 {
-    private Plugin Plugin;
+    private Plugin plugin;
     private Reader reader;
     private Configuration config;
     private Dictionary<int,SuggestedSchedules?> scheduleSuggestions;
@@ -39,7 +39,7 @@ public class MainWindow : Window, IDisposable
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
 
-        Plugin = plugin;
+        this.plugin = plugin;
         this.reader = reader;
         config = plugin.Configuration;
         Solver.Solver.Init(config, this);
@@ -221,7 +221,7 @@ public class MainWindow : Window, IDisposable
             ImGui.SameLine(ImGui.GetContentRegionAvail().X - buttonWidth + 10);
             if (ImGui.Button("Config", new Vector2(buttonWidth,0f)))
             {
-                Plugin.DrawConfigUI();
+                plugin.DrawConfigUI();
             }
             ImGui.Spacing();
 

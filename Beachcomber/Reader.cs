@@ -26,14 +26,16 @@ namespace Beachcomber
         public Reader()
         {
             SignatureHelper.Initialise(this);
-            items = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Select(o => o.Item.Value?.Name.ToString() ?? string.Empty)
-               .Where(s => s.Length > 0).Prepend(string.Empty).ToArray();
+            items = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Where(o=> o.UnkData4[0].Amount >0).Select(o => o.Item.Value?.Name.ToString() ?? string.Empty)
+               .Prepend(string.Empty).ToArray();
             var itemSheet = DalamudPlugins.GameData.GetExcelSheet<Lumina.Excel.GeneratedSheets.Item>()!;
             //This will probably need to be changed if we get new mats/crafts
             var materialNames = Enumerable.Range(37551, 61).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()).ToList();
             for (int i = 0; i < 6; i++)//Add 6 dummy items in between Milk and Resin
                 materialNames.Add("None");
             materialNames.AddRange(Enumerable.Range(39224, 9).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()));
+            materialNames.AddRange(Enumerable.Range(39887, 91-76+1).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()));
+
             var addon = DalamudPlugins.GameData.GetExcelSheet<Addon>()!;
             shifts = Enumerable.Range(15186, 5).Select(i => addon.GetRow((uint)i)!.Text.ToString()).ToArray();
             supplies = Enumerable.Range(15181, 5).Reverse().Select(i => addon.GetRow((uint)i)!.Text.ToString()).ToArray();
@@ -59,7 +61,7 @@ namespace Beachcomber
             var popMods = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksPopularityType>()!.ToDictionary(i => i.RowId, i => i.Ratio);
             PopularityHelper.InitFromGameData(popMods);
 
-            var validItemRows = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Where(s => (s.Item.Value?.Name.ToString() ?? string.Empty).Length > 0);
+            var validItemRows = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Where(o => o.UnkData4[0].Amount > 0);
 
             //"Isleworks Pumpkin Pudding", 37662, firstItem.Item.Value!.Name, firstItem.Item.Value.RowId
             //4, 0, 0,  cat1, cat2, ? firstItem.Unknown1, firstItem.Unknown2, firstItem.Unknown3
@@ -82,8 +84,8 @@ namespace Beachcomber
                 {
 
                     itemInfos.Add(new ItemInfo((Solver.Item)itemIndex, (ItemCategory)(item.Theme[0].Value!.RowId), (ItemCategory)item.Theme[1].Value!.RowId, item.Value, item.CraftingTime, item.LevelReq, mats));
-                    PluginLog.Verbose("Adding item {0} with material count {1} and categories {2}({4}), {3}({5})", (Solver.Item)itemIndex, mats.Count, item.Theme[0].Value!.RowId, item.Theme[1].Value!.RowId,
-                        (ItemCategory)(item.Theme[0].Value!.RowId), (ItemCategory)item.Theme[1].Value!.RowId);
+                    PluginLog.Verbose("Adding item {6} as {0} with material count {1} and categories {2}({4}), {3}({5})", (Solver.Item)itemIndex, mats.Count, item.Theme[0].Value!.RowId, item.Theme[1].Value!.RowId,
+                        (ItemCategory)(item.Theme[0].Value!.RowId), (ItemCategory)item.Theme[1].Value!.RowId, item.Item.Value!.Name.ToString());
 
                     itemIndex++;
                 }
@@ -103,7 +105,6 @@ namespace Beachcomber
 
 
             var currentRank = MJIManager.Instance()->IslandState.CurrentRank;
-
             int completedLandmarks = 0;
             for (int i = 0; i < /*MJILandmarkPlacements.Slots*/ 4; i++)
             {
