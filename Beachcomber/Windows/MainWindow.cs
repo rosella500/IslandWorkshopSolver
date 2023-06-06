@@ -183,7 +183,7 @@ public class MainWindow : Window, IDisposable
         }
         if(config.numWorkshops > 3)
         {
-            ImGui.TextColored(yellow, "Warning: Beachcomber has not yet been updated to optimize for 4 workshops.\nIt's recommended to put the best schedule in workshops 1-3 and then a different schedule into the 4th one.");
+            ImGui.TextColored(yellow, "Warning: Beachcomber has not yet been updated to optimize for 4 workshops.\nI'm working on it, I promise.");
         }
         try
         {
