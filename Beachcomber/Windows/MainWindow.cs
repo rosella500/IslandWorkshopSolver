@@ -181,6 +181,10 @@ public class MainWindow : Window, IDisposable
             ImGui.TextColored(red, "Beachcomber needs to be updated! Please update so you can have the best quality recommendations.");
             return;
         }
+        if(config.numWorkshops > 3)
+        {
+            ImGui.TextColored(yellow, "Warning: Beachcomber has not yet been updated to optimize for 4 workshops.\nIt's recommended to put the best schedule in workshops 1-3 and then a different schedule into the 4th one.");
+        }
         try
         {
 

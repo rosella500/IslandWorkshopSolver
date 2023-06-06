@@ -121,7 +121,7 @@ public class ConfigWindow : Window, IDisposable
             ImGui.Spacing();
             int currentLevel = (Configuration.workshopBonus - 100) / 10;
 
-            if (ImGui.Combo("Workshop level", ref currentLevel, new string[3] { "Workshop I", "Workshop II", "Workshop III" }, 3))
+            if (ImGui.Combo("Workshop level", ref currentLevel, new string[4] { "Workshop I", "Workshop II", "Workshop III", "Workshop IV" }, 4))
             {
                 Configuration.workshopBonus = currentLevel * 10 + 100;
                 Configuration.Save();

@@ -106,7 +106,7 @@ namespace Beachcomber
 
             var currentRank = MJIManager.Instance()->IslandState.CurrentRank;
             int completedLandmarks = 0;
-            for (int i = 0; i < /*MJILandmarkPlacements.Slots*/ 4; i++)
+            for (int i = 0; i < /*MJILandmarkPlacements.Slots*/ 5; i++)
             {
                 PluginLog.Verbose("Landmark {0} ID {1}, placement {4}, under construction {2}, hours to complete {3}", i,
                      MJIManager.Instance()->IslandState.LandmarkIds[i], MJIManager.Instance()->IslandState.LandmarkUnderConstruction[i], MJIManager.Instance()->IslandState.LandmarkHoursToCompletion[i], MJIManager.Instance()->LandmarkPlacementsSpan[i].LandmarkId);
@@ -135,7 +135,7 @@ namespace Beachcomber
             bool showError = false;
             int numWorkshops = 0;
 
-            for (int i = 0; i < /*MJIWorkshops.MaxWorkshops*/ 3; i++)
+            for (int i = 0; i < /*MJIWorkshops.MaxWorkshops*/ 4; i++)
             {
                 if (MJIManager.Instance()->IslandState.Workshops.PlaceId[i] != 0)
                 {
