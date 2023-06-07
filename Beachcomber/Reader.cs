@@ -9,6 +9,7 @@ using Dalamud.Logging;
 using Beachcomber.Solver;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.Game.MJI;
+using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace Beachcomber
 {
@@ -20,15 +21,18 @@ namespace Beachcomber
         private readonly IReadOnlyList<string> supplies;
         private readonly IReadOnlyList<string> shifts;
         private readonly ExcelSheet<MJICraftworksPopularity> sheet;
+        private readonly ExcelSheet<MJIItemPouch> itemPouchSheet;
+        private readonly ExcelSheet<Lumina.Excel.GeneratedSheets.Item> itemSheet;
         private int lastValidDay = -1;
         private int lastHash = -1;
 
         public Reader()
         {
             SignatureHelper.Initialise(this);
+            itemPouchSheet = DalamudPlugins.GameData.GetExcelSheet<MJIItemPouch>()!;
             items = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Where(o=> o.UnkData4[0].Amount >0).Select(o => o.Item.Value?.Name.ToString() ?? string.Empty)
                .Prepend(string.Empty).ToArray();
-            var itemSheet = DalamudPlugins.GameData.GetExcelSheet<Lumina.Excel.GeneratedSheets.Item>()!;
+            itemSheet = DalamudPlugins.GameData.GetExcelSheet<Lumina.Excel.GeneratedSheets.Item>()!;
             //This will probably need to be changed if we get new mats/crafts
             var materialNames = Enumerable.Range(37551, 61).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()).ToList();
             for (int i = 0; i < 6; i++)//Add 6 dummy items in between Milk and Resin
@@ -171,34 +175,15 @@ namespace Beachcomber
 
         public unsafe bool GetInventory(out Dictionary<int, int> inventory)
         {
-            inventory = new Dictionary<int, int>();
-            var uiModulePtr = DalamudPlugins.GameGui.GetUIModule();
-            if (uiModulePtr == IntPtr.Zero)
-                return false;
-
-            var agentModule = ((UIModule*)uiModulePtr)->GetAgentModule();
-            if (agentModule == null)
-                return false;
-
-            var mjiPouch = agentModule->GetAgentMJIPouch();
-            if (mjiPouch == null)
-                return false;
-
-            if (mjiPouch->InventoryData == null)
-                return false;
-
             int totalItems = 0;
-            for (ulong i = 0; i < mjiPouch->InventoryData->Inventory.Size(); i++)
+            inventory = new Dictionary<int, int>();
+            foreach (var row in itemPouchSheet)
             {
-                var invItem = mjiPouch->InventoryData->Inventory.Get(i);
-                PluginLog.Verbose("MJI Pouch inventory item: name {2}, slotIndex {0}, stack {1}", invItem.SlotIndex, invItem.StackSize, invItem.Name);
-                totalItems += invItem.StackSize;
-                if (inventory.ContainsKey(invItem.SlotIndex))
-                    PluginLog.Warning("Duplicate ID {0} detected: {1}", invItem.SlotIndex, invItem.Name);
-                else
-                    inventory.Add(invItem.SlotIndex, invItem.StackSize);
+                int quantity = InventoryManager.Instance()->GetInventoryItemCount(row.Item.Row);
+                PluginLog.LogVerbose("{0}={1} row {2} quantity {3}", row.Item.Value.Name, row.RowId, row.Item.Row, quantity);
+                inventory.Add((int)(row.RowId), quantity);
+                totalItems += quantity;
             }
-
             return totalItems > 0;
         }
 
