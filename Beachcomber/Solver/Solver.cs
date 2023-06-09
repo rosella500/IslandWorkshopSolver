@@ -1182,7 +1182,7 @@ public class Solver
             if (CurrentDay == 0 && numNE > 0)
                 return false;
 
-            if (numNE > 5)
+            if (numNE > (Items.Count/12) + 2)
                 return false;
         }
 
