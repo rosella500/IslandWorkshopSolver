@@ -81,6 +81,15 @@ public enum Item
     BeetSoup,
     ImamBayildi,
     PickledZucchini,
+    BrassServing,
+    GrindingWheel,
+    DuriumTathlums,
+    GoldHairpin,
+    MammetOfTheCycleAward,
+    FruitPunch,
+    SweetPopotoPie,
+    Peperoncino,
+    BuffaloBeanSalad,
     NumCrafts
 }
 

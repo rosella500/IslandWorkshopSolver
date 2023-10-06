@@ -36,6 +36,7 @@ namespace Beachcomber
                 materialNames.Add("None");
             materialNames.AddRange(Enumerable.Range(39224, 9).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()));
             materialNames.AddRange(Enumerable.Range(39887, 91-76+1).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()));
+            materialNames.AddRange(Enumerable.Range(41630, 9).Select(i => itemSheet.GetRow((uint)i)!.Name.ToString()));
 
             var addon = DalamudPlugins.GameData.GetExcelSheet<Addon>()!;
             shifts = Enumerable.Range(15186, 5).Select(i => addon.GetRow((uint)i)!.Text.ToString()).ToArray();

@@ -77,7 +77,16 @@ public enum Material
     RunnerBeans = 88,
     Beets = 89,
     Eggplant = 90,
-    Zucchini = 91
+    Zucchini = 91,
+    DuriumSand = 92,
+    YellowCopperOre = 93,
+    GoldOre = 94,
+    HawksEyeSand = 95,
+    CrystalFormation = 96,
+    Watermelon = 101,
+    SweetPopoto = 102,
+    Broccoli = 103,
+    BuffaloBeans = 104
 }
 public static class RareMaterialHelper
 {
