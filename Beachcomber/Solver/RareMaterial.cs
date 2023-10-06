@@ -84,7 +84,7 @@ public static class RareMaterialHelper
     private static Dictionary<Material, int> materialValues = new Dictionary<Material, int>();
     private static Dictionary<Material, string> materialNames = new Dictionary<Material, string>();
 
-    public static void InitFromGameData(Dictionary<byte,ushort> matData, IList<string> names)
+    public static void InitFromGameData(Dictionary<uint,ushort> matData, IList<string> names)
     {
         materialValues.Clear();
         foreach(var kvp in matData)
@@ -93,7 +93,7 @@ public static class RareMaterialHelper
                 materialValues.Add((Material)kvp.Key, kvp.Value);
         }
         foreach (var kvp in materialValues)
-            PluginLog.Verbose("Mat: {0}, Value: {1}", kvp.Key, kvp.Value);
+            DalamudPlugins.pluginLog.Verbose("Mat: {0}, Value: {1}", kvp.Key, kvp.Value);
 
         materialNames.Clear();
         int index = 0;
@@ -106,7 +106,7 @@ public static class RareMaterialHelper
         }
 
         foreach (var kvp in materialNames)
-            PluginLog.Verbose("Mat: {0}, Name: {1}", kvp.Key, kvp.Value);
+            DalamudPlugins.pluginLog.Verbose("Mat: {0}, Name: {1}", kvp.Key, kvp.Value);
     }
 
     public static bool GetMaterialValue(Material mat, out int value)

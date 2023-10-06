@@ -120,7 +120,7 @@ public class WorkshopSchedule
         if (isEfficient)
             adjustedValue *= 2;
         if(verboseLogging)
-            PluginLog.LogDebug(craft.item + " is worth " + adjustedValue + " with " + currentGroove + " groove at " + ItemInfo.GetSupplyBucket(supply) + " supply (" + supply + ") and " + craft.popularity + " popularity with peak "+craft.peak);
+            DalamudPlugins.pluginLog.Debug(craft.item + " is worth " + adjustedValue + " with " + currentGroove + " groove at " + ItemInfo.GetSupplyBucket(supply) + " supply (" + supply + ") and " + craft.popularity + " popularity with peak "+craft.peak);
 
         return adjustedValue;
     }
@@ -157,7 +157,7 @@ public class WorkshopSchedule
             daysToGroove--;
 
         if (verboseLogging)
-            PluginLog.Debug("Calculating workshop value for day {0}. Rested? {1}. Crafting days after this: {2}", day + 1, Solver.Rested, daysToGroove);
+            DalamudPlugins.pluginLog.Debug("Calculating workshop value for day {0}. Rested? {1}. Crafting days after this: {2}", day + 1, Solver.Rested, daysToGroove);
 
 
         //How many days will it take to hit max normally
@@ -183,14 +183,14 @@ public class WorkshopSchedule
             while (craftingDaysLeft > 0 && expendedEndingGroove < Solver.GROOVE_MAX)
             {
                 if (verboseLogging)
-                    PluginLog.Debug("Have {0} crafting days after today, should end at {1} groove, seeing what happens tomorrow after we get to {2}", craftingDaysLeft, expectedStartingGroove, expectedStartingGroove + estimatedGroovePerDay);
+                    DalamudPlugins.pluginLog.Debug("Have {0} crafting days after today, should end at {1} groove, seeing what happens tomorrow after we get to {2}", craftingDaysLeft, expectedStartingGroove, expectedStartingGroove + estimatedGroovePerDay);
                 if (expendedEndingGroove + estimatedGroovePerDay + Solver.NumWorkshops - 1 <= Solver.GROOVE_MAX)
                 {
                     fullDays++;
                     expendedEndingGroove += estimatedGroovePerDay;
                     craftingDaysLeft--;
                     if (verboseLogging)
-                        PluginLog.Debug("We can fit in a whole day");
+                        DalamudPlugins.pluginLog.Debug("We can fit in a whole day");
                 }
                 else
                 {
@@ -199,7 +199,7 @@ public class WorkshopSchedule
                     expendedEndingGroove = Solver.GROOVE_MAX;
 
                     if (verboseLogging)
-                        PluginLog.Debug("There's {0} groove left to add today, so lets say that's {1} rows", grooveToGo, numRowsOfPartialDay);
+                        DalamudPlugins.pluginLog.Debug("There's {0} groove left to add today, so lets say that's {1} rows", grooveToGo, numRowsOfPartialDay);
                 }
             }
 
@@ -223,7 +223,7 @@ public class WorkshopSchedule
             }
             
             if (verboseLogging)
-                PluginLog.Debug("Groove bonus {0}% over {1} days, starting with day {3} with the last day giving {2} rows", grooveBonus, daysToGroove, numRowsOfPartialDay, day+2);
+                DalamudPlugins.pluginLog.Debug("Groove bonus {0}% over {1} days, starting with day {3} with the last day giving {2} rows", grooveBonus, daysToGroove, numRowsOfPartialDay, day+2);
 
             expectedStartingGroove += Solver.NumWorkshops;
         }
@@ -243,11 +243,11 @@ public class WorkshopSchedule
             grooveBonus *= -1;
 
         if (verboseLogging)
-            PluginLog.Debug("Using average value of {0} per day {1} crafts is worth {2} cowries", valuePerDay, craftsAbove4, grooveBonus);
+            DalamudPlugins.pluginLog.Debug("Using average value of {0} per day {1} crafts is worth {2} cowries", valuePerDay, craftsAbove4, grooveBonus);
 
 
         if (verboseLogging)
-            PluginLog.Debug("Calculating value for {0}, starting groove {3}, days to groove: {1}, crafts above 4: {2}", String.Join(", ", items), daysToGroove, craftsAbove4, startingGroove);
+            DalamudPlugins.pluginLog.Debug("Calculating value for {0}, starting groove {3}, days to groove: {1}, crafts above 4: {2}", String.Join(", ", items), daysToGroove, craftsAbove4, startingGroove);
         int grooveValue = 0;
 
         if (daysToGroove > 0 && grooveBonus != 0)
@@ -255,7 +255,7 @@ public class WorkshopSchedule
             grooveValue = (int)grooveBonus;
         }
         if (verboseLogging)
-            PluginLog.Debug("groove value: {0}", grooveValue);
+            DalamudPlugins.pluginLog.Debug("groove value: {0}", grooveValue);
 
         int workshopValue = 0;
         Dictionary<Item, int> numCrafted = new Dictionary<Item, int>();
@@ -278,7 +278,7 @@ public class WorkshopSchedule
                 numCrafted.Add(completedCraft.item, 0);
             }
             if (verboseLogging)
-                PluginLog.Debug("Processing craft {0}, made previously: {1}, efficient: {2}", completedCraft.item, previouslyCrafted, efficient);
+                DalamudPlugins.pluginLog.Debug("Processing craft {0}, made previously: {1}, efficient: {2}", completedCraft.item, previouslyCrafted, efficient);
 
             int nextGroove = Math.Min(startingGroove + i * Solver.NumWorkshops, Solver.GROOVE_MAX);
             workshopValue += GetValueForCurrent(day, previouslyCrafted, nextGroove, efficient, verboseLogging);
@@ -288,7 +288,7 @@ public class WorkshopSchedule
         }
         int materialValue = (int)(GetMaterialCost() * Solver.MaterialWeight);
         if(verboseLogging)
-        PluginLog.Debug("Groove value {2}, workshopValue {3}, material value {0}, weighted {1}", GetMaterialCost(), materialValue, grooveValue, workshopValue);
+        DalamudPlugins.pluginLog.Debug("Groove value {2}, workshopValue {3}, material value {0}, weighted {1}", GetMaterialCost(), materialValue, grooveValue, workshopValue);
         //Allow for the accounting for materials if desired
         return grooveValue + workshopValue - materialValue;
     }

@@ -7,6 +7,7 @@ using ImGuiNET;
 using Dalamud.Logging;
 using Beachcomber.Solver;
 using System.Linq;
+using Dalamud.Plugin.Services;
 
 namespace Beachcomber.Windows;
 
@@ -70,11 +71,11 @@ public class MainWindow : Window, IDisposable
             showWorkshopError = workshopInfo.ShowError;
             config.workshopBonus = workshopInfo.WorkshopBonus;
             config.numWorkshops = workshopInfo.NumWorkshops;
-            PluginLog.Debug("Setting config workshops to {0}", workshopInfo.NumWorkshops);
+            DalamudPlugins.pluginLog.Debug("Setting config workshops to {0}", workshopInfo.NumWorkshops);
         }
         else
         {
-            PluginLog.Debug("Null workshop info, continuing");
+            DalamudPlugins.pluginLog.Debug("Null workshop info, continuing");
         }
         if (changedConfig)
         {
@@ -98,7 +99,7 @@ public class MainWindow : Window, IDisposable
         }
         catch (Exception e)
         {
-            PluginLog.LogError(e, "Error opening window and writing supply/initing");
+            DalamudPlugins.pluginLog.Error(e, "Error opening window and writing supply/initing");
             DalamudPlugins.Chat.PrintError("Error opening window. See /xllog for more info.");
             IsOpen = false;
         }
@@ -127,7 +128,7 @@ public class MainWindow : Window, IDisposable
 
     public void AddNewSuggestions(List<(int day, SuggestedSchedules? sch)>? schedules)
     {
-        PluginLog.Debug("Solver completed and new suggestions added");
+        DalamudPlugins.pluginLog.Debug("Solver completed and new suggestions added");
         for (int c = 0; c < selectedSchedules.Length; c++)
             selectedSchedules[c] = -1;
 
@@ -211,7 +212,7 @@ public class MainWindow : Window, IDisposable
                 }
                 catch (Exception e)
                 {
-                    PluginLog.LogError(e, "Error running solver.");
+                    DalamudPlugins.pluginLog.Error(e, "Error running solver.");
                 }
             }
             ImGui.SameLine(buttonWidth+20);
@@ -316,7 +317,7 @@ public class MainWindow : Window, IDisposable
                                     ImGui.Spacing();
                                     if (ImGui.Button("Save"))
                                     {
-                                        PluginLog.Debug("Adding stub value");
+                                        DalamudPlugins.pluginLog.Debug("Adding stub value");
                                         Solver.Solver.AddStubValue(day, makeupGroove, makeupValue);
                                         makeupGroove = 0;
                                         makeupValue = 0;
@@ -452,7 +453,7 @@ public class MainWindow : Window, IDisposable
         }
         catch (Exception e)
         {
-            PluginLog.LogError(e, "Error displaying schedule data.");
+            DalamudPlugins.pluginLog.Error(e, "Error displaying schedule data.");
         }
     }
 

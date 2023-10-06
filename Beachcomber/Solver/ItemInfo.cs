@@ -60,7 +60,7 @@ public class ItemInfo
     public PeakCycle previousPeak { get; private set; }
 
     private PeakCycle _peak = Unknown;
-    public PeakCycle peak { get { return _peak; } set { _peak = value; PluginLog.Debug("Setting item {0} to peak {1}", item, peak); } } //This should be a private set but I'm allowing it so I can test different peaks
+    public PeakCycle peak { get { return _peak; } set { _peak = value; DalamudPlugins.pluginLog.Debug("Setting item {0} to peak {1}", item, peak); } } //This should be a private set but I'm allowing it so I can test different peaks
     public int[] craftedPerDay { get; private set; }
     private Dictionary<int,ObservedSupply> observedSupplies;
     public int rankUnlocked { get; private set; }
@@ -97,7 +97,7 @@ public class ItemInfo
     {
         if (other == null)
         {
-            PluginLog.LogError("Trying to compare efficiency for null item?");
+            DalamudPlugins.pluginLog.Error("Trying to compare efficiency for null item?");
             return false;
         }
         bool diffItem = other.item != item;
@@ -116,7 +116,7 @@ public class ItemInfo
 
     public void AddObservedDay(ObservedSupply ob, int day, int hour)
     {
-        //PluginLog.LogDebug("Found observed supply {0} for item {1} on day {2} hour {3}", ob, item, day+1, hour);
+        //DalamudPlugins.pluginLog.LogDebug("Found observed supply {0} for item {1} on day {2} hour {3}", ob, item, day+1, hour);
         if (observedSupplies.ContainsKey(day))
             observedSupplies[day] = ob;
         else
@@ -156,13 +156,13 @@ public class ItemInfo
                 if (observedDemand == None)
                 {
                     peak = Cycle2Strong;
-                    PluginLog.LogDebug("{0} has reliable D2 peak {1}", item, peak);
+                    DalamudPlugins.pluginLog.Debug("{0} has reliable D2 peak {1}", item, peak);
                     return;
                 }
                 else if (observedDemand == Increasing)
                 {
                     peak = Cycle2Weak;
-                    PluginLog.LogDebug("{0} has reliable D2 peak {1}", item, peak);
+                    DalamudPlugins.pluginLog.Debug("{0} has reliable D2 peak {1}", item, peak);
                     return;
                 }
                 else if (previousPeak.IsReliable())
@@ -170,20 +170,20 @@ public class ItemInfo
                     if (observedDemand == Skyrocketing)
                     {
                         peak = Cycle2Strong;
-                        PluginLog.LogDebug("{0} has reliable D2 peak {1}", item, peak);
+                        DalamudPlugins.pluginLog.Debug("{0} has reliable D2 peak {1}", item, peak);
                         return;
                     }
                     else
                     {
                         peak = Cycle2Weak;
-                        PluginLog.LogDebug("{0} has reliable D2 peak {1}", item, peak);
+                        DalamudPlugins.pluginLog.Debug("{0} has reliable D2 peak {1}", item, peak);
                         return;
                     }
                 }
                 else
                 {
                     peak = Cycle2Unknown;
-                    PluginLog.LogDebug("{0} peaks D2 but strength is unknown", item);
+                    DalamudPlugins.pluginLog.Debug("{0} peaks D2 but strength is unknown", item);
                     Solver.AddUnknownD2(item);
                 }
             }
@@ -200,20 +200,20 @@ public class ItemInfo
                 currentDaySchedule.SetForAllWorkshops(Solver.Importer.endDays[day].crafts);
             }
 
-            PluginLog.LogVerbose(item + " observed: " + observedSupplies[day]);
+            DalamudPlugins.pluginLog.Verbose(item + " observed: " + observedSupplies[day]);
             int craftedToday = currentDaySchedule == null ? 0 : currentDaySchedule.GetCraftedBeforeHour(item, currentHour);
             if (craftedToday > 0)
-                PluginLog.Debug("Found {0} crafted before hour {1} today, including in expected supply", craftedToday, currentHour);
+                DalamudPlugins.pluginLog.Debug("Found {0} crafted before hour {1} today, including in expected supply", craftedToday, currentHour);
 
             int weakPrevious = GetSupplyOnDayByPeak(Cycle2Weak, day - 1);
             int weakSupply = GetSupplyOnDayByPeak(Cycle2Weak, day) + craftedToday;
             ObservedSupply expectedWeak = new ObservedSupply(GetSupplyBucket(weakSupply),
                     GetDemandShift(weakPrevious, weakSupply));
-            PluginLog.LogVerbose("Checking against peak Cycle2Weak, expecting: " + expectedWeak);
+            DalamudPlugins.pluginLog.Verbose("Checking against peak Cycle2Weak, expecting: " + expectedWeak);
             if (observedSupplies[day].Equals(expectedWeak))
             {
                 peak = Cycle2Weak;
-                PluginLog.LogDebug("{0} has observed D2 peak {1}", item, peak);
+                DalamudPlugins.pluginLog.Debug("{0} has observed D2 peak {1}", item, peak);
                 return;
             }
 
@@ -222,15 +222,15 @@ public class ItemInfo
             ObservedSupply expectedStrong = new ObservedSupply(GetSupplyBucket(strongSupply),
                     GetDemandShift(strongPrevious, strongSupply));
 
-            PluginLog.LogVerbose("Checking against peak Cycle2Strong, expecting: " + expectedStrong);
+            DalamudPlugins.pluginLog.Verbose("Checking against peak Cycle2Strong, expecting: " + expectedStrong);
             if (observedSupplies[day].Equals(expectedStrong))
             {
                 peak = Cycle2Strong;
-                PluginLog.LogDebug("{0} has observed D2 peak {1}", item, peak);
+                DalamudPlugins.pluginLog.Debug("{0} has observed D2 peak {1}", item, peak);
                 return;
             }
             else
-                PluginLog.LogWarning(item + " does not match any known demand shifts for day 2: " + observedSupplies[1] + " with " + craftedToday + " crafts.");
+                DalamudPlugins.pluginLog.Warning(item + " does not match any known demand shifts for day 2: " + observedSupplies[1] + " with " + craftedToday + " crafts.");
         }
         
         if(day == 2 && observedSupplies.ContainsKey(2) && peak == Cycle67)
@@ -241,20 +241,20 @@ public class ItemInfo
                 currentDaySchedule.SetForAllWorkshops(Solver.Importer.endDays[day].crafts);
             }
 
-            PluginLog.LogVerbose(item + " observed: " + observedSupplies[day]);
+            DalamudPlugins.pluginLog.Verbose(item + " observed: " + observedSupplies[day]);
             int craftedToday = currentDaySchedule == null ? 0 : currentDaySchedule.GetCraftedBeforeHour(item, currentHour);
             if (craftedToday > 0)
-                PluginLog.Debug("Found {0} crafted before hour {1} today, including in expected supply", craftedToday, currentHour);
+                DalamudPlugins.pluginLog.Debug("Found {0} crafted before hour {1} today, including in expected supply", craftedToday, currentHour);
 
             int weakPrevious = GetSupplyOnDayByPeak(Cycle3Weak, day - 1);
             int weakSupply = GetSupplyOnDayByPeak(Cycle3Weak, day) + craftedToday;
             ObservedSupply expectedWeak = new ObservedSupply(GetSupplyBucket(weakSupply),
                     GetDemandShift(weakPrevious, weakSupply));
-            PluginLog.LogVerbose("Checking against peak Cycle3Weak, expecting: " + expectedWeak);
+            DalamudPlugins.pluginLog.Verbose("Checking against peak Cycle3Weak, expecting: " + expectedWeak);
             if (observedSupplies[day].Equals(expectedWeak))
             {
                 peak = Cycle3Weak;
-                PluginLog.LogDebug("{0} has observed D2 peak {1}", item, peak);
+                DalamudPlugins.pluginLog.Debug("{0} has observed D2 peak {1}", item, peak);
                 return;
             }
         }
@@ -267,11 +267,11 @@ public class ItemInfo
                 currentDaySchedule.SetForAllWorkshops(Solver.Importer.endDays[day].crafts);
             }
             ObservedSupply observedToday = observedSupplies[day];
-            PluginLog.LogVerbose(item + " observed: " + observedToday+" on day "+(day+1));
+            DalamudPlugins.pluginLog.Verbose(item + " observed: " + observedToday+" on day "+(day+1));
             int craftedPreviously = GetCraftedBeforeDay(day);
             int craftedToday = currentDaySchedule == null? 0 : currentDaySchedule.GetCraftedBeforeHour(item, currentHour);
             if (craftedToday > 0)
-                PluginLog.Debug("Found {0} crafted before hour {1} today, including in expected supply along with the {2} crafted before today", craftedToday, currentHour, craftedPreviously);
+                DalamudPlugins.pluginLog.Debug("Found {0} crafted before hour {1} today, including in expected supply along with the {2} crafted before today", craftedToday, currentHour, craftedPreviously);
             bool found = false;
 
             for (int i = 0; i < PEAKS_TO_CHECK[day - 1].Length; i++)
@@ -281,12 +281,12 @@ public class ItemInfo
                 int expectedSupply = GetSupplyOnDayByPeak(potentialPeak, day) + craftedToday;
                 ObservedSupply expectedObservation = new ObservedSupply(GetSupplyBucket(craftedPreviously + expectedSupply),
                         GetDemandShift(expectedPrevious, expectedSupply));
-                PluginLog.LogVerbose("Checking against peak " + potentialPeak + ", expecting: " + expectedObservation);
+                DalamudPlugins.pluginLog.Verbose("Checking against peak " + potentialPeak + ", expecting: " + expectedObservation);
 
                 if (observedToday.Equals(expectedObservation))
                 {
                     peak = potentialPeak;
-                    PluginLog.Debug("{0} with {3} crafts matches pattern for peak {1}, terminal? {2}", item, peak, peak.IsTerminal(), craftedPreviously+craftedToday);
+                    DalamudPlugins.pluginLog.Debug("{0} with {3} crafts matches pattern for peak {1}, terminal? {2}", item, peak, peak.IsTerminal(), craftedPreviously+craftedToday);
                     found = true;
                     if (peak.IsTerminal())
                         return;
@@ -294,10 +294,10 @@ public class ItemInfo
             }
 
             if (!found)
-                PluginLog.LogWarning("{0} does not match any known patterns for day {1} with observed {2}, {3} crafted before and {4} crafted today", item,day+1,observedSupplies[day], craftedPreviously,craftedToday);
+                DalamudPlugins.pluginLog.Warning("{0} does not match any known patterns for day {1} with observed {2}, {3} crafted before and {4} crafted today", item,day+1,observedSupplies[day], craftedPreviously,craftedToday);
             
         }
-        PluginLog.Warning("Item {0} contains no observed data for day {1}. Can't set peak.", item, day);
+        DalamudPlugins.pluginLog.Warning("Item {0} contains no observed data for day {1}. Can't set peak.", item, day);
     }
 
     public int GetSupplyOnDay(int day)
@@ -321,7 +321,7 @@ public class ItemInfo
                 schedule.SetForAllWorkshops(Solver.Importer.endDays[day - 1].crafts);
                 craftedToday = schedule.GetCraftedBeforeHour(item, Solver.Importer.observedSupplyHours[day - 1]);
                 *//*if (craftedToday > 0)
-                    PluginLog.Debug("Found {0}x {3} crafted already today, so we're looking at a supply of {1} when observed as {2}", craftedToday, craftedToday + supply, observedEarlier, item);*//*
+                    DalamudPlugins.pluginLog.Debug("Found {0}x {3} crafted already today, so we're looking at a supply of {1} when observed as {2}", craftedToday, craftedToday + supply, observedEarlier, item);*//*
             }
             
             //Only return exact supply number if it matches what we observed
@@ -331,7 +331,7 @@ public class ItemInfo
             }
             else
             {
-                PluginLog.Warning("Estimated supply for item {4} day {3}: {0} ({1}) doesn't match observed supply: {2}",
+                DalamudPlugins.pluginLog.Warning("Estimated supply for item {4} day {3}: {0} ({1}) doesn't match observed supply: {2}",
                     supply, GetSupplyBucket(supply), observedEarlier.supply, day, item);
 
                 if (observedToday != null)
@@ -347,7 +347,7 @@ public class ItemInfo
                     {
 
                         int estimatedSupply = GetEstimatedSupplyTomorrow(yesterdaySupply);
-                        //PluginLog.Debug("Assuming it peaked in the past, sending supply {0} ({1})", estimatedSupply, GetSupplyBucket(estimatedSupply));
+                        //DalamudPlugins.pluginLog.Debug("Assuming it peaked in the past, sending supply {0} ({1})", estimatedSupply, GetSupplyBucket(estimatedSupply));
                         return estimatedSupply;
                     }
                     else
@@ -363,7 +363,7 @@ public class ItemInfo
                         }
 
                         int finalEstimate = estimatedYesterday + SUPPLY_PATH[(int)peak][day];
-                        PluginLog.Debug("We know its peak, so estimating today as {0} and adding {1} for tomorrow, sending supply {2} ({3})",
+                        DalamudPlugins.pluginLog.Debug("We know its peak, so estimating today as {0} and adding {1} for tomorrow, sending supply {2} ({3})",
                             estimatedYesterday, SUPPLY_PATH[(int)peak][day], finalEstimate, GetSupplyBucket(finalEstimate));
                         return finalEstimate;
                     }

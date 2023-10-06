@@ -1,6 +1,7 @@
 using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 using Dalamud.Interface.Windowing;
 using Beachcomber.Windows;
 
@@ -8,11 +9,10 @@ namespace Beachcomber
 {
     public sealed class Plugin : IDalamudPlugin
     {
-        public string Name => "Beachcomber";
         private const string CommandName = "/cowries";
 
         private DalamudPluginInterface PluginInterface { get; init; }
-        private CommandManager CommandManager { get; init; }
+        private ICommandManager CommandManager { get; init; }
         public Configuration Configuration { get; init; }
         public WindowSystem WindowSystem = new("WorkshopSolver");
 
@@ -21,7 +21,7 @@ namespace Beachcomber
 
         public Plugin(
             [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-            [RequiredVersion("1.0")] CommandManager commandManager)
+            [RequiredVersion("1.0")] ICommandManager commandManager)
         {
             PluginInterface = pluginInterface;
             CommandManager = commandManager;

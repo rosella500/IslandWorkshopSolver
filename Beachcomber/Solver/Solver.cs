@@ -46,7 +46,7 @@ public class Solver
         IslandRank = Config.islandRank;
         NumWorkshops = Config.numWorkshops;
 
-        PluginLog.Debug("Set num workshops to {0} from config ({1})", NumWorkshops, Config.numWorkshops);
+        DalamudPlugins.pluginLog.Debug("Set num workshops to {0} from config ({1})", NumWorkshops, Config.numWorkshops);
 
         if (InitStep != 0 && (CurrentDay != GetCurrentDay() || Week != GetCurrentWeek()))
         {
@@ -80,7 +80,7 @@ public class Solver
         }
         catch (Exception e)
         {
-            PluginLog.LogError(e, "Error importing file :" + e.Message + "\n" + e.StackTrace);
+            DalamudPlugins.pluginLog.Error(e, "Error importing file :" + e.Message + "\n" + e.StackTrace);
         }
     }
 
@@ -106,7 +106,7 @@ public class Solver
 
         if (Importer.HasAllPeaks()) //If we have the peaks in CSV already, just set them
         {
-            PluginLog.Debug("Above peaks are final");
+            DalamudPlugins.pluginLog.Debug("Above peaks are final");
         }
         else if (CurrentDay == 6) //We don't get data from today but we should set the peaks anyway
         {
@@ -137,7 +137,7 @@ public class Solver
             }
             if (strong == 5)
             {
-                PluginLog.Debug("We have all the strong peaks we need! All unknowns are weak");
+                DalamudPlugins.pluginLog.Debug("We have all the strong peaks we need! All unknowns are weak");
                 foreach (var item in Config.unknownD2Items.Keys)
                 {
                     Items[(int)item].peak = Cycle2Weak;
@@ -146,7 +146,7 @@ public class Solver
             }
             else if (weak == 5)
             {
-                PluginLog.Debug("We have all the weak we need! All unknowns are strong");
+                DalamudPlugins.pluginLog.Debug("We have all the weak we need! All unknowns are strong");
                 foreach (var item in Config.unknownD2Items.Keys)
                 {
                     Items[(int)item].peak = Cycle2Strong;
@@ -184,7 +184,7 @@ public class Solver
             }
         }
 
-        PluginLog.Debug("Reserving items {0} today.", String.Join(", ", ReservedItems));
+        DalamudPlugins.pluginLog.Debug("Reserving items {0} today.", String.Join(", ", ReservedItems));
         CheckEndDaySummaries();
 
 
@@ -198,12 +198,12 @@ public class Solver
         for (int summary = 1; summary < Importer.endDays.Count && summary <= CurrentDay; summary++)
         {
             var prevDaySummary = Importer.endDays[summary];
-            PluginLog.LogDebug("previous day (C{0}) summary: " + prevDaySummary, summary+1);
+            DalamudPlugins.pluginLog.Debug("previous day (C{0}) summary: " + prevDaySummary, summary+1);
 
             var twoDaysAgo = Importer.endDays[summary - 1];
             if (prevDaySummary.crafts != null && prevDaySummary.crafts.Count > 0)
             {
-                PluginLog.Debug("Checking value of summary for cycle {0} with starting groove {1}", summary + 1, twoDaysAgo.endingGroove);
+                DalamudPlugins.pluginLog.Debug("Checking value of summary for cycle {0} with starting groove {1}", summary + 1, twoDaysAgo.endingGroove);
                 CycleSchedule yesterdaySchedule = new CycleSchedule(summary, twoDaysAgo.endingGroove);
                 yesterdaySchedule.SetForAllWorkshops(prevDaySummary.crafts);
                 int gross = yesterdaySchedule.GetValue();
@@ -211,7 +211,7 @@ public class Solver
                 int net = gross - yesterdaySchedule.GetMaterialCost();
                 if (gross != prevDaySummary.endingGross || prevDaySummary.endingGroove != yesterdaySchedule.endingGroove)
                 {
-                    PluginLog.LogDebug("Writing summary to file. New gross: " + gross+" new groove: "+yesterdaySchedule.endingGroove);
+                    DalamudPlugins.pluginLog.Debug("Writing summary to file. New gross: " + gross+" new groove: "+yesterdaySchedule.endingGroove);
 
                     Importer.WriteEndDay(summary, yesterdaySchedule.endingGroove, gross, net, prevDaySummary.crafts);
                 }
@@ -223,10 +223,10 @@ public class Solver
             else if(prevDaySummary.endingGross==0)
             {
                 //Resting,
-                PluginLog.Debug("Resting, making sure groove is accurate");
+                DalamudPlugins.pluginLog.Debug("Resting, making sure groove is accurate");
                 if(prevDaySummary.endingGroove != twoDaysAgo.endingGroove)
                 {
-                    PluginLog.LogDebug("Writing summary to file. New gross: 0 new groove: " + twoDaysAgo.endingGroove);
+                    DalamudPlugins.pluginLog.Debug("Writing summary to file. New gross: 0 new groove: " + twoDaysAgo.endingGroove);
                     Importer.WriteEndDay(summary, twoDaysAgo.endingGroove, 0, 0, new List<Item>());
                 }
                 prevDaySummary.endingGroove = twoDaysAgo.endingGroove;
@@ -245,7 +245,7 @@ public class Solver
         {
             if (Importer.endDays[i].endingGross == 0)
             {
-                PluginLog.LogInformation("Rest day found on day " + (i + 1));
+                DalamudPlugins.pluginLog.Information("Rest day found on day " + (i + 1));
                 Rested = true;
             }
         }
@@ -259,7 +259,7 @@ public class Solver
                 var futureDay = Importer.endDays[i];
                 if (i == CurrentDay + 1 || endOfWeek)
                 {
-                    PluginLog.Debug("Future day summary: Day: {1}, Items: {0}", String.Join(',', futureDay.crafts), (i + 1));
+                    DalamudPlugins.pluginLog.Debug("Future day summary: Day: {1}, Items: {0}", String.Join(',', futureDay.crafts), (i + 1));
                     SetDay(futureDay.crafts, i);
                     if (endOfWeek && futureDay.crafts.Count > 0)
                         endOfWeekValid = true;
@@ -279,7 +279,7 @@ public class Solver
     {
         if (InitStep != 2)
         {
-            PluginLog.LogError("Trying to run solver before solver initiated");
+            DalamudPlugins.pluginLog.Error("Trying to run solver before solver initiated");
             return;
         }
 
@@ -295,7 +295,7 @@ public class Solver
             Importer.WriteCurrentPeaks(Week);
 
 
-        PluginLog.Debug("Starting running solver task");
+        DalamudPlugins.pluginLog.Debug("Starting running solver task");
         Task.Run(() => RunSolverAsync(dayToSolve));
     }
 
@@ -338,14 +338,14 @@ public class Solver
         if(Window != null)
             Window.AddNewSuggestions(toReturn);
 
-        PluginLog.LogInformation("Took {0} ms to calculate suggestions for day {1}. Suggestions length: {2}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time, dayToSolve + 1, toReturn.Count);
+        DalamudPlugins.pluginLog.Information("Took {0} ms to calculate suggestions for day {1}. Suggestions length: {2}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time, dayToSolve + 1, toReturn.Count);
         return Task.CompletedTask;
     }
 
     public static void AddStubValue(int day, int groove, int value)
     {
         int prevGroove = GetEndingGrooveForDay(day - 1);
-        PluginLog.Debug("Writing new end day summary with day {0}, endingGroove {1}, and gross {2}", day + 1, prevGroove + groove, value);
+        DalamudPlugins.pluginLog.Debug("Writing new end day summary with day {0}, endingGroove {1}, and gross {2}", day + 1, prevGroove + groove, value);
         Importer.WriteEndDay(day, prevGroove + groove, value, value, new List<Item>());
         Importer.endDays[day] = new EndDaySummary(new List<int>(), prevGroove + groove, value, value, new List<Item>());
         CheckEndDaySummaries();
@@ -598,7 +598,7 @@ public class Solver
     private static int GetWorstFutureDay(KeyValuePair<WorkshopSchedule, int> rec, int day)
     {
         int worstInFuture = -1;
-        PluginLog.LogDebug("Comparing d" + (day + 1) + " (" + rec.Value + ") to worst-case future days");
+        DalamudPlugins.pluginLog.Debug("Comparing d" + (day + 1) + " (" + rec.Value + ") to worst-case future days");
         int currentGroove = GetEndingGrooveForDay(CurrentDay);
         Dictionary<Item, int> reservedSet = new Dictionary<Item, int>();
         foreach (Item item in rec.Key.GetItems())
@@ -617,7 +617,7 @@ public class Solver
             if(solution.Key!=null)
             {
 
-                PluginLog.LogDebug("Day " + (d + 1) + ", crafts: " + String.Join(", ", solution.Key.GetItems()) + " value: " + solution.Value);
+                DalamudPlugins.pluginLog.Debug("Day " + (d + 1) + ", crafts: " + String.Join(", ", solution.Key.GetItems()) + " value: " + solution.Value);
                 if (worstInFuture == -1)
                     worstInFuture = solution.Value;
                 else
@@ -631,7 +631,7 @@ public class Solver
             }
 
         }
-            PluginLog.LogDebug("Worst future day: " + worstInFuture);
+            DalamudPlugins.pluginLog.Debug("Worst future day: " + worstInFuture);
 
         return worstInFuture;
     }
@@ -641,7 +641,7 @@ public class Solver
     {
         int currentGroove = GetEndingGrooveForDay(CurrentDay);
         KeyValuePair<WorkshopSchedule, int> solution = GetBestSchedule(4, currentGroove);
-            //PluginLog.LogVerbose("Testing against D5 solution " + solution.Key.getItems());
+            //DalamudPlugins.pluginLog.LogVerbose("Testing against D5 solution " + solution.Key.getItems());
         List<ItemInfo> c5Peaks = new List<ItemInfo>();
         foreach (Item item in solution.Key.GetItems())
             if (Items[(int)item].peak == Cycle5 && !c5Peaks.Contains(Items[(int)item]))
@@ -649,14 +649,14 @@ public class Solver
         int sum = solution.Value;
         int permutations = (int)Math.Pow(2, c5Peaks.Count);
 
-            //PluginLog.LogVerbose("C5 peaks: " + c5Peaks.Count + ", permutations: " + permutations);
+            //DalamudPlugins.pluginLog.LogVerbose("C5 peaks: " + c5Peaks.Count + ", permutations: " + permutations);
 
         for (int p = 1; p < permutations; p++)
         {
             for (int i = 0; i < c5Peaks.Count; i++)
             {
                 bool strong = ((p) & (1 << i)) != 0; //I can't believe I'm using a bitwise and
-                    //PluginLog.LogVerbose("Checking permutation " + p + " for item " + c5Peaks[i].item + " " + (strong ? "strong" : "weak"));
+                    //DalamudPlugins.pluginLog.LogVerbose("Checking permutation " + p + " for item " + c5Peaks[i].item + " " + (strong ? "strong" : "weak"));
                 if (strong)
                     c5Peaks[i].peak = Cycle5Strong;
                 else
@@ -664,11 +664,11 @@ public class Solver
             }
 
             int toAdd = solution.Key.GetValueWithGrooveEstimate(4, GetEndingGrooveForDay(CurrentDay));
-                //PluginLog.LogVerbose("Permutation " + p + " has value " + toAdd);
+                //DalamudPlugins.pluginLog.LogVerbose("Permutation " + p + " has value " + toAdd);
             sum += toAdd;
         }
 
-            //PluginLog.LogVerbose("Sum: " + sum + " average: " + sum / permutations);
+            //DalamudPlugins.pluginLog.LogVerbose("Sum: " + sum + " average: " + sum / permutations);
         sum /= permutations;
         KeyValuePair<WorkshopSchedule, int> newSolution = new KeyValuePair<WorkshopSchedule, int>(solution.Key, sum);
 
@@ -687,10 +687,10 @@ public class Solver
             return Importer.endDays[day].endingGroove;
         else if(SchedulesPerDay.TryGetValue(day, out var schedule))
         {
-            PluginLog.LogDebug("Getting ending groove from scheduled day " +(day+1)+": " + schedule.schedule.endingGroove);
+            DalamudPlugins.pluginLog.Debug("Getting ending groove from scheduled day " +(day+1)+": " + schedule.schedule.endingGroove);
             return schedule.schedule.endingGroove;
         }
-        PluginLog.LogDebug("Can't find day in summaries or schedules. Returning 0");
+        DalamudPlugins.pluginLog.Debug("Can't find day in summaries or schedules. Returning 0");
 
         return 0;
     }
@@ -713,7 +713,7 @@ public class Solver
     public static void SetDay(List<Item> crafts, int day)
     {
         if (day != 0)
-            PluginLog.LogInformation("Day {0}, crafts: {1}", day+1, crafts);
+            DalamudPlugins.pluginLog.Information("Day {0}, crafts: {1}", day+1, crafts);
 
         CycleSchedule schedule = new CycleSchedule(day, 0);
         schedule.SetForAllWorkshops(crafts);
@@ -732,7 +732,7 @@ public class Solver
         
 
         if (day != 0)
-            PluginLog.LogInformation("day {0} total, 0 groove: {1}. Starting groove {2}: {3}, net {4}.", day + 1, zeroGrooveValue, schedule.startingGroove, gross, net);
+            DalamudPlugins.pluginLog.Information("day {0} total, 0 groove: {1}. Starting groove {2}: {3}, net {4}.", day + 1, zeroGrooveValue, schedule.startingGroove, gross, net);
         foreach (var kvp in schedule.numCrafted)
         {
             Items[(int)kvp.Key].SetCrafted(kvp.Value, day);
@@ -783,7 +783,7 @@ public class Solver
         while (eightEnum.MoveNext())
         {
             var topItem = eightEnum.Current;
-            //PluginLog.LogVerbose("Building schedule around : " + topItem.item + ", peak: " + topItem.peak);
+            //DalamudPlugins.pluginLog.LogVerbose("Building schedule around : " + topItem.item + ", peak: " + topItem.peak);
 
 
             List<ItemInfo> eightMatches = new List<ItemInfo>();
@@ -804,7 +804,7 @@ public class Solver
                 if (!firstFourMatchEnum.Current.GetsEfficiencyBonus(topItem))
                     continue;
 
-                //PluginLog.LogVerbose("Found 4hr match, matching with " + firstFourMatchEnum.Current.item);
+                //DalamudPlugins.pluginLog.LogVerbose("Found 4hr match, matching with " + firstFourMatchEnum.Current.item);
 
                 //4-4-8-8
                 var secondFourMatchEnum = fourHour.GetEnumerator();
@@ -865,7 +865,7 @@ public class Solver
         {
             var topItem = sixEnum.Current;
 
-                //PluginLog.LogVerbose("Building schedule around : " + topItem.item);
+                //DalamudPlugins.pluginLog.LogVerbose("Building schedule around : " + topItem.item);
 
 
             //6-6-6-6
@@ -983,7 +983,7 @@ public class Solver
             GetAllMatsForSchedule(workshop, totalMaterials);
             foreach(var mat in totalMaterials)
             {
-                //PluginLog.Debug("Checking material {1}x {0}, in inventory: {2} ", mat.Key, mat.Value, Inventory.ContainsKey((int)mat.Key) ? Inventory[(int)mat.Key] : 0);
+                //DalamudPlugins.pluginLog.Debug("Checking material {1}x {0}, in inventory: {2} ", mat.Key, mat.Value, Inventory.ContainsKey((int)mat.Key) ? Inventory[(int)mat.Key] : 0);
                 if (RareMaterialHelper.GetMaterialValue(mat.Key, out _) && (!Inventory.ContainsKey((int)mat.Key) || Inventory[(int)mat.Key] < mat.Value))
                 {
                     return 0;
@@ -995,24 +995,24 @@ public class Solver
         //Only add if we don't already have one with this schedule or ours is better
         if(safeSchedules.TryGetValue(workshop, out int oldValue))
         {
-                //PluginLog.LogVerbose("Found workshop in safe schedules with rare mats: " + String.Join(", ", workshop.rareMaterialsRequired));
+                //DalamudPlugins.pluginLog.LogVerbose("Found workshop in safe schedules with rare mats: " + String.Join(", ", workshop.rareMaterialsRequired));
         }
         else
         {
-                //PluginLog.LogVerbose("Can't find workshop schedule out of "+safeSchedules.Count+" with rare mats: " + String.Join(", ", workshop.rareMaterialsRequired));
+                //DalamudPlugins.pluginLog.LogVerbose("Can't find workshop schedule out of "+safeSchedules.Count+" with rare mats: " + String.Join(", ", workshop.rareMaterialsRequired));
             oldValue = -1;
         }
 
         if (oldValue < value)
         {
             if (oldValue != -1)
-                //PluginLog.LogVerbose("Replacing schedule with mats " + String.Join(", ",workshop.rareMaterialsRequired) + " with " + String.Join(", ",list) + " because " + value + " is higher than " + oldValue);
+                //DalamudPlugins.pluginLog.LogVerbose("Replacing schedule with mats " + String.Join(", ",workshop.rareMaterialsRequired) + " with " + String.Join(", ",list) + " because " + value + " is higher than " + oldValue);
             safeSchedules.Remove(workshop); //It doesn't seem to update the key when updating the value, so we delete the key first
             safeSchedules.Add(workshop, value);
         }
         else
         {
-                //PluginLog.LogVerbose("Not replacing schedule with mats " + String.Join(", ",workshop.rareMaterialsRequired) + " with " + String.Join(", ",list) + " because " + value + " is lower than " + oldValue);
+                //DalamudPlugins.pluginLog.LogVerbose("Not replacing schedule with mats " + String.Join(", ",workshop.rareMaterialsRequired) + " with " + String.Join(", ",list) + " because " + value + " is lower than " + oldValue);
 
                 value = 0;
         }
@@ -1070,7 +1070,7 @@ public class Solver
         TimeSpan timeSinceStart = (current - startOfIS);
         int week = timeSinceStart.Days / 7 + 1;
         
-        PluginLog.LogDebug("Current week: {0}", week);
+        DalamudPlugins.pluginLog.Debug("Current week: {0}", week);
 
         return week;
     }
@@ -1105,11 +1105,11 @@ public class Solver
 
         bool needOverwrite = CurrentDay < 6 && IsProductsValid(products) && Importer.NeedToOverwriteTodayData(CurrentDay, products);
         if (needOverwrite)
-            PluginLog.Warning("Found new supply info that seems to be from a later day than what we currently have. Overwriting");
+            DalamudPlugins.pluginLog.Warning("Found new supply info that seems to be from a later day than what we currently have. Overwriting");
 
         if (InitStep < 1)
         {
-            PluginLog.LogError("Trying to run solver before solver initiated");
+            DalamudPlugins.pluginLog.Error("Trying to run solver before solver initiated");
             return false;
         }
         else if (InitStep > 1 && !needOverwrite)
@@ -1120,17 +1120,17 @@ public class Solver
 
         bool needNewWeek = CurrentDay < 6 && Importer.NeedNewWeekData(Week);
         bool needNewData = CurrentDay < 6 && Importer.NeedNewTodayData(CurrentDay);
-        PluginLog.LogDebug("Need new week data? {0} Need new supply data? {1}", needNewWeek, needNewData);
+        DalamudPlugins.pluginLog.Debug("Need new week data? {0} Need new supply data? {1}", needNewWeek, needNewData);
 
         if (!(needNewData || needNewWeek || needOverwrite))
             return true;
 
 
-        PluginLog.LogInformation("Trying to write supply info starting with " + products[0] + ", last updated day " + (updatedDay + 1));
+        DalamudPlugins.pluginLog.Information("Trying to write supply info starting with " + products[0] + ", last updated day " + (updatedDay + 1));
 
         if ((needNewWeek || (CurrentDay == 0 && needOverwrite)) && IsPopularityValid(products))
         {
-            PluginLog.LogDebug("Writing week start info (names and popularity)");
+            DalamudPlugins.pluginLog.Debug("Writing week start info (names and popularity)");
             Importer.WriteWeekStart(products);
             if (!needNewData)
                 return true;
@@ -1138,14 +1138,14 @@ public class Solver
 
         if (updatedDay == CurrentDay && (needNewData || needOverwrite) && IsProductsValid(products))
         { 
-            PluginLog.LogDebug("Products are valid and updated today");
+            DalamudPlugins.pluginLog.Debug("Products are valid and updated today");
             Importer.WriteNewSupply(products, CurrentDay);
             return true;
         }
         else if(Importer.HasAllPeaks())
             return true;
 
-        PluginLog.LogInformation("Supply info invalid. Failed to write.");
+        DalamudPlugins.pluginLog.Information("Supply info invalid. Failed to write.");
         return false;
         
     }
@@ -1206,7 +1206,7 @@ public class Solver
 
         //This uses currentDay to refer to yesterday because it'd be currentDay - 1 (for yesterday)
         //+ 1 (for displaying 1-indexed) and that's just silly
-        PluginLog.LogWarning("No products have gone down in supply since day {0}'s supply data. We probably haven't updated today.", CurrentDay);
+        DalamudPlugins.pluginLog.Warning("No products have gone down in supply since day {0}'s supply data. We probably haven't updated today.", CurrentDay);
         return false;
     }
 }

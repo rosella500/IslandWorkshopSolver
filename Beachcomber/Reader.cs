@@ -2,12 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Dalamud.Utility.Signatures;
 using Lumina.Excel.GeneratedSheets;
 using Lumina.Excel;
 using Dalamud.Logging;
 using Beachcomber.Solver;
-using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.Game.MJI;
 using FFXIVClientStructs.FFXIV.Client.Game;
 
@@ -28,7 +26,6 @@ namespace Beachcomber
 
         public Reader()
         {
-            SignatureHelper.Initialise(this);
             itemPouchSheet = DalamudPlugins.GameData.GetExcelSheet<MJIItemPouch>()!;
             items = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Where(o=> o.UnkData4[0].Amount >0).Select(o => o.Item.Value?.Name.ToString() ?? string.Empty)
                .Prepend(string.Empty).ToArray();
@@ -56,7 +53,7 @@ namespace Beachcomber
 
             ItemHelper.InitFromGameData(craftNames);
             //Maps material ID to value
-            var rareMats = DalamudPlugins.GameData.GetExcelSheet<MJIDisposalShopItem>()!.Where(i => i.Unknown1 == 0).ToDictionary(i => i.Unknown0, i=> i.Unknown2);
+            var rareMats = DalamudPlugins.GameData.GetExcelSheet<MJIDisposalShopItem>()!.Where(i => i.Category.Row == 1).ToDictionary(i => i.Item.Row, i=> i.Count);
             RareMaterialHelper.InitFromGameData(rareMats, materialNames);
 
             var supplyMods = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksSupplyDefine>()!.ToDictionary(i => i.RowId, i => i.Ratio);
@@ -88,7 +85,7 @@ namespace Beachcomber
                 {
 
                     itemInfos.Add(new ItemInfo((Solver.Item)itemIndex, (ItemCategory)(item.Theme[0].Value!.RowId), (ItemCategory)item.Theme[1].Value!.RowId, item.Value, item.CraftingTime, item.LevelReq, mats));
-                    PluginLog.Verbose("Adding item {6} as {0} with material count {1} and categories {2}({4}), {3}({5})", (Solver.Item)itemIndex, mats.Count, item.Theme[0].Value!.RowId, item.Theme[1].Value!.RowId,
+                    DalamudPlugins.pluginLog.Verbose("Adding item {6} as {0} with material count {1} and categories {2}({4}), {3}({5})", (Solver.Item)itemIndex, mats.Count, item.Theme[0].Value!.RowId, item.Theme[1].Value!.RowId,
                         (ItemCategory)(item.Theme[0].Value!.RowId), (ItemCategory)item.Theme[1].Value!.RowId, item.Item.Value!.Name.ToString());
 
                     itemIndex++;
@@ -112,7 +109,7 @@ namespace Beachcomber
             int completedLandmarks = 0;
             for (int i = 0; i < /*MJILandmarkPlacements.Slots*/ 5; i++)
             {
-                PluginLog.Verbose("Landmark {0} ID {1}, placement {4}, under construction {2}, hours to complete {3}", i,
+                DalamudPlugins.pluginLog.Verbose("Landmark {0} ID {1}, placement {4}, under construction {2}, hours to complete {3}", i,
                      MJIManager.Instance()->IslandState.LandmarkIds[i], MJIManager.Instance()->IslandState.LandmarkUnderConstruction[i], MJIManager.Instance()->IslandState.LandmarkHoursToCompletion[i], MJIManager.Instance()->LandmarkPlacementsSpan[i].LandmarkId);
                 if (MJIManager.Instance()->IslandState.LandmarkIds[i] != 0)
                 {
@@ -124,9 +121,9 @@ namespace Beachcomber
             var tension = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksTension>()!;
             var maxGroove = tension.GetRow((uint)completedLandmarks)!.Unknown0;
 
-            PluginLog.Debug("Found {0} completed landmarks, setting max groove to {1}", completedLandmarks, maxGroove);
+            DalamudPlugins.pluginLog.Debug("Found {0} completed landmarks, setting max groove to {1}", completedLandmarks, maxGroove);
 
-            PluginLog.Debug("Island rank {0}", currentRank);
+            DalamudPlugins.pluginLog.Debug("Island rank {0}", currentRank);
             return (currentRank, maxGroove);
         }
 
@@ -143,7 +140,7 @@ namespace Beachcomber
             {
                 if (MJIManager.Instance()->IslandState.Workshops.PlaceId[i] != 0)
                 {
-                    PluginLog.Verbose("Workshop {0} level {1}, under construction {2}, hours to complete {3}, placeID {4}", i,
+                    DalamudPlugins.pluginLog.Verbose("Workshop {0} level {1}, under construction {2}, hours to complete {3}, placeID {4}", i,
                     MJIManager.Instance()->IslandState.Workshops.BuildingLevel[i] + 1, MJIManager.Instance()->IslandState.Workshops.UnderConstruction[i],
                     MJIManager.Instance()->IslandState.Workshops.HoursToCompletion[i], MJIManager.Instance()->IslandState.Workshops.PlaceId[i]);
                     numWorkshops++;
@@ -154,7 +151,7 @@ namespace Beachcomber
                 }
                 else
                 {
-                    PluginLog.Verbose("Workshop {0} not built", i);
+                    DalamudPlugins.pluginLog.Verbose("Workshop {0} not built", i);
                 }
             }
 
@@ -168,7 +165,7 @@ namespace Beachcomber
             bonus = workshopBonusSheet.GetRow((uint)minLevel)!.Ratio;
 
 
-            PluginLog.Debug("Found min workshop rank of {0} with {2} workshops, setting bonus to {1}", minLevel, bonus, numWorkshops);
+            DalamudPlugins.pluginLog.Debug("Found min workshop rank of {0} with {2} workshops, setting bonus to {1}", minLevel, bonus, numWorkshops);
             WorkshopInfo workshopInfo = new() { NumWorkshops = numWorkshops, ShowError = showError, WorkshopBonus = bonus };
             return workshopInfo;
         }
@@ -180,7 +177,7 @@ namespace Beachcomber
             foreach (var row in itemPouchSheet)
             {
                 int quantity = InventoryManager.Instance()->GetInventoryItemCount(row.Item.Row);
-                PluginLog.LogVerbose("{0}={1} row {2} quantity {3}", row.Item.Value.Name, row.RowId, row.Item.Row, quantity);
+                DalamudPlugins.pluginLog.Verbose("{0}={1} row {2} quantity {3}", row.Item.Value.Name, row.RowId, row.Item.Row, quantity);
                 inventory.Add((int)(row.RowId), quantity);
                 totalItems += quantity;
             }
@@ -196,16 +193,16 @@ namespace Beachcomber
             byte currentPop = MJIManager.Instance()->CurrentPopularity;
             if (currentPop == 0)
             {
-                PluginLog.Debug("No current pop, getting from importer");
+                DalamudPlugins.pluginLog.Debug("No current pop, getting from importer");
                 
                 if (Solver.Solver.Importer.popularityIndex == 127)
-                    PluginLog.Debug("Importer doesn't have pop either");
+                    DalamudPlugins.pluginLog.Debug("Importer doesn't have pop either");
                 else
                     currentPop = Solver.Solver.Importer.popularityIndex;
             }
             var currentPopularity = sheet.GetRow(currentPop)!; 
             var nextPopularity = sheet.GetRow(MJIManager.Instance()->NextPopularity)!; 
-            PluginLog.Information("Current pop index {0}, next pop index {1}", currentPop, nextPopularity.RowId);
+            DalamudPlugins.pluginLog.Information("Current pop index {0}, next pop index {1}", currentPop, nextPopularity.RowId);
 
             var sb = new StringBuilder(64 * 128);
             int numNE = 0;
@@ -232,18 +229,18 @@ namespace Beachcomber
             string returnStr = sb.ToString();
             int newHash = returnStr.GetHashCode();
             if (numNE == items.Count - 1)
-                PluginLog.Warning("Reading invalid supply data (all Nonexistent). Need to talk to the mammet");
+                DalamudPlugins.pluginLog.Warning("Reading invalid supply data (all Nonexistent). Need to talk to the mammet");
             else if (lastHash == -1 || lastHash != newHash)
             {
                 int currentDay = Solver.Solver.GetCurrentDay();
-                PluginLog.Debug("New valid supply data detected! Previous hash: {0}, day {1}, Current hash: {2}, day {3})", lastHash, lastValidDay, newHash, currentDay) ; 
-                PluginLog.Verbose("{0}", returnStr);
+                DalamudPlugins.pluginLog.Debug("New valid supply data detected! Previous hash: {0}, day {1}, Current hash: {2}, day {3})", lastHash, lastValidDay, newHash, currentDay) ; 
+                DalamudPlugins.pluginLog.Verbose("{0}", returnStr);
 
                 lastHash = newHash;
                 lastValidDay = currentDay;
             }
             else
-                PluginLog.LogDebug("Reading same valid supply data as before, not updating hash or day");
+                DalamudPlugins.pluginLog.Debug("Reading same valid supply data as before, not updating hash or day");
 
             return (lastValidDay, sb.ToString());
         }
@@ -253,7 +250,7 @@ namespace Beachcomber
             var val = pop.Popularity[idx].Value!;
 
             //var val = (byte?)pop.GetType().GetProperty($"Unknown{idx}", BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty)?.GetValue(pop, null);
-            PluginLog.LogVerbose("Getting popularity {3} for index {0}: {2} ({1})", idx, val.Ratio, val.RowId, pop.RowId);
+            DalamudPlugins.pluginLog.Verbose("Getting popularity {3} for index {0}: {2} ({1})", idx, val.Ratio, val.RowId, pop.RowId);
             return val == null ? 0 : (int)val.RowId; // string.Empty : popularities[val.Value];
         }
     }

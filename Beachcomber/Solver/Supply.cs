@@ -50,7 +50,7 @@ public static class SupplyHelper
                 supplyModifiers.Add((Supply)kvp.Key, kvp.Value);
         }
         foreach (var kvp in supplyModifiers)
-            PluginLog.Verbose("Supply: {0}, Modifier: {1}", kvp.Key, kvp.Value);
+            DalamudPlugins.pluginLog.Verbose("Supply: {0}, Modifier: {1}", kvp.Key, kvp.Value);
     }
 }
 

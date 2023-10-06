@@ -64,28 +64,28 @@ public class CycleSchedule
                     bool efficient = workshops[i].CurrentCraftIsEfficient();
 
 
-                    //PluginLog.LogVerbose("Found completed " + completedCraft.item + " at hour " + hour + ". Efficient? " + efficient);
+                    //DalamudPlugins.pluginLog.LogVerbose("Found completed " + completedCraft.item + " at hour " + hour + ". Efficient? " + efficient);
                     int craftedEarlierThisHour = 0;
                     if (craftedThisHour.ContainsKey(completedCraft.item))
                     {
                         craftedEarlierThisHour = craftedThisHour[completedCraft.item];
-                        //PluginLog.LogVerbose("Found completed " + completedCraft.item + " earlier this hour " + craftedEarlierThisHour);
+                        //DalamudPlugins.pluginLog.LogVerbose("Found completed " + completedCraft.item + " earlier this hour " + craftedEarlierThisHour);
                     }
                     else
                     {
                         craftedThisHour.Add(completedCraft.item, 0);
 
-                        //PluginLog.LogVerbose("Did not find completed " + completedCraft.item + " earlier " + craftedEarlierThisHour+", adding");
+                        //DalamudPlugins.pluginLog.LogVerbose("Did not find completed " + completedCraft.item + " earlier " + craftedEarlierThisHour+", adding");
                     }
                     craftedThisHour[completedCraft.item] = craftedEarlierThisHour + (efficient ? 2 : 1);
 
-                    //PluginLog.LogVerbose("total crafted " + completedCraft.item + " at hour "+hour+": " + craftedThisHour[completedCraft.item]);
+                    //DalamudPlugins.pluginLog.LogVerbose("total crafted " + completedCraft.item + " at hour "+hour+": " + craftedThisHour[completedCraft.item]);
                     int numCraftedPreviously = numCrafted.TryGetValue(completedCraft.item, out int craftedPreviously) ? craftedPreviously : 0;
 
-                    //PluginLog.LogVerbose("total crafted " + completedCraft.item + " before hour " + hour + ": " + numCraftedPreviously);
+                    //DalamudPlugins.pluginLog.LogVerbose("total crafted " + completedCraft.item + " before hour " + hour + ": " + numCraftedPreviously);
                     cowriesThisHour += workshops[i].GetValueForCurrent(day, numCraftedPreviously, currentGroove, efficient);
 
-                    //PluginLog.LogVerbose("cowries at hour " + hour + ": " + cowriesThisHour);
+                    //DalamudPlugins.pluginLog.LogVerbose("cowries at hour " + hour + ": " + cowriesThisHour);
                     workshops[i].currentIndex++;
                     if (workshops[i].CurrentCraftIsEfficient())
                         grooveToAdd++;
@@ -94,7 +94,7 @@ public class CycleSchedule
             if (cowriesThisHour > 0)
             {
                 cowriesPerHour.Add(cowriesThisHour);
-                //PluginLog.LogVerbose("hour " + hour + ": " + cowriesThisHour);
+                //DalamudPlugins.pluginLog.LogVerbose("hour " + hour + ": " + cowriesThisHour);
             }
 
             totalCowries += cowriesThisHour;
@@ -166,7 +166,7 @@ public class CycleSchedule
 
     public bool HasAnyUnsurePeaks()
     {
-        PluginLog.Debug("Num workshops: " + workshops.Length);
+        DalamudPlugins.pluginLog.Debug("Num workshops: " + workshops.Length);
         return workshops[0].HasAnyUnsurePeaks();
     }
 

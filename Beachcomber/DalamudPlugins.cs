@@ -1,7 +1,6 @@
-using Dalamud.Data;
-using Dalamud.Game.Gui;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Local
 
@@ -14,8 +13,9 @@ public class DalamudPlugins
         => pluginInterface.Create<DalamudPlugins>();
 
     // @formatter:off
-    [PluginService][RequiredVersion("1.0")] public static DataManager GameData { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public static ChatGui Chat { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public static GameGui GameGui { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public static IDataManager GameData { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public static IChatGui Chat { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public static IGameGui GameGui { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public static IPluginLog pluginLog { get; private set; } = null!;
     // @formatter:on
 }
