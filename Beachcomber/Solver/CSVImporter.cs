@@ -59,9 +59,9 @@ public class CSVImporter
         string path = GetPathForWeek(currentWeek);
         if (File.Exists(path))
         {
-            PluginLog.LogWarning("This week's file already exists at {0} ", path);
+            DalamudPlugins.pluginLog.Warning("This week's file already exists at {0} ", path);
         }
-        PluginLog.LogDebug("Starting to write a file to {0}", path);
+        DalamudPlugins.pluginLog.Debug("Starting to write a file to {0}", path);
         try
         {
             string[] newFileContents = new string[products.Length+2];
@@ -81,7 +81,7 @@ public class CSVImporter
         }
         catch (Exception e)
         {
-            PluginLog.LogError(e, "Error writing file {0}", path);
+            DalamudPlugins.pluginLog.Error(e, "Error writing file {0}", path);
         }
     }
 
@@ -95,7 +95,7 @@ public class CSVImporter
     public bool NeedNewTodayData(int currentDay)
     {
         bool hasAllPeaks = HasAllPeaks();
-        PluginLog.Debug("Current day {0}, lastDayRead {1}, observedSupplies count {2} observed today? {3} has all peaks already? {4}", currentDay, lastDayRead, observedSupplies.Count, observedSupplies.Count > 0 ? observedSupplies[0].ContainsKey(currentDay) : "null", hasAllPeaks);
+        DalamudPlugins.pluginLog.Debug("Current day {0}, lastDayRead {1}, observedSupplies count {2} observed today? {3} has all peaks already? {4}", currentDay, lastDayRead, observedSupplies.Count, observedSupplies.Count > 0 ? observedSupplies[0].ContainsKey(currentDay) : "null", hasAllPeaks);
         return !hasAllPeaks && lastDayRead < Math.Min(currentDay,3) && (observedSupplies.Count == 0 || !observedSupplies[0].ContainsKey(currentDay));
     }
 
@@ -131,7 +131,7 @@ public class CSVImporter
         string path = GetPathForWeek(currentWeek);
         if (!File.Exists(path))
         {
-            PluginLog.LogError("No file found to add supply to at " + path);
+            DalamudPlugins.pluginLog.Error("No file found to add supply to at " + path);
             return;
         }
 
@@ -176,7 +176,7 @@ public class CSVImporter
                 }
                 else
                 {
-                    PluginLog.LogWarning("Trying to write to column " + column + " but length: " + fileItemInfo.Length);
+                    DalamudPlugins.pluginLog.Warning("Trying to write to column " + column + " but length: " + fileItemInfo.Length);
                 }
             }
             if (changedFile)
@@ -224,18 +224,18 @@ public class CSVImporter
             }
             else
             {
-                PluginLog.LogDebug("Supply data for day " + (currentDay + 1) + " already found in sheet. Did not write anything.");
+                DalamudPlugins.pluginLog.Debug("Supply data for day " + (currentDay + 1) + " already found in sheet. Did not write anything.");
             }
         }
         catch (Exception e)
         {
-            PluginLog.LogError(e,"Error writing file {0}",path);
+            DalamudPlugins.pluginLog.Error(e,"Error writing file {0}",path);
         }
     }
 
     public void WriteEndDay(int day, int groove, int gross, int net, List<Item> crafts)
     {
-        PluginLog.LogDebug("Writing end day for day " + (day+1));
+        DalamudPlugins.pluginLog.Debug("Writing end day for day " + (day+1));
 
         int column = (day+1) * 3 + 1;
 
@@ -243,13 +243,13 @@ public class CSVImporter
 
         if (!File.Exists(path))
         {
-            PluginLog.LogError("No file found with data at " + path);
+            DalamudPlugins.pluginLog.Error("No file found with data at " + path);
             return;
         }
         try
         {
             string[] original = File.ReadAllLines(path);
-            PluginLog.LogDebug("Reading end summary CSV. Lines: " + original.Length);
+            DalamudPlugins.pluginLog.Debug("Reading end summary CSV. Lines: " + original.Length);
 
             List<string> updated = new List<string>();
 
@@ -269,19 +269,19 @@ public class CSVImporter
 
                         sb.Append(Solver.Items[c].craftedPerDay[day]);
                         /*if (Solver.items[c].craftedPerDay[day] > 0)
-                            PluginLog.LogDebug("Adding " + Solver.items[c].craftedPerDay[day] + "x " + Solver.items[c].item + " to end day summary");*/
+                            DalamudPlugins.pluginLog.LogDebug("Adding " + Solver.items[c].craftedPerDay[day] + "x " + Solver.items[c].item + " to end day summary");*/
                         updated.Add(sb.ToString());
                     }
                     else
                     {
                         split[column] = "" + Solver.Items[c].craftedPerDay[day];
                         string joined = String.Join(",", split);
-                        //PluginLog.LogDebug("Column set to " + split[column]+", new row: "+joined);
+                        //DalamudPlugins.pluginLog.LogDebug("Column set to " + split[column]+", new row: "+joined);
                         updated.Add(joined);
                     }
                 }
 
-                PluginLog.LogDebug("Added all num crafted");
+                DalamudPlugins.pluginLog.Debug("Added all num crafted");
             }
             else
             {
@@ -295,11 +295,11 @@ public class CSVImporter
             if(Solver.Items.Count < original.Length)
             {
                 string orig = original[Solver.Items.Count];
-                //PluginLog.LogDebug("Summary line exists: " + orig+" trying to write to column "+column);
+                //DalamudPlugins.pluginLog.LogDebug("Summary line exists: " + orig+" trying to write to column "+column);
                 string[] split = orig.Split(",");
                 if (split.Length < column - 1)
                 {
-                    //PluginLog.LogDebug("Summary line ends before we need to write, can just append");
+                    //DalamudPlugins.pluginLog.LogDebug("Summary line ends before we need to write, can just append");
                     StringBuilder sb = new StringBuilder(orig);
                     int commasToAdd = column - 1 - split.Length;
                     for (int i = 0; i < commasToAdd; i++)
@@ -307,11 +307,11 @@ public class CSVImporter
 
                     sb.Append(groove).Append(',').Append(gross).Append(',').Append(net);
                     updated.Add(sb.ToString());
-                    //PluginLog.LogDebug("Adding onto existing row: " + sb.ToString());
+                    //DalamudPlugins.pluginLog.LogDebug("Adding onto existing row: " + sb.ToString());
                 }
                 else
                 {
-                    //PluginLog.LogDebug("Summary line is long enough we have to overwrite values") ;
+                    //DalamudPlugins.pluginLog.LogDebug("Summary line is long enough we have to overwrite values") ;
                     split[column - 2] = "" + groove;
                     if (split.Length > column - 1)
                     {
@@ -337,12 +337,12 @@ public class CSVImporter
                     }
                     
                     
-                    //PluginLog.LogDebug("Setting existing row's values to " + updated[updated.Count - 1]);
+                    //DalamudPlugins.pluginLog.LogDebug("Setting existing row's values to " + updated[updated.Count - 1]);
                 }
             }
             else
             {
-                //PluginLog.LogDebug("Need to add new row for output summaries");
+                //DalamudPlugins.pluginLog.LogDebug("Need to add new row for output summaries");
                 StringBuilder sb = new StringBuilder();
                 int commasToAdd = column - 2;
                 for (int i = 0; i < commasToAdd; i++)
@@ -350,17 +350,17 @@ public class CSVImporter
                 sb.Append(groove).Append(',');
                 sb.Append(gross).Append(',').Append(net);
                 updated.Add(sb.ToString());
-                //PluginLog.LogDebug("Adding new row: " + sb.ToString());
+                //DalamudPlugins.pluginLog.LogDebug("Adding new row: " + sb.ToString());
             }
 
             if (Solver.Items.Count + 1 < original.Length)
             {
                 string orig = original[Solver.Items.Count + 1];
-                //PluginLog.LogDebug("Summary line 2 exists: " + orig+" trying to write to column "+column);
+                //DalamudPlugins.pluginLog.LogDebug("Summary line 2 exists: " + orig+" trying to write to column "+column);
                 string[] split = orig.Split(",");
                 if (split.Length < column + 1)
                 {
-                    //PluginLog.LogDebug("Adding to end of file for items ");
+                    //DalamudPlugins.pluginLog.LogDebug("Adding to end of file for items ");
                     StringBuilder sb = new StringBuilder();
                     sb.Append(orig);
                     int commasToAdd = column + 1 - split.Length;
@@ -374,13 +374,13 @@ public class CSVImporter
                 {
                     split[column] = String.Join(";", crafts);
                     string joined = String.Join(",", split);
-                    //PluginLog.LogDebug("Column set to " + split[column]+", new row: "+joined);
+                    //DalamudPlugins.pluginLog.LogDebug("Column set to " + split[column]+", new row: "+joined);
                     updated.Add(joined);
                 }
             }
             else
             {
-                //PluginLog.LogDebug("Need to add new row for output summary 2");
+                //DalamudPlugins.pluginLog.LogDebug("Need to add new row for output summary 2");
                 StringBuilder sb = new StringBuilder();
                 int commasToAdd = column + 1;
                 for (int i = 0; i < commasToAdd; i++)
@@ -388,16 +388,16 @@ public class CSVImporter
                 
                 sb.Append(String.Join(";", crafts));
                 updated.Add(sb.ToString());
-                //PluginLog.LogDebug("Adding new row: " + sb.ToString());
+                //DalamudPlugins.pluginLog.LogDebug("Adding new row: " + sb.ToString());
             }
 
-            PluginLog.LogDebug("Writing " + updated.Count + " lines to the end-day summary list");
+            DalamudPlugins.pluginLog.Debug("Writing " + updated.Count + " lines to the end-day summary list");
 
             File.WriteAllLines(path, updated);
         }
         catch (Exception e)
         {
-            PluginLog.LogError("Error writing num crafts to csv " + path + ": " + e.Message);
+            DalamudPlugins.pluginLog.Error("Error writing num crafts to csv " + path + ": " + e.Message);
         }
 
     }
@@ -441,7 +441,7 @@ public class CSVImporter
             }
         }
 
-        PluginLog.Debug("# peaks per day, starting at day {0}: strong: {1}, weak {2}", day + 1, String.Join(", ", numStrong), String.Join(", ", numWeak));
+        DalamudPlugins.pluginLog.Debug("# peaks per day, starting at day {0}: strong: {1}, weak {2}", day + 1, String.Join(", ", numStrong), String.Join(", ", numWeak));
 
         for(int i=0; i<7-day; i++)
         {
@@ -449,7 +449,7 @@ public class CSVImporter
             {
                 if (numStrong[i] != 5 || numWeak[i] != 5)
                 {
-                    PluginLog.Debug("Don't have enough d7 peaks ({0} strong and {1} weak)", numStrong[i], numWeak[i]);
+                    DalamudPlugins.pluginLog.Debug("Don't have enough d7 peaks ({0} strong and {1} weak)", numStrong[i], numWeak[i]);
                     return false;
                 }
                     
@@ -458,7 +458,7 @@ public class CSVImporter
             {
                 if (numStrong[i] != 4 || numWeak[i] != 4)
                 {
-                    PluginLog.Debug("Don't have enough d{2} peaks ({0} strong and {1} weak)", numStrong[i], numWeak[i], i+day+1);
+                    DalamudPlugins.pluginLog.Debug("Don't have enough d{2} peaks ({0} strong and {1} weak)", numStrong[i], numWeak[i], i+day+1);
                     return false;
                 }
             }
@@ -474,7 +474,7 @@ public class CSVImporter
 
         if (!File.Exists(path))
         {
-            PluginLog.LogError("No file found with data at " + path);
+            DalamudPlugins.pluginLog.Error("No file found with data at " + path);
             return;
         }
 
@@ -504,7 +504,7 @@ public class CSVImporter
                 {
                     split[20] = Solver.Items[c].peak.ToString();
                     updated.Add(String.Join(",", split));
-                    //PluginLog.LogWarning("Trying to write new peaks but we already have them? " + orig);
+                    //DalamudPlugins.pluginLog.LogWarning("Trying to write new peaks but we already have them? " + orig);
                 }
             }
             for(int c=currentPeaks.Length; c< original.Length;c++)
@@ -515,7 +515,7 @@ public class CSVImporter
         }
         catch (Exception e)
         {
-            PluginLog.LogError(e, "Error writing new peaks to csv " + path);
+            DalamudPlugins.pluginLog.Error(e, "Error writing new peaks to csv " + path);
         }
 
     }
@@ -545,7 +545,7 @@ public class CSVImporter
         }
         else
         {
-            PluginLog.LogWarning("No file found with old peak data at " + path + ". Day 2 prediction is going to be less accurate.");
+            DalamudPlugins.pluginLog.Warning("No file found with old peak data at " + path + ". Day 2 prediction is going to be less accurate.");
         }
 
         path = GetPathForWeek(currentWeek);
@@ -556,7 +556,7 @@ public class CSVImporter
 
         if (!File.Exists(path))
         {
-            PluginLog.LogError("No file found with observed data at " + path);
+            DalamudPlugins.pluginLog.Error("No file found with observed data at " + path);
             return;
         }
 
@@ -575,7 +575,7 @@ public class CSVImporter
 
         string[] fileInfo = lines.ToArray();//File.ReadAllLines(path);
 
-        PluginLog.LogDebug("Reading file at {0} with {1} lines", path, fileInfo.Length);
+        DalamudPlugins.pluginLog.Debug("Reading file at {0} with {1} lines", path, fileInfo.Length);
 
         for (int c = 0; c <= 20; c += 3)
         {
@@ -598,12 +598,12 @@ public class CSVImporter
                     data3 = values[c + 2];
 
                 bool parseAsSummary = row == Solver.Items.Count;
-                //PluginLog.LogDebug("Parsing column " + c + " d1: " + data1 + " d2: " + data2 + " d3: " + data3 + " summary: " + parseAsSummary);
+                //DalamudPlugins.pluginLog.LogDebug("Parsing column " + c + " d1: " + data1 + " d2: " + data2 + " d3: " + data3 + " summary: " + parseAsSummary);
 
 
                 if (row == Solver.Items.Count) //Summary row
                 {
-                    //PluginLog.LogDebug("Found first summary row, looking at column {0} ", c);
+                    //DalamudPlugins.pluginLog.LogDebug("Found first summary row, looking at column {0} ", c);
                     if (c > 0)
                     {
                         string craftsStr = "";
@@ -704,7 +704,7 @@ public class CSVImporter
 
     private void AddSummaryValues(List<int> crafted, string data1, string data2, string data3, string hourRecorded, string craftsStr, int day)
     {
-        PluginLog.LogDebug("Adding summary row of groove {0}, gross {1}, net {2}, hourRecorded: {3}, and crafts {4} for day {5}",
+        DalamudPlugins.pluginLog.Debug("Adding summary row of groove {0}, gross {1}, net {2}, hourRecorded: {3}, and crafts {4} for day {5}",
             data1, data2, data3, hourRecorded, craftsStr, day);
         if(int.TryParse(data1, out int groove))
         {
@@ -742,14 +742,14 @@ public class CSVImporter
         var request = Task.Run(() => HTTPClient.GetStringAsync("http://island.ws:1483/?week=" + week + "&api=" + API_VERSION));
         if (!request.Wait(3000))
         {
-            PluginLog.Warning("Can't get peaks from external DB. Doing the best with what we have");
+            DalamudPlugins.pluginLog.Warning("Can't get peaks from external DB. Doing the best with what we have");
             return;
         }
         var responseString = request.Result;
-        PluginLog.LogDebug("Response from get data: " + responseString);
+        DalamudPlugins.pluginLog.Debug("Response from get data: " + responseString);
         if (responseString.ToLower().Contains("error"))
         {
-            PluginLog.Error(responseString);
+            DalamudPlugins.pluginLog.Error(responseString);
             if (responseString.ToLower().Contains("api") && Solver.Window != null)
             {
                 Solver.Window.showAPIError = true;
@@ -782,7 +782,7 @@ public class CSVImporter
             if (peakList == null)
                 return;
 
-            PluginLog.Verbose("List received: {0}. Length {2} Items available {1}", peakList, Solver.Items.Count, peakList.Count);
+            DalamudPlugins.pluginLog.Verbose("List received: {0}. Length {2} Items available {1}", peakList, Solver.Items.Count, peakList.Count);
 
             int index = 0;
             foreach (string peak in peakList)
@@ -851,7 +851,7 @@ public class CSVImporter
             lastDayRead = day;
             weekRead = week;
             popularityIndex = popularity;
-            PluginLog.Verbose("Last day read {0}", lastDayRead);
+            DalamudPlugins.pluginLog.Verbose("Last day read {0}", lastDayRead);
         }
 
     }

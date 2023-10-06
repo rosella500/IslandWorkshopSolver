@@ -158,6 +158,6 @@ public static class ItemHelper
                 displayNames.Add((Item)i, itemData[i]);
         }
         foreach (var kvp in displayNames)
-            PluginLog.Verbose("Item: {0}, Display: {1}", kvp.Key, kvp.Value);
+            DalamudPlugins.pluginLog.Verbose("Item: {0}, Display: {1}", kvp.Key, kvp.Value);
     }
 }
