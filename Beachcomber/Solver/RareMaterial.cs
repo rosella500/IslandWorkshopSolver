@@ -84,7 +84,7 @@ public static class RareMaterialHelper
     private static Dictionary<Material, int> materialValues = new Dictionary<Material, int>();
     private static Dictionary<Material, string> materialNames = new Dictionary<Material, string>();
 
-    public static void InitFromGameData(Dictionary<byte,ushort> matData, IList<string> names)
+    public static void InitFromGameData(Dictionary<uint,ushort> matData, IList<string> names)
     {
         materialValues.Clear();
         foreach(var kvp in matData)

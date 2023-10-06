@@ -2,12 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Dalamud.Utility.Signatures;
 using Lumina.Excel.GeneratedSheets;
 using Lumina.Excel;
 using Dalamud.Logging;
 using Beachcomber.Solver;
-using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.Game.MJI;
 using FFXIVClientStructs.FFXIV.Client.Game;
 
@@ -28,7 +26,6 @@ namespace Beachcomber
 
         public Reader()
         {
-            SignatureHelper.Initialise(this);
             itemPouchSheet = DalamudPlugins.GameData.GetExcelSheet<MJIItemPouch>()!;
             items = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksObject>()!.Where(o=> o.UnkData4[0].Amount >0).Select(o => o.Item.Value?.Name.ToString() ?? string.Empty)
                .Prepend(string.Empty).ToArray();
@@ -56,7 +53,7 @@ namespace Beachcomber
 
             ItemHelper.InitFromGameData(craftNames);
             //Maps material ID to value
-            var rareMats = DalamudPlugins.GameData.GetExcelSheet<MJIDisposalShopItem>()!.Where(i => i.Unknown1 == 0).ToDictionary(i => i.Unknown0, i=> i.Unknown2);
+            var rareMats = DalamudPlugins.GameData.GetExcelSheet<MJIDisposalShopItem>()!.Where(i => i.Category.Row == 1).ToDictionary(i => i.Item.Row, i=> i.Count);
             RareMaterialHelper.InitFromGameData(rareMats, materialNames);
 
             var supplyMods = DalamudPlugins.GameData.GetExcelSheet<MJICraftworksSupplyDefine>()!.ToDictionary(i => i.RowId, i => i.Ratio);
